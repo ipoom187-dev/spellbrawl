@@ -1,3 +1,5 @@
+<!doctype html>
+<meta charset="utf-8">
 <title>Spellbrawl</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,6 +19,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;
   background-image:radial-gradient(ellipse at 50% -20%, #3a1d2e 0%, transparent 60%);}
@@ -55,8 +58,10 @@ header.top .sp{flex:1}
   background:radial-gradient(ellipse at 50% 40%, var(--felt1), var(--felt2));
   border:10px solid var(--wood);box-shadow:0 0 0 2px var(--gold) inset,0 10px 40px #000a}
 .arena{border-top:1px dashed #f0c35a55;padding-top:12px;min-height:220px}
-.arena .card.fresh{animation:deal .4s ease-out}
-@keyframes deal{from{transform:translateY(-18px) scale(.94);box-shadow:0 0 0 3px var(--gold)}to{transform:none}}
+.arena .card.fresh{animation:deal .55s cubic-bezier(.2,1.2,.4,1)}
+@keyframes deal{0%{transform:translateY(-50px) rotate(-8deg) scale(1.3);opacity:0;filter:brightness(2.4)}
+  55%{transform:translateY(4px) rotate(1deg) scale(1.03);opacity:1;filter:brightness(1.4);box-shadow:0 0 0 3px var(--gold),0 0 44px var(--band)}
+  100%{transform:none;filter:none}}
 @media (prefers-reduced-motion:reduce){.arena .card.fresh{animation:none}}
 .arena-title{font-family:var(--f-display);font-size:22px;color:var(--gold);margin-bottom:8px}
 .arena-title span{font-family:var(--f-body);font-size:13px;color:var(--ink)}
@@ -161,14 +166,61 @@ table.score th,table.score td{padding:6px 8px;border-bottom:1px solid var(--line
 table.score th:first-child,table.score td:first-child{text-align:left}
 table.score tr.win td{color:var(--gold);font-weight:700}
 .tablewrap{overflow-x:auto}
+/* ambient pulses: --ph is reset by render() so the glow keeps its phase when the board is redrawn */
+.card.buyable{animation:buyglow 1.6s ease-in-out infinite var(--ph,0ms)}
+@keyframes buyglow{50%{box-shadow:0 0 0 2px var(--gold),0 0 30px #f0c35aaa}}
+.rival.active,.you.active{animation:activeglow 1.6s ease-in-out infinite var(--ph,0ms)}
+@keyframes activeglow{50%{box-shadow:0 0 0 1px var(--accent) inset,0 0 40px #ff7a3d66}}
+/* FX layer: lives outside #board so render() never wipes an effect mid-flight */
+.app{position:relative;z-index:1}
+#embers{position:fixed;inset:0;z-index:0;pointer-events:none}
+#fx{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden}
+.fx{position:absolute;pointer-events:none;will-change:transform,opacity}
+.fx.spark{left:0;top:0;border-radius:50%;transform:translate(-50%,-50%)}
+.fx.spark.coin{width:13px;height:13px;background:radial-gradient(circle at 35% 35%,#fff6c8,#f0c35a 45%,#a8761a);box-shadow:0 0 12px #f0c35a}
+.fx.orb{left:0;top:0;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle,#fff 0 18%,var(--c) 45%,transparent 72%);box-shadow:0 0 26px 10px var(--c)}
+.fx.float{font-family:var(--f-display);font-size:46px;line-height:1;white-space:nowrap;transform:translate(-50%,-50%);text-shadow:0 0 14px currentColor,0 3px 0 #000,0 0 3px #000}
+.fx.float.dmg{color:#ff4d5e} .fx.float.crit{font-size:70px;color:#ff2d45}
+.fx.float.heal{color:#7dffa0} .fx.float.curse{color:#c79bff;font-size:28px}
+.fx.ring{width:130px;height:130px;border-radius:50%;border:4px solid var(--def);box-shadow:0 0 30px var(--def),inset 0 0 30px var(--def);transform:translate(-50%,-50%)}
+.fx.seatflash{border-radius:10px;mix-blend-mode:screen}
+.fx.screen{width:100%;height:100%}
+.fx.vig-red{background:radial-gradient(ellipse at center,transparent 30%,#c8001ebb)}
+.fx.vig-blood{background:radial-gradient(ellipse at center,#0000 20%,#3a0010ee)}
+.fx.vig-violet{background:radial-gradient(ellipse at center,transparent 25%,#5a10a0cc)}
+.fx.flash{background:#fff}
+.fx.banner{width:100%;transform:translateY(-50%);text-align:center;padding:20px 16px;
+  background:linear-gradient(90deg,transparent,#000d 18%,#000d 82%,transparent);border-block:2px solid var(--bc)}
+.banner .b-title{font-family:var(--f-display);font-size:clamp(40px,8vw,92px);line-height:1;color:var(--bc);
+  text-shadow:0 0 28px var(--bc),0 4px 0 #000;animation:btitle .7s cubic-bezier(.2,1.4,.4,1) both}
+.banner .b-sub{font-size:clamp(14px,2.4vw,20px);color:var(--ink);margin-top:8px;letter-spacing:.05em}
+@keyframes btitle{from{transform:scale(2.4);opacity:0;letter-spacing:.35em;filter:blur(6px)}to{transform:none;opacity:1;filter:none}}
+.banner.kill{--bc:#ff3b4f} .banner.legend{--bc:#ff5470} .banner.chaos{--bc:#c27dff}
+.banner.gold,.banner.win{--bc:var(--gold)} .banner.turn{--bc:var(--accent)} .banner.lose{--bc:#a99bb0}
+.banner.small{padding:10px 16px} .banner.small .b-title{font-size:clamp(26px,4vw,42px)}
+/* Chaos reveal: the card held big in the centre of a lightning storm */
+.fx.storm{background:radial-gradient(ellipse at 50% 25%,#2a1745e0,#07040ef5 70%)}
+.fx.storm-cv{left:0;top:0}
+.fx.chaos-show{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:auto;cursor:pointer;padding:16px}
+.chaos-show .cs-title{font-family:var(--f-display);font-size:clamp(40px,7vw,80px);line-height:1;color:#c27dff;text-shadow:0 0 30px #c27dff,0 4px 0 #000;animation:btitle .7s cubic-bezier(.2,1.4,.4,1) both}
+.chaos-show .cs-card{zoom:var(--k,2);animation:csin .8s cubic-bezier(.2,1.3,.4,1) both,csglow 1.2s ease-in-out .8s infinite}
+.chaos-show .cs-card .card{box-shadow:0 0 0 2px #c27dff,0 0 40px #9b4dff}
+@keyframes csin{from{transform:translateY(-60vh) rotate(-14deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes csglow{50%{filter:drop-shadow(0 0 16px #b06cff) brightness(1.08)}}
+.chaos-show .cs-hint{font-size:12px;color:var(--mute);letter-spacing:.1em}
+@media (prefers-reduced-motion:reduce){.chaos-show .cs-card,.chaos-show .cs-title{animation:none}}
+@media (prefers-reduced-motion:reduce){.card.buyable,.rival.active,.you.active,.banner .b-title{animation:none}}
 </style>
 
+<canvas id="embers" aria-hidden="true"></canvas>
 <div class="app" id="app">
   <header class="top">
     <h1>Spellbrawl</h1>
     <span class="sub">เกมสร้างเด็คพ่อมดตีกัน · กติกาแบบ Cerberus/Annihilageddon</span>
     <span class="sp"></span>
     <button class="btn ghost" id="btn-speed" data-act="speed">AI: ปกติ</button>
+    <button class="btn ghost" id="btn-sfx" data-act="sfx">เสียง: เปิด</button>
+    <button class="btn ghost" id="btn-music" data-act="music">เพลง: เปิด</button>
     <button class="btn ghost" data-act="artedit">ภาพกระดาน/การ์ด</button>
     <button class="btn ghost" data-act="rules">กติกา</button>
     <input type="file" id="art-file" accept="image/*" hidden>
@@ -193,6 +245,8 @@ table.score tr.win td{color:var(--gold);font-weight:700}
     <div class="opts" id="m-opts"></div>
   </div>
 </div>
+
+<div id="fx" aria-hidden="true"></div>
 
 <script>
 "use strict";
@@ -384,9 +438,21 @@ function drawTop(p) {
   if (!p.deck.length) { if (!p.discard.length) return null; p.deck = shuffle(p.discard); p.discard = []; }
   return p.deck.pop();
 }
-async function draw(p, n) { for (let i = 0; i < n; i++) { const c = drawTop(p); if (!c) break; p.hand.push(c); } render(); }
-function heal(p, n) { const b = p.hp; p.hp = Math.min(25, p.hp + n); if (p.hp > b) log(`${p.name} ฟื้น ${p.hp - b} HP (${p.hp})`, 'good'); }
-function gainBent(t) { if (G.bent <= 0) return; G.bent--; t.discard.push(make('bent')); log(`${t.name} ได้รับ Bent Wand`, 'dmg'); }
+async function draw(p, n) {
+  let k = 0;
+  for (; k < n; k++) { const c = drawTop(p); if (!c) break; p.hand.push(c); }
+  if (k && p === G.players[0]) AUD.play('draw');
+  render();
+}
+function heal(p, n) {
+  const b = p.hp; p.hp = Math.min(25, p.hp + n);
+  if (p.hp > b) { log(`${p.name} ฟื้น ${p.hp - b} HP (${p.hp})`, 'good'); AUD.play('heal'); FX.heal(p, p.hp - b); }
+}
+function gainBent(t) {
+  if (G.bent <= 0) return;
+  G.bent--; t.discard.push(make('bent')); log(`${t.name} ได้รับ Bent Wand`, 'dmg');
+  AUD.play('curse'); FX.curse(t);
+}
 function costFor(p, c) {
   let k = c.cost;
   if (p.trait.id === 'beast' && c.type === 'creature') k = Math.max(1, k - 1);
@@ -394,6 +460,458 @@ function costFor(p, c) {
   return k;
 }
 const aiVal = c => (c.id === 'fizzle' || c.id === 'bent') ? -2 : c.id === 'rune' ? 0 : c.cost + (c.power || 0) + (c.vp || 0);
+
+/* ---------------- audio: every sound is synthesized with Web Audio, no files ----------------
+   AUD.play(name) for SFX · background music is a procedural war-drum loop (Dm–Bb–F–C) */
+const AUD = (() => {
+  const KEY = 'spellbrawl-audio', LEVEL = { sfx: 1, mus: .5 };
+  const st = { sfx: true, music: true };
+  try { Object.assign(st, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  let ctx = null, noiseBuf = null, timer = null, nextT = 0, step = 0;
+  const bus = {}, wet = {};
+  const N = m => 440 * Math.pow(2, (m - 69) / 12);
+
+  function init() {
+    if (ctx) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    ctx = new AC();
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 8; comp.ratio.value = 5; comp.attack.value = .003; comp.release.value = .3;
+    comp.connect(ctx.destination);
+    // synthesized hall reverb
+    const verb = ctx.createConvolver(), len = Math.floor(ctx.sampleRate * 2.8), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+    verb.buffer = ir; verb.connect(comp);
+    for (const [b, on] of [['sfx', st.sfx], ['mus', st.music]]) {
+      bus[b] = ctx.createGain(); bus[b].gain.value = on ? LEVEL[b] : 0; bus[b].connect(comp);
+      wet[b] = ctx.createGain(); wet[b].gain.value = on ? LEVEL[b] * .5 : 0; wet[b].connect(verb);
+    }
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    return true;
+  }
+  function voice(src, { t, a = .005, d = .3, v = .2, b = 'sfx', w = .25, filter, f0, f1, q = 1 }) {
+    let node = src;
+    if (filter) {
+      const fl = ctx.createBiquadFilter(); fl.type = filter; fl.Q.value = q;
+      fl.frequency.setValueAtTime(f0, t); if (f1) fl.frequency.exponentialRampToValueAtTime(f1, t + a + d);
+      node.connect(fl); node = fl;
+    }
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(v, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d);
+    node.connect(g); g.connect(bus[b]);
+    if (w) { const s = ctx.createGain(); s.gain.value = w; g.connect(s); s.connect(wet[b]); }
+    src.start(t); src.stop(t + a + d + .05);
+    return src;
+  }
+  function tone(type, f, o) {
+    const s = ctx.createOscillator(); s.type = type; s.frequency.setValueAtTime(f, o.t);
+    if (o.to) s.frequency.exponentialRampToValueAtTime(o.to, o.t + (o.a || .005) + (o.d || .3));
+    if (o.detune) s.detune.value = o.detune;
+    return voice(s, o);
+  }
+  function noise(o) { const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true; return voice(s, o); }
+  function lfo(param, rate, depth, t, dur) {
+    const l = ctx.createOscillator(), g = ctx.createGain(); l.frequency.value = rate; g.gain.value = depth;
+    l.connect(g); g.connect(param); l.start(t); l.stop(t + dur);
+  }
+  function drum(t, v, b = 'sfx') {
+    tone('sine', 120, { t, to: 42, d: .55, v, b, w: .35 });
+    noise({ t, d: .18, v: v * .5, filter: 'lowpass', f0: 900, f1: 90, b, w: .3 });
+  }
+  function cymbal(t, v, b = 'sfx') { noise({ t, a: .002, d: 1.8, v, filter: 'highpass', f0: 5500, b, w: .6 }); }
+  function brass(ms, t, d, v, b = 'sfx') {
+    const k = v / Math.sqrt(ms.length);
+    ms.forEach(m => [-9, 9].forEach(dt => tone('sawtooth', N(m), { t, a: .07, d, v: k, detune: dt, filter: 'lowpass', f0: 500, f1: 2400, q: 1.5, b, w: .5 })));
+  }
+  function choir(ms, t, d, v, b = 'sfx') {
+    const k = v / Math.sqrt(ms.length);
+    ms.forEach(m => [-14, 0, 14].forEach(dt => {
+      const o = tone('sawtooth', N(m), { t, a: Math.min(.5, d * .3), d, v: k, detune: dt, filter: 'lowpass', f0: 900, f1: 700, b, w: .8 });
+      lfo(o.detune, 5, 6, t, d + .6);
+    }));
+  }
+  function impact(t, n) {
+    tone('sine', 150, { t, to: 38, d: .35 + n * .06, v: Math.min(.9, .45 + n * .08), w: .2 });
+    noise({ t, d: .25 + n * .04, v: .5, filter: 'lowpass', f0: 2400, f1: 120, w: .35 });
+    if (n >= 4) { tone('sine', 70, { t, to: 28, d: 1.2, v: .6, w: .5 }); noise({ t: t + .02, d: 1.4, v: .25, filter: 'lowpass', f0: 600, f1: 60, w: .7 }); }
+  }
+  const S = {
+    card: t => noise({ t, d: .14, v: .22, filter: 'bandpass', f0: 1200, f1: 4200, q: 1.2, w: .1 }),
+    draw: t => noise({ t, d: .05, v: .08, filter: 'highpass', f0: 3500, w: 0 }),
+    power: t => { tone('sine', N(84), { t, d: .35, v: .06, w: .4 }); tone('sine', N(91), { t: t + .05, d: .4, v: .045, w: .4 }); },
+    cast: t => {
+      tone('sawtooth', 160, { t, to: 1100, a: .02, d: .28, v: .09, filter: 'lowpass', f0: 800, f1: 5000, w: .3 });
+      noise({ t, a: .03, d: .3, v: .18, filter: 'bandpass', f0: 600, f1: 4000, q: 2, w: .3 });
+    },
+    impact: (t, n = 2) => impact(t, n),
+    shield: t => {
+      [1, 2.76, 5.4].forEach((m, i) => tone('sine', 620 * m, { t, d: .9 - i * .2, v: .09 / (i + 1), w: .6 }));
+      noise({ t, d: .08, v: .15, filter: 'highpass', f0: 5000, w: .3 });
+    },
+    reflect: t => { S.shield(t); tone('sawtooth', 1200, { t: t + .05, to: 140, d: .35, v: .08, filter: 'lowpass', f0: 4000, f1: 600, w: .4 }); },
+    heal: t => [72, 76, 79, 84, 88].forEach((m, i) => tone('sine', N(m), { t: t + i * .055, d: .6, v: .06, w: .7 })),
+    curse: t => { const o = tone('square', 420, { t, to: 110, d: .7, v: .05, filter: 'lowpass', f0: 1800, f1: 400, w: .5 }); lfo(o.frequency, 9, 35, t, .8); },
+    discard: t => noise({ t, d: .12, v: .25, filter: 'lowpass', f0: 700, f1: 200, w: .1 }),
+    destroy: t => {
+      noise({ t, a: .04, d: .6, v: .3, filter: 'bandpass', f0: 3000, f1: 300, q: .8, w: .4 });
+      tone('sawtooth', 300, { t, to: 60, d: .5, v: .06, filter: 'lowpass', f0: 1200, w: .3 });
+    },
+    buy: t => {
+      tone('square', N(91), { t, d: .09, v: .05, w: .3 }); tone('square', N(96), { t: t + .07, d: .25, v: .05, w: .4 });
+      tone('sine', N(103), { t: t + .07, d: .4, v: .04, w: .5 });
+    },
+    turnMe: t => { brass([57], t, .25, .07); brass([62, 69], t + .2, 1, .07); drum(t + .2, .5); },
+    turnAI: t => drum(t, .3),
+    kill: t => {
+      impact(t, 8);
+      [1, 2.42, 3.13, 4.7, 5.93].forEach((m, i) => tone('sine', 82 * m, { t: t + .02, a: .01, d: 3.2 - i * .4, v: .16 / (i + 1), w: .8 }));
+      choir([50, 53, 57, 62], t + .15, 2.4, .05);
+    },
+    chaos: t => {
+      noise({ t, a: .01, d: .15, v: .6, filter: 'highpass', f0: 2000, w: .5 });
+      noise({ t: t + .05, a: .1, d: 2.6, v: .6, filter: 'lowpass', f0: 1800, f1: 70, w: .8 });
+      [38, 44].forEach(m => tone('sawtooth', N(m), { t, a: .3, d: 1.8, v: .06, filter: 'lowpass', f0: 500, w: .5 }));
+    },
+    // near strikes crack hard and fast; far ones are mostly a late rolling rumble
+    thunder: (t, near) => {
+      const lag = near ? 0 : .15 + Math.random() * .35;
+      noise({ t, a: .002, d: near ? .18 : .08, v: near ? .7 : .25, filter: 'highpass', f0: 1500, w: .5 });
+      noise({ t: t + lag, a: .04, d: 1.6 + Math.random(), v: near ? .6 : .4, filter: 'lowpass', f0: near ? 1600 : 700, f1: 50, w: .8 });
+      tone('sine', 60, { t: t + lag, to: 28, d: 1.4, v: near ? .5 : .25, w: .4 });
+    },
+    rain: (t, dur = 4) => {
+      noise({ t, a: .4, d: dur, v: .14, filter: 'bandpass', f0: 2600, f1: 1800, q: .6, w: .3 });
+      noise({ t, a: .6, d: dur, v: .1, filter: 'lowpass', f0: 380, f1: 200, w: .5 });
+    },
+    legendUp: t => {
+      [0, .18, .3, .42].forEach((dt, i) => drum(t + dt, .5 + i * .12));
+      choir([38, 45, 50, 53], t + .2, 3, .07); brass([50, 57], t + .5, 2.2, .08);
+      noise({ t: t + .4, a: .8, d: 2, v: .2, filter: 'lowpass', f0: 300, f1: 2000, w: .9 });
+    },
+    legendWin: t => {
+      drum(t, .8); [[62, 0], [69, .16], [74, .32]].forEach(([m, dt]) => brass([m], t + dt, .3, .09));
+      brass([62, 66, 69, 74], t + .5, 1.8, .07); cymbal(t + .5, .25);
+    },
+    victory: t => {
+      [[60, 0], [64, .14], [67, .28], [72, .42]].forEach(([m, dt]) => brass([m], t + dt, .25, .08));
+      brass([60, 64, 67, 72, 76], t + .62, 2.6, .07); drum(t + .62, .9); cymbal(t + .62, .3);
+    },
+    defeat: t => { [[62, 0], [60, .35], [57, .7]].forEach(([m, dt]) => brass([m], t + dt, .45, .07)); choir([50, 53, 57], t + 1, 3, .06); drum(t + 1, .6); },
+  };
+
+  // music: low-string ostinato + choir pad, war drums join once a battle is on
+  const PROG = [[50, 53, 57], [46, 50, 53], [45, 48, 53], [48, 52, 55]];
+  const STEP = 60 / 88 / 2;
+  function musicStep(t, s) {
+    const ch = PROG[Math.floor(s / 8) % PROG.length], b = s % 8, battle = !!(G && !G.over);
+    if (b === 0) choir(ch.map(m => m + 12), t, STEP * 8, .05, 'mus');
+    tone('sawtooth', N(ch[0] - 12 + [0, 0, 12, 0, 7, 0, 12, 7][b]), { t, a: .01, d: STEP * .9, v: battle ? .07 : .04, filter: 'lowpass', f0: 1400, f1: 250, b: 'mus', w: .2 });
+    if (battle) {
+      const v = [.7, 0, 0, .35, .55, 0, .3, .4][b];
+      if (v) drum(t, v, 'mus');
+      if (s % 32 === 0) cymbal(t, .12, 'mus');
+    }
+  }
+  function startMusic() {
+    if (timer || !ctx) return;
+    nextT = ctx.currentTime + .1;
+    timer = setInterval(() => {
+      if (ctx.state !== 'running') return;
+      if (nextT < ctx.currentTime) nextT = ctx.currentTime + .05; // tab was throttled: don't burst-play the backlog
+      while (nextT < ctx.currentTime + .3) { musicStep(nextT, step++); nextT += STEP; }
+    }, 80);
+  }
+  function stopMusic() { clearInterval(timer); timer = null; }
+
+  return {
+    st,
+    unlock() { if (!init()) return; if (ctx.state === 'suspended') ctx.resume(); if (st.music) startMusic(); },
+    play(name, arg) {
+      if (!ctx || !st.sfx || ctx.state !== 'running') return;
+      try { S[name](ctx.currentTime + .02, arg); } catch (e) { console.warn('sfx', name, e); }
+    },
+    toggle(k) {
+      const b = k === 'sfx' ? 'sfx' : 'mus';
+      st[k] = !st[k];
+      try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {}
+      if (ctx) {
+        bus[b].gain.setTargetAtTime(st[k] ? LEVEL[b] : 0, ctx.currentTime, .08);
+        wet[b].gain.setTargetAtTime(st[k] ? LEVEL[b] * .5 : 0, ctx.currentTime, .08);
+        if (b === 'mus') { if (st[k]) startMusic(); else stopMusic(); }
+      }
+      return st[k];
+    },
+  };
+})();
+
+/* ---------------- visual FX ---------------- */
+const RM = matchMedia('(prefers-reduced-motion: reduce)');
+
+// drifting embers behind the table; surge() makes them flare on big moments
+const Embers = (() => {
+  const cv = $('#embers'), cx = cv.getContext('2d');
+  let boost = 0, last = 0;
+  const fit = () => { cv.width = innerWidth; cv.height = innerHeight; };
+  fit(); addEventListener('resize', fit);
+  const mk = y => ({ x: Math.random() * cv.width, y: y != null ? y : cv.height + 10, r: .6 + Math.random() * 2, v: .2 + Math.random() * .6,
+    sw: Math.random() * 6.28, h: 12 + Math.random() * 30, a: .3 + Math.random() * .5 });
+  const ps = Array.from({ length: 46 }, () => mk(Math.random() * cv.height));
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (document.hidden) return;
+    if (RM.matches) { if (last) { cx.clearRect(0, 0, cv.width, cv.height); last = 0; } return; }
+    const dt = Math.min(3, (now - last) / 16.7 || 1); last = now;
+    boost *= .97;
+    cx.clearRect(0, 0, cv.width, cv.height); cx.globalCompositeOperation = 'lighter';
+    for (const p of ps) {
+      p.y -= p.v * (1 + boost * 4) * dt; p.sw += .02 * dt; p.x += Math.sin(p.sw) * .3 * dt;
+      if (p.y < -10) Object.assign(p, mk());
+      const fl = .6 + .4 * Math.sin(now / 180 + p.sw * 7), R = p.r * (1 + boost) * 4;
+      const g = cx.createRadialGradient(p.x, p.y, 0, p.x, p.y, R);
+      g.addColorStop(0, `hsla(${p.h},100%,65%,${p.a * fl})`); g.addColorStop(1, `hsla(${p.h},100%,50%,0)`);
+      cx.fillStyle = g; cx.beginPath(); cx.arc(p.x, p.y, R, 0, 6.283); cx.fill();
+    }
+  }
+  requestAnimationFrame(frame);
+  return { surge() { boost = 1.5; } };
+})();
+
+// one-shot effects drawn on #fx; awaited ones pace the game, slower/faster with the AI speed setting
+const FX = (() => {
+  const pace = () => { const p = G && cur(); return p && p.isAI ? Math.max(.25, Math.min(1.6, AI_DELAY / 650)) : 1; };
+  const T = ms => Math.round(ms * pace());
+  const px = v => typeof v === 'number' ? v + 'px' : v;
+  function spawn(cls, x, y, text) {
+    const el = document.createElement('div');
+    el.className = 'fx ' + cls; el.style.left = px(x); el.style.top = px(y);
+    if (text != null) el.textContent = text;
+    $('#fx').appendChild(el);
+    return el;
+  }
+  function fire(el, kf, o) {
+    const done = () => el.remove();
+    el.animate(kf, { fill: 'both', ...o }).onfinish = done;
+    setTimeout(done, o.duration + (o.delay || 0) + 400); // backstop if the animation never finishes (hidden tab)
+  }
+  const clampPt = (x, y) => ({ x: Math.min(innerWidth - 40, Math.max(40, x)), y: Math.min(innerHeight - 40, Math.max(40, y)) });
+  const seat = p => p && G ? document.querySelector(`[data-pi="${G.players.indexOf(p)}"]`) : null;
+  function at(p) {
+    const s = seat(p), el = s || $('.boardc');
+    if (!el) return { x: innerWidth / 2, y: innerHeight / 2 };
+    const r = el.getBoundingClientRect();
+    return clampPt(r.left + r.width / 2, s ? r.top + r.height / 2 : r.top + 60);
+  }
+  function sparks(x, y, color, n = 14, spread = 90, size = 8, rise = 0) {
+    if (RM.matches) n = Math.min(n, 3);
+    for (let i = 0; i < n; i++) {
+      const el = spawn('spark', 0, 0), s = size * (.5 + Math.random());
+      el.style.cssText += `;width:${s}px;height:${s}px;background:${color};box-shadow:0 0 ${s + 6}px ${color}`;
+      const a = Math.random() * Math.PI * 2, d = spread * (.35 + Math.random() * .8);
+      fire(el, [{ transform: `translate(${x}px,${y}px) translate(-50%,-50%)`, opacity: 1 },
+        { transform: `translate(${x + Math.cos(a) * d}px,${y + Math.sin(a) * d - rise}px) translate(-50%,-50%) scale(.15)`, opacity: 0 }],
+        { duration: 450 + Math.random() * 450, easing: 'cubic-bezier(.15,.7,.3,1)' });
+    }
+  }
+  function shake(n) {
+    if (RM.matches || n <= 0) return;
+    const k = [];
+    for (let i = 0; i < 7; i++) { const f = n * (1 - i / 7); k.push({ transform: `translate(${(Math.random() - .5) * 2 * f}px,${(Math.random() - .5) * 2 * f}px)` }); }
+    k.push({ transform: 'none' });
+    $('#app').animate(k, { duration: 420, easing: 'ease-out' });
+  }
+  function seatFlash(p, color) {
+    const el = seat(p); if (!el) return;
+    const r = el.getBoundingClientRect(), f = spawn('seatflash', r.left, r.top);
+    f.style.width = r.width + 'px'; f.style.height = r.height + 'px'; f.style.background = color;
+    fire(f, [{ opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 0 }], { duration: 650 });
+  }
+  function float(p, text, cls) {
+    const { x, y } = at(p), el = spawn('float ' + cls, x + (Math.random() - .5) * 40, y - 10, text);
+    fire(el, [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 },
+      { transform: 'translate(-50%,-80%) scale(1.35)', opacity: 1, offset: .15 },
+      { transform: 'translate(-50%,-110%) scale(1)', opacity: 1, offset: .6 },
+      { transform: 'translate(-50%,-190%) scale(.9)', opacity: 0 }], { duration: 1200, easing: 'ease-out' });
+  }
+  const screen = (cls, kf, ms) => fire(spawn('screen ' + cls, 0, 0), kf, { duration: ms });
+  const pulse = [{ opacity: 0 }, { opacity: 1, offset: .12 }, { opacity: 0 }];
+  function banner(title, sub, kind, ms) {
+    const el = spawn('banner ' + kind, 0, '42%');
+    const t = document.createElement('div'); t.className = 'b-title'; t.textContent = title; el.appendChild(t);
+    if (sub) { const s = document.createElement('div'); s.className = 'b-sub'; s.textContent = sub; el.appendChild(s); }
+    fire(el, [{ opacity: 0, transform: 'translateY(-50%) scaleY(.2)' }, { opacity: 1, transform: 'translateY(-50%) scaleY(1)', offset: .12 },
+      { opacity: 1, transform: 'translateY(-50%) scaleY(1)', offset: .8 }, { opacity: 0, transform: 'translateY(-50%) scaleY(1.1)' }],
+      { duration: ms, easing: 'ease-out' });
+    return sleep(ms * .8);
+  }
+
+  // full-screen storm canvas: slanted rain + branching lightning strikes (each with thunder + flash); returns stop()
+  function storm() {
+    const cv = document.createElement('canvas');
+    cv.className = 'fx storm-cv'; cv.width = innerWidth; cv.height = innerHeight;
+    $('#fx').appendChild(cv);
+    const g = cv.getContext('2d'), W = cv.width, H = cv.height;
+    const rain = Array.from({ length: 180 }, () => ({ x: Math.random() * W * 1.2, y: Math.random() * H, l: 14 + Math.random() * 18, v: 16 + Math.random() * 12 }));
+    const bolts = [];
+    // midpoint displacement gives the jagged lightning shape
+    function path(x0, y0, x1, y1, spread) {
+      let pts = [[x0, y0], [x1, y1]];
+      for (let gen = 0; gen < 6; gen++, spread /= 2) {
+        const n = [pts[0]];
+        for (let i = 1; i < pts.length; i++) {
+          const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+          n.push([(ax + bx) / 2 + (Math.random() - .5) * spread, (ay + by) / 2 + (Math.random() - .5) * spread * .3], pts[i]);
+        }
+        pts = n;
+      }
+      return pts;
+    }
+    function strike(now) {
+      // half the strikes land around the showcased card in the middle
+      const near = Math.random() < .5;
+      const x0 = Math.random() * W, x1 = near ? W / 2 + (Math.random() - .5) * Math.min(W * .5, 420) : Math.random() * W;
+      const y1 = near ? H * (.3 + Math.random() * .4) : H * (.65 + Math.random() * .35);
+      const main = path(x0, -10, x1, y1, Math.min(260, W * .25));
+      const lines = [main];
+      for (let b = 0; b < 1 + Math.floor(Math.random() * 3); b++) {
+        const [sx, sy] = main[8 + Math.floor(Math.random() * (main.length - 16))];
+        lines.push(path(sx, sy, sx + (Math.random() - .5) * 320, sy + 80 + Math.random() * 180, 90));
+      }
+      bolts.push({ lines, born: now, life: 380 });
+      AUD.play('thunder', near);
+      screen('flash', [{ opacity: 0 }, { opacity: near ? .45 : .28, offset: .1 }, { opacity: 0 }], 260);
+      if (near) shake(7);
+    }
+    let next = performance.now() + 150, stopping = 0, raf;
+    function frame(now) {
+      raf = requestAnimationFrame(frame);
+      if (!stopping && now >= next) { strike(now); next = now + 220 + Math.random() * 520; }
+      g.clearRect(0, 0, W, H);
+      g.strokeStyle = 'rgba(190,180,255,.28)'; g.lineWidth = 1.2; g.beginPath();
+      for (const d of rain) {
+        d.y += d.v; d.x -= d.v * .25;
+        if (d.y > H) { d.y = -d.l; d.x = Math.random() * W * 1.2; }
+        g.moveTo(d.x, d.y); g.lineTo(d.x + d.l * .25, d.y - d.l);
+      }
+      g.stroke();
+      for (let i = bolts.length - 1; i >= 0; i--) {
+        const b = bolts[i], age = now - b.born;
+        if (age > b.life) { bolts.splice(i, 1); continue; }
+        const a = (1 - age / b.life) * (age < 70 || Math.random() > .35 ? 1 : .35); // flicker
+        b.lines.forEach((pts, k) => {
+          for (const [w, col] of [[k ? 5 : 10, `rgba(170,110,255,${a * .35})`], [k ? 1.2 : 2.6, `rgba(255,255,255,${a})`]]) {
+            g.lineWidth = w; g.strokeStyle = col; g.shadowColor = '#c9a0ff'; g.shadowBlur = 24;
+            g.beginPath(); pts.forEach(([x, y], j) => j ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke();
+          }
+        });
+        g.shadowBlur = 0;
+      }
+    }
+    raf = requestAnimationFrame(frame);
+    return () => {
+      stopping = 1;
+      cv.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, fill: 'forwards' }).onfinish = () => { cancelAnimationFrame(raf); cv.remove(); };
+      setTimeout(() => { cancelAnimationFrame(raf); cv.remove(); }, 900);
+    };
+  }
+
+  return {
+    // a glowing bolt arcing from the caster's seat (or the board, for Chaos/Legends) to the target
+    async bolt(from, to, color) {
+      const a = at(from), b = at(to);
+      if (RM.matches || Math.hypot(b.x - a.x, b.y - a.y) < 8) return;
+      const dur = T(420), cx = (a.x + b.x) / 2, cy = Math.min(a.y, b.y) - Math.min(180, Math.hypot(b.x - a.x, b.y - a.y) * .35);
+      const pt = u => ({ x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * cx + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * cy + u * u * b.y });
+      const orb = spawn('orb', 0, 0); orb.style.setProperty('--c', color);
+      fire(orb, Array.from({ length: 9 }, (_, i) => { const p = pt(i / 8); return { transform: `translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${.5 + i / 10})` }; }),
+        { duration: dur, easing: 'ease-in' });
+      for (let k = 1; k < 7; k++) setTimeout(() => { const p = pt(Math.pow(k / 7, 1.6)); sparks(p.x, p.y, color, 2, 16, 6); }, dur * k / 7);
+      await sleep(dur);
+      sparks(b.x, b.y, color, 10, 60, 9);
+    },
+    ring(p) {
+      const { x, y } = at(p);
+      [0, 120].forEach(delay => fire(spawn('ring', x, y), [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 1 },
+        { transform: 'translate(-50%,-50%) scale(1.9)', opacity: 0 }], { duration: 700, delay, easing: 'ease-out' }));
+    },
+    hit(t, n) {
+      const { x, y } = at(t);
+      seatFlash(t, 'rgba(229,72,95,.5)');
+      float(t, '-' + n, n >= 4 ? 'dmg crit' : 'dmg');
+      sparks(x, y, '#ff6a3d', 8 + n * 3, 50 + n * 14, 9);
+      shake(t === G.players[0] ? 6 + n * 2 : n >= 3 ? 2 + n * 1.5 : 0);
+    },
+    heal(p, n) { const { x, y } = at(p); float(p, '+' + n, 'heal'); sparks(x, y, '#7dffa0', 10, 50, 6, 60); },
+    curse(t) { const { x, y } = at(t); float(t, 'Bent Wand', 'curse'); sparks(x, y, '#b07cff', 8, 40, 6); },
+    coins(r, p) {
+      if (!r || RM.matches) return;
+      const a = clampPt(r.left + r.width / 2, r.top + r.height / 2), b = at(p);
+      sparks(a.x, a.y, '#f0c35a', 12, 70, 7);
+      for (let i = 0; i < 7; i++) {
+        const ox = (Math.random() - .5) * 60, oy = (Math.random() - .5) * 60;
+        fire(spawn('spark coin', 0, 0), [{ transform: `translate(${a.x + ox}px,${a.y + oy}px) translate(-50%,-50%)`, opacity: 1 },
+          { transform: `translate(${(a.x + b.x) / 2}px,${Math.min(a.y, b.y) - 80}px) translate(-50%,-50%) scale(1.3)`, opacity: 1 },
+          { transform: `translate(${b.x}px,${b.y}px) translate(-50%,-50%) scale(.4)`, opacity: 0 }],
+          { duration: 700, delay: i * 45, easing: 'ease-in-out' });
+      }
+    },
+    kill(t, tok) {
+      const { x, y } = at(t);
+      screen('vig-red', pulse, T(1400)); shake(18); Embers.surge();
+      sparks(x, y, '#ff3b4f', 30, 200, 11); sparks(x, y, '#efe6d6', 14, 140, 6);
+      return banner(`☠ ${t.name} ตาย!`, `เหรียญพ่อมดตาย: ${tok.name}`, 'kill', T(1500));
+    },
+    turn(p) {
+      if (p.isAI) { banner(`เทิร์นของ ${p.name}`, '', 'turn small', T(800)); return null; }
+      banner('เทิร์นของคุณ!', 'ร่ายเวท ซื้อการ์ด ถล่มศัตรู', 'turn', 1100);
+      return sleep(450);
+    },
+    legend(L) {
+      screen('vig-blood', pulse, T(2000)); shake(10); Embers.surge();
+      return banner('ตำนานปรากฏ!', `${L.name} · ${L.group}`, 'legend', T(2000));
+    },
+    legendWin(p, L) {
+      const { x, y } = at(p);
+      sparks(innerWidth / 2, innerHeight * .42, '#f0c35a', 40, 260, 10); sparks(x, y, '#f0c35a', 20, 120, 8); shake(6); Embers.surge();
+      return banner('ล้มตำนาน!', `${p.name} พิชิต ${L.name}`, 'gold', T(1600));
+    },
+    // Chaos: the card is held big in the middle of a lightning storm long enough to read; click skips
+    async chaos(c) {
+      const hold = 3600;
+      const sky = spawn('screen storm', 0, 0);
+      sky.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, fill: 'forwards' });
+      const stopStorm = RM.matches ? () => {} : storm();
+      AUD.play('rain', hold / 1000 + 1.2);
+      shake(12);
+      const box = spawn('chaos-show', 0, 0);
+      box.innerHTML = `<div class="cs-title">โกลาหล!</div><div class="cs-card">${cardHTML(c)}</div><div class="cs-hint">คลิกที่ใดก็ได้เพื่อไปต่อ</div>`;
+      box.querySelector('.cs-card').style.setProperty('--k', Math.max(1.2, Math.min(2.4, innerHeight * .55 / 190, innerWidth * .8 / 132)).toFixed(2));
+      let skip;
+      const clicked = new Promise(r => { skip = r; });
+      box.addEventListener('pointerdown', () => skip());
+      await Promise.race([sleep(hold), clicked]);
+      stopStorm();
+      for (const el of [sky, box]) {
+        el.style.pointerEvents = 'none';
+        el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, fill: 'forwards' }).onfinish = () => el.remove();
+        setTimeout(() => el.remove(), 900);
+      }
+      await sleep(250);
+    },
+    victory(win, name) {
+      banner(win ? 'ชัยชนะ!' : `${name} ชนะ`, win ? 'คุณคือจอมเวทสูงสุดแห่งสนามประลอง' : 'สนามประลองยังรอการล้างแค้น', win ? 'win' : 'lose', 3200);
+      if (!win || RM.matches) return;
+      Embers.surge();
+      for (let i = 0; i < 70; i++) {
+        const el = spawn('spark', 0, 0), s = 4 + Math.random() * 8, x = Math.random() * innerWidth;
+        el.style.cssText += `;width:${s}px;height:${s}px;background:hsl(${30 + Math.random() * 30} 95% 60%);box-shadow:0 0 10px hsl(40 95% 60%)`;
+        fire(el, [{ transform: `translate(${x}px,-20px)` }, { transform: `translate(${x + (Math.random() - .5) * 200}px,${innerHeight + 40}px)` }],
+          { duration: 1800 + Math.random() * 1800, delay: Math.random() * 1200, easing: 'cubic-bezier(.3,0,.7,1)' });
+      }
+    },
+  };
+})();
 
 async function pickTarget(p, list, spec) {
   if (list.length === 1) return list[0];
@@ -426,12 +944,15 @@ async function attack(src, spec) {
     G.turn.attacked = true;
     if (src.trait.id === 'ember' && !G.turn.emberUsed && spec.dmg) { bonus = 1; G.turn.emberUsed = true; }
   }
+  const color = !spec.dmg ? (spec.bent ? '#b07cff' : '#59c2c7') : spec.chaos ? '#c27dff' : src ? '#ff7a3d' : '#ff3355';
+  AUD.play('cast');
+  await Promise.all(targets.map(t => FX.bolt(src, t, color)));
   let kills = 0;
   for (const t of targets) {
     const d = await tryDefend(t, src, spec);
     if (d === 'avoid') continue;
     if (d === 'redirect') {
-      if (spec.dmg) { log(`${t.name} สะท้อน ${spec.dmg} ดาเมจกลับไปหา ${src.name}!`, 'dmg'); await damage(src, spec.dmg, t); }
+      if (spec.dmg) { log(`${t.name} สะท้อน ${spec.dmg} ดาเมจกลับไปหา ${src.name}!`, 'dmg'); await FX.bolt(t, src, '#59c2c7'); await damage(src, spec.dmg, t); }
       continue;
     }
     if (spec.dmg && await damage(t, spec.dmg + bonus, src)) { kills++; if (spec.onKill) await spec.onKill(t); }
@@ -465,6 +986,7 @@ async function tryDefend(t, src, spec) {
   }
   if (!choice) return null;
   log(`${t.name} ป้องกันด้วย ${choice.name}`, 'good');
+  AUD.play(choice.redirect && src ? 'reflect' : 'shield'); FX.ring(t);
   if (choice.defDiscard) { t.hand.splice(t.hand.indexOf(choice), 1); t.discard.push(choice); }
   if (choice.onDefend) await choice.onDefend(t, src);
   return choice.redirect && src ? 'redirect' : 'avoid';
@@ -476,6 +998,7 @@ async function damage(t, n, killer) {
   t.hp -= n; t.hitFlash = true;
   log(`${t.name} รับ ${n} ดาเมจ (${Math.max(t.hp, 0)} HP)`, 'dmg');
   render();
+  AUD.play('impact', n); FX.hit(t, n);
   if (t.hp < 1) { await kill(t, killer); return true; }
   return false;
 }
@@ -485,6 +1008,7 @@ async function kill(t, killer) {
   t.tokens.push(tok);
   t.hp = tok.respawn || 20;
   log(`☠ ${t.name} ตาย!${killer && killer !== t ? ` (โดย ${killer.name})` : ''} ได้รับเหรียญพ่อมดตาย “${tok.name}”: ${tok.text} · ฟื้นคืนชีพที่ ${t.hp} HP`, 'kill');
+  AUD.play('kill'); render(); await FX.kill(t, tok);
   if (killer && killer !== t) {
     if (G.trophy !== killer) { G.trophy = killer; log(`${killer.name} ได้ถ้วยรางวัลแชมป์ (จั่ว 6 ทิ้ง 1 ตอนจบเทิร์น)`, 'sys'); }
     if (killer.trait.id === 'bone') { heal(killer, 3); await draw(killer, 1); }
@@ -500,7 +1024,7 @@ async function discardFromHand(t, n) {
     if (t.isAI) c = t.hand.slice().sort((a, b) => aiVal(a) - aiVal(b))[0];
     else c = await humanChoose('ทิ้งการ์ดจากมือ 1 ใบ', t.hand.map(x => ({ card: x, value: x })));
     t.hand.splice(t.hand.indexOf(c), 1); t.discard.push(c);
-    log(`${t.name} ทิ้ง ${c.name}`);
+    log(`${t.name} ทิ้ง ${c.name}`); AUD.play('discard');
   }
 }
 
@@ -514,7 +1038,7 @@ async function destroyOwn(p) {
   if (!c) return null;
   const arr = p.hand.includes(c) ? p.hand : p.discard;
   arr.splice(arr.indexOf(c), 1); G.destroyed.push(c);
-  log(`${p.name} ทำลาย ${c.name}`);
+  log(`${p.name} ทำลาย ${c.name}`); AUD.play('destroy');
   render();
   return c;
 }
@@ -525,7 +1049,7 @@ async function destroyOngoing(t) {
   if (t.isAI) c = t.ongoing.slice().sort((a, b) => a.cost - b.cost)[0];
   else c = await humanChoose('แผ่นดินไหว! ทำลายการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
   t.ongoing.splice(t.ongoing.indexOf(c), 1); G.destroyed.push(c);
-  log(`${t.name} เสีย ${c.name}`, 'dmg');
+  log(`${t.name} เสีย ${c.name}`, 'dmg'); AUD.play('destroy');
 }
 
 async function gainFromLineup(p, max) {
@@ -544,7 +1068,8 @@ async function playCard(p, card, { fromOther = null } = {}) {
   G.curLabel = card.name;
   G.turn.shown.push(card);
   log(`${p.name} ใช้ ${card.name}`);
-  if (card.power) P(p, card.power);
+  AUD.play('card');
+  if (card.power) { P(p, card.power); AUD.play('power'); }
   if (card.ongoing && !fromOther) p.ongoing.push(card); else if (!fromOther) G.turn.played.push(card);
   render();
   if (card.play) await card.play(p, card);
@@ -561,6 +1086,8 @@ async function buy(p, src, i) {
   if (!card) return false;
   const k = costFor(p, card);
   if (k > G.turn.power) return false;
+  const slot = document.querySelector(src === 'lineup' ? `[data-src="lineup"][data-i="${i}"]` : `[data-src="${src}"]`);
+  const from = slot && slot.getBoundingClientRect();
   G.turn.power -= k;
   if (src === 'lineup') G.lineup[i] = null;
   if (src === 'wild') G.wild--;
@@ -568,7 +1095,8 @@ async function buy(p, src, i) {
   if (src === 'familiar') p.familiar = null;
   p.discard.push(card);
   log(`${p.name} ซื้อ ${card.name} (${k})`, src === 'legend' ? 'sys' : '');
-  if (src === 'legend') log(`${p.name} ล้มตำนาน ${card.name} ได้!`, 'sys');
+  if (src === 'legend') { log(`${p.name} ล้มตำนาน ${card.name} ได้!`, 'sys'); AUD.play('legendWin'); render(); await FX.legendWin(p, card); }
+  else { AUD.play('buy'); FX.coins(from, p); }
   if (card.type === 'spell' && p.trait.id === 'mind' && !G.turn.mindUsed) { G.turn.mindUsed = true; await draw(p, 1); }
   render();
   return true;
@@ -583,7 +1111,7 @@ async function refillLineup() {
       if (c.type === 'chaos') {
         G.curLabel = c.name;
         log(`โกลาหล! ${c.name}: ${c.text.replace(/<[^>]+>/g, '')}`, 'sys');
-        G.chaosShown = c; render(); await sleep(AI_DELAY);
+        G.chaosShown = c; render(); AUD.play('chaos'); await FX.chaos(c);
         await c.chaos();
         G.destroyed.push(c); G.chaosShown = null;
       } else G.lineup[i] = c;
@@ -597,6 +1125,7 @@ async function startTurn(p) {
   log(`เทิร์นของ ${p.name}`, 'turn');
   render();
   await refillLineup(); if (G.ending) return;
+  AUD.play(p.isAI ? 'turnAI' : 'turnMe'); await FX.turn(p);
   for (const c of p.ongoing.slice()) if (c.onStart) { G.curLabel = c.name; await c.onStart(p); }
   for (const k of p.tokens) if (k.start) await k.start(p);
   if (p.trait.id === 'coin' && p.hand.some(c => c.type === 'treasure')) { P(p, 1); log(`${p.name} (Coin Witch) +1 พลัง`); }
@@ -622,7 +1151,7 @@ async function endTurn(p) {
       const L = G.legends[0];
       G.curLabel = L.name + ' (Group Attack)';
       log(`ตำนาน ${L.name} ปรากฏ! Group Attack: ${L.group}`, 'sys');
-      render(); await sleep(AI_DELAY);
+      render(); AUD.play('legendUp'); await FX.legend(L);
       if (L.gattack) await L.gattack();
     }
   }
@@ -682,6 +1211,8 @@ function finish() {
   }).sort((a, b) => b.total - a.total || b.legends - a.legends || a.tokens - b.tokens);
   log(`เกมจบ: ${G.ending}`, 'sys');
   render();
+  const win = rows[0].p === G.players[0];
+  AUD.play(win ? 'victory' : 'defeat'); FX.victory(win, rows[0].p.name);
   const m = $('#modal'); m.hidden = false;
   $('#m-title').textContent = `${rows[0].p.name} ชนะ!`;
   $('#m-sub').innerHTML = `เกมจบเพราะ${G.ending}`;
@@ -828,7 +1359,7 @@ function seatHTML(p, dir) {
   const ong = p.ongoing.length ? `<div class="ong">${p.ongoing.map(c => cardHTML(c, { small: true })).join('')}</div>` : '';
   const i = G.players.indexOf(p);
   return `
-    <div class="rival ${cur() === p ? 'active' : ''} ${p.hitFlash ? 'hit' : ''}">
+    <div class="rival ${cur() === p ? 'active' : ''} ${p.hitFlash ? 'hit' : ''}" data-pi="${i}">
       <div class="seatdir">${dir}</div>
       <div class="rname"><b>${p.name}</b>${cur() === p ? '<span class="trait">กำลังร่ายเวท…</span>' : ''}</div>
       <div class="trait">${p.trait.name}: ${p.trait.text}</div>
@@ -846,6 +1377,7 @@ function seatHTML(p, dir) {
 
 function render() {
   if (!G) return;
+  document.documentElement.style.setProperty('--ph', -Math.round(performance.now() % 1600) + 'ms');
   const me = G.players[0];
   const myTurn = cur() === me && !G.over && !G.ending && G.endTurnResolve;
   const pw = G.turn ? G.turn.power : 0;
@@ -904,7 +1436,7 @@ function render() {
       ${arena}
     </section>
     <section class="you ${cur() === me ? 'active' : ''} ${me.hitFlash ? 'hit' : ''}">
-      <div class="youbar">
+      <div class="youbar" data-pi="0">
         <div class="big hp"><span class="v">${me.hp}</span><span class="k">HP</span></div>
         <div class="big pw"><span class="v">${cur() === me ? pw : '–'}</span><span class="k">พลัง</span></div>
         <div style="min-width:0;flex:1">
@@ -1004,6 +1536,7 @@ document.addEventListener('click', async e => {
     const k = (steps.findIndex(s => s[0] === AI_DELAY) + 1) % steps.length;
     AI_DELAY = steps[k][0]; el.textContent = steps[k][1]; return;
   }
+  if (act === 'sfx' || act === 'music') { el.textContent = audioLabel(act, AUD.toggle(act)); if (act === 'sfx') AUD.play('buy'); return; }
   if (act === 'artedit') { openArtEditor(); return; }
   if (act === 'art-pick') { artTarget = el.dataset.id; $('#art-file').value = ''; $('#art-file').click(); return; }
   if (act === 'art-clear') { delete ART[el.dataset.id]; saveArt(); openArtEditor(); return; }
@@ -1021,7 +1554,13 @@ document.addEventListener('click', async e => {
     else if (act === 'end') { const r = G.endTurnResolve; G.endTurnResolve = null; G.busy = false; r(); return; }
   } finally { if (G) { G.busy = false; render(); } }
 });
+// browsers only allow audio after a user gesture
+document.addEventListener('pointerdown', () => AUD.unlock());
+const audioLabel = (k, on) => `${k === 'sfx' ? 'เสียง' : 'เพลง'}: ${on ? 'เปิด' : 'ปิด'}`;
+$('#btn-sfx').textContent = audioLabel('sfx', AUD.st.sfx);
+$('#btn-music').textContent = audioLabel('music', AUD.st.music);
 document.addEventListener('keydown', e => {
+  AUD.unlock();
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card[data-act]')) { e.preventDefault(); e.target.click(); }
 });
 
