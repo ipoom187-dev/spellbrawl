@@ -1,0 +1,1127 @@
+<title>Spellbrawl</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Chakra+Petch:wght@400;600;700&display=swap">
+<style>
+/* Layout: one-screen battle table — rivals across the top, the market in the middle, your hand at the bottom, battle log on the right */
+:root{
+  --bg:#141019; --panel:#1f1826; --panel2:#2a2032; --line:#3b2f46;
+  --ink:#efe6d6; --mute:#a99bb0; --accent:#ff7a3d; --gold:#f0c35a;
+  --hp:#e5485f; --def:#59c2c7; --paper:#efe3c8; --paper-ink:#2a1f1a;
+  --felt1:#33203f; --felt2:#160d1c; --wood:#4a2d1c;
+  --t-starter:#8a8079; --t-spell:#d4502f; --t-creature:#4f9a4a; --t-treasure:#c99a2e;
+  --t-wizard:#6a5bd1; --t-location:#2f8f93; --t-legend:#a3243b; --t-wild:#c23f9a;
+  --t-bent:#6b5a45; --t-familiar:#d0679b; --t-chaos:#26202b;
+  --f-display:"Pirata One", "Georgia", serif;
+  --f-body:"Chakra Petch", "Tahoma", "Leelawadee UI", sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;
+  background-image:radial-gradient(ellipse at 50% -20%, #3a1d2e 0%, transparent 60%);}
+button{font-family:inherit}
+.app{display:flex;flex-direction:column;gap:12px;padding:12px 16px;min-height:100%}
+header.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header.top h1{font-family:var(--f-display);font-weight:400;font-size:34px;margin:0;color:var(--accent);letter-spacing:.5px;line-height:1}
+header.top .sub{color:var(--mute);font-size:12px}
+header.top .sp{flex:1}
+.btn{background:var(--accent);color:#1a0f0a;border:0;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:14px}
+.btn:hover{filter:brightness(1.1)}
+.btn:focus-visible,.card:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+.sect-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
+/* tabletop: rivals seated top / left / right, board in the middle, your mat at the bottom */
+.table{display:grid;gap:14px;min-width:0;
+  grid-template-columns:minmax(210px,250px) minmax(0,1fr) minmax(210px,250px);
+  grid-template-areas:"top top top" "left board right" "you you you"}
+.seat-top{grid-area:top;display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+.seat-top .rival{width:min(100%,380px)}
+.seat-left{grid-area:left;display:flex;flex-direction:column;justify-content:center;gap:14px;min-width:0}
+.seat-right{grid-area:right;display:flex;flex-direction:column;justify-content:center;gap:14px;min-width:0}
+@media (max-width:1150px){
+  .table{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "left" "right" "board" "you"}
+  .seat-left,.seat-right{flex-direction:row;flex-wrap:wrap;justify-content:center}
+  .seat-left .rival,.seat-right .rival{width:min(100%,380px)}
+}
+.rival{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.rival.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,0 0 24px #ff7a3d33}
+.seatdir{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.rival .ong{display:flex;gap:6px;flex-wrap:wrap}
+.linkbtn{background:none;border:1px solid var(--line);color:var(--ink);border-radius:5px;padding:4px 8px;font:inherit;font-size:12px;cursor:pointer}
+.linkbtn:hover{border-color:var(--gold);color:var(--gold)}
+.boardc{grid-area:board;min-width:0;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:14px;
+  background:radial-gradient(ellipse at 50% 40%, var(--felt1), var(--felt2));
+  border:10px solid var(--wood);box-shadow:0 0 0 2px var(--gold) inset,0 10px 40px #000a}
+.arena{border-top:1px dashed #f0c35a55;padding-top:12px;min-height:220px}
+.arena .card.fresh{animation:deal .4s ease-out}
+@keyframes deal{from{transform:translateY(-18px) scale(.94);box-shadow:0 0 0 3px var(--gold)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.arena .card.fresh{animation:none}}
+.arena-title{font-family:var(--f-display);font-size:22px;color:var(--gold);margin-bottom:8px}
+.arena-title span{font-family:var(--f-body);font-size:13px;color:var(--ink)}
+.rival .rname{display:flex;align-items:baseline;gap:8px}
+.rival .rname b{font-family:var(--f-display);font-size:22px;font-weight:400}
+.trait{font-size:11px;color:var(--gold)}
+.hpbar{height:10px;background:#000a;border-radius:5px;overflow:hidden;position:relative}
+.hpbar i{display:block;height:100%;background:var(--hp);transition:width .3s}
+.hpnum{font-variant-numeric:tabular-nums;font-weight:700}
+.stats{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.stats b{color:var(--ink)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{font-size:11px;padding:2px 6px;border-radius:10px;background:var(--panel2);border:1px solid var(--line)}
+.chip.trophy{background:var(--gold);color:#2a1d05;border-color:var(--gold);font-weight:700}
+.chip.skull{background:#3a1520;border-color:#6b2333}
+.hit{animation:hit .6s}
+@keyframes hit{0%,100%{transform:none}25%{transform:translateX(-4px);background:#5a1a26}75%{transform:translateX(4px)}}
+@media (prefers-reduced-motion:reduce){.hit{animation:none}}
+/* market */
+.mrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.mgroup{display:flex;flex-direction:column;gap:4px}
+.mgroup .cap{font-size:11px;color:var(--mute)}
+.piles{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;justify-content:center}
+.piles b{color:var(--ink)}
+/* cards */
+.cards{display:flex;gap:8px;flex-wrap:wrap}
+.card{width:132px;min-height:184px;background:var(--paper);color:var(--paper-ink);border-radius:8px;display:flex;flex-direction:column;
+  border:3px solid var(--band,#888);position:relative;cursor:default;user-select:none;transition:transform .12s}
+.card .c-head{display:flex;align-items:center;gap:6px;background:var(--band);color:#fff;padding:4px 6px}
+.card .c-cost{min-width:22px;height:22px;border-radius:50%;background:var(--gold);color:#2a1d05;display:grid;place-items:center;font-weight:700;font-size:13px}
+.card .c-cost:empty{display:none}
+.card .c-name{font-family:var(--f-display);font-size:17px;line-height:1.05}
+.card .c-type{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px;color:#6d5c52;border-bottom:1px dashed #c9b894}
+.card .c-text{font-size:11.5px;line-height:1.35;padding:5px 6px;flex:1}
+.card .c-foot{display:flex;justify-content:space-between;align-items:center;padding:4px 6px;gap:4px}
+.tag{font-size:9.5px;font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;margin-right:2px}
+.tag.atk{background:var(--hp)} .tag.def{background:var(--def);color:#06282a} .tag.ong{background:#2f8f93}
+.c-vp{font-weight:700;font-size:12px;color:#7a4e00;white-space:nowrap}
+.card.small{width:112px;min-height:150px}
+.card.small .c-name{font-size:15px}
+.card.small .c-text{font-size:10.5px}
+.card.mini{width:96px;min-height:0}
+.card.mini .c-text,.card.mini .c-foot,.card.mini .c-type,.card.mini .c-art{display:none}
+.card .c-art{height:72px;background:linear-gradient(135deg,var(--band),#00000055);background-size:cover;background-position:center;border-bottom:2px solid var(--band)}
+.card.small .c-art{height:56px}
+.art-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;width:100%}
+.art-item{display:flex;flex-direction:column;gap:6px;align-items:center}
+.art-item .row{display:flex;gap:4px}
+.board-preview{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:6px solid var(--wood);display:grid;place-items:center;color:var(--mute);font-size:12px;
+  background:radial-gradient(ellipse at 50% 40%, var(--felt1), var(--felt2))}
+.card.buyable{cursor:pointer;box-shadow:0 0 0 2px var(--gold),0 0 18px #f0c35a55}
+.card.buyable:hover,.card.playable:hover{transform:translateY(-4px)}
+.card.playable{cursor:pointer}
+.card.dim{opacity:.55}
+.card.back{background:repeating-linear-gradient(45deg,#3a1d2e,#3a1d2e 8px,#2a1522 8px,#2a1522 16px);color:var(--ink);border-color:var(--t-legend);align-items:center;justify-content:center;text-align:center;font-family:var(--f-display);font-size:20px;padding:10px}
+.t-starter{--band:var(--t-starter)} .t-spell{--band:var(--t-spell)} .t-creature{--band:var(--t-creature)}
+.t-treasure{--band:var(--t-treasure)} .t-wizard{--band:var(--t-wizard)} .t-location{--band:var(--t-location)}
+.t-legend{--band:var(--t-legend)} .t-wild{--band:var(--t-wild)} .t-bent{--band:var(--t-bent)}
+.t-familiar{--band:var(--t-familiar)} .t-chaos{--band:var(--t-chaos)}
+/* you */
+.you{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:10px}
+.you.active{border-color:var(--accent)}
+.youbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.big{display:flex;flex-direction:column;align-items:center;min-width:64px}
+.big .v{font-family:var(--f-display);font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+.big .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.big.hp .v{color:var(--hp)} .big.pw .v{color:var(--gold)}
+.youbar .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.you{grid-area:you}
+.zones{display:grid;grid-template-columns:auto minmax(0,1fr) 280px;gap:12px}
+@media (max-width:1100px){.zones{grid-template-columns:auto minmax(0,1fr)}.zones .logbox{grid-column:1/-1}}
+@media (max-width:640px){.zones{grid-template-columns:minmax(0,1fr)}}
+.pilebtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.logbox{background:#00000033;border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;max-height:330px;min-width:0}
+.count-badge{position:absolute;top:-8px;right:-8px;background:var(--accent);color:#1a0f0a;font-weight:700;border-radius:12px;padding:2px 8px;font-size:12px;box-shadow:0 2px 6px #0008}
+.vgroup{display:flex;flex-direction:column;gap:6px;width:100%}
+.vgroup h4{margin:6px 0 0;font-family:var(--f-display);font-weight:400;font-size:20px;color:var(--gold)}
+.vgroup .cards{gap:14px}
+.zone{min-width:0}
+.empty{color:var(--mute);font-size:12px;font-style:italic;padding:8px 0}
+/* log */
+.loglist{overflow-y:auto;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
+.loglist div{padding:3px 6px;border-radius:4px;background:#ffffff06;line-height:1.35}
+.loglist .dmg{color:#ff9aa8} .loglist .kill{color:#fff;background:#6b2333} .loglist .turn{color:var(--accent);font-weight:700;background:transparent;border-top:1px solid var(--line);padding-top:6px}
+.loglist .good{color:#9fe0a0} .loglist .sys{color:var(--gold)}
+/* overlay */
+.overlay{position:fixed;inset:0;background:#0b0810dd;display:grid;place-items:center;z-index:50;padding:16px;overflow-y:auto}
+.dialog{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;max-width:820px;width:100%;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 32px);overflow-y:auto}
+.dialog h2{font-family:var(--f-display);font-weight:400;font-size:28px;margin:0;color:var(--accent);text-wrap:balance}
+.dialog .msub{color:var(--mute);font-size:13px}
+.opts{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.opts .opt-card .card{cursor:pointer}
+.opts .opt-card .card:hover{transform:translateY(-4px);box-shadow:0 0 0 2px var(--gold)}
+.setup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute)}
+label.fld input,label.fld select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit}
+.rules{font-size:13px;line-height:1.6;color:var(--ink)}
+.rules h3{font-family:var(--f-display);font-weight:400;color:var(--gold);font-size:20px;margin:10px 0 2px}
+.rules ul{margin:4px 0;padding-left:20px}
+table.score{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+table.score th,table.score td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+table.score th:first-child,table.score td:first-child{text-align:left}
+table.score tr.win td{color:var(--gold);font-weight:700}
+.tablewrap{overflow-x:auto}
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <h1>Spellbrawl</h1>
+    <span class="sub">เกมสร้างเด็คพ่อมดตีกัน · กติกาแบบ Cerberus/Annihilageddon</span>
+    <span class="sp"></span>
+    <button class="btn ghost" id="btn-speed" data-act="speed">AI: ปกติ</button>
+    <button class="btn ghost" data-act="artedit">ภาพกระดาน/การ์ด</button>
+    <button class="btn ghost" data-act="rules">กติกา</button>
+    <input type="file" id="art-file" accept="image/*" hidden>
+    <style id="art-css"></style>
+    <button class="btn ghost" data-act="newgame">เกมใหม่</button>
+  </header>
+  <main class="table" id="board"></main>
+</div>
+
+<div class="overlay" id="viewer" hidden style="z-index:45">
+  <div class="dialog" style="max-width:1100px">
+    <div style="display:flex;align-items:center;gap:12px"><h2 id="v-title" style="flex:1"></h2><button class="btn" data-act="vclose">ปิด</button></div>
+    <div class="msub" id="v-sub"></div>
+    <div class="opts" id="v-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal" hidden>
+  <div class="dialog">
+    <h2 id="m-title"></h2>
+    <div class="msub" id="m-sub"></div>
+    <div class="opts" id="m-opts"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const rnd = n => Math.floor(Math.random() * n);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+let G = null, uidc = 1, AI_DELAY = 650;
+
+const TYPE_TH = { starter:'การ์ดเริ่มต้น', spell:'คาถา · Spell', creature:'สัตว์อสูร · Creature', treasure:'สมบัติ · Treasure',
+  wizard:'พ่อมด · Wizard', location:'สถานที่ · Location', legend:'ตำนาน · Legend', wild:'เวทป่าเถื่อน · Wild', bent:'ไม้กายสิทธิ์งอ',
+  familiar:'สัตว์รับใช้ · Familiar', chaos:'โกลาหล · Chaos' };
+
+/* ---------------- card definitions ---------------- */
+const DEFS = {};
+function def(id, o) { DEFS[id] = { id, cost: 0, vp: 0, ...o }; }
+function make(id) { return { ...DEFS[id], uid: uidc++ }; }
+const P = (p, n) => { G.turn.power += n; };
+
+// starters
+def('rune', { name:'Rune', type:'starter', power:1, text:'+1 พลัง' });
+def('wand', { name:'Wand', type:'starter', power:1, atk:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 1 ดาเมจ ถ้าฆ่าได้ จั่ว 2 ใบ',
+  play: async p => { await attack(p, { to:'choose', dmg:1, onKill: async () => draw(p, 2) }); } });
+def('fizzle', { name:'Fizzle', type:'starter', text:'ฟู่… ไม่มีผลอะไรเลย' });
+def('bent', { name:'Bent Wand', type:'bent', vp:-1, text:'ไม่มีผล<br>-1 VP ตอนจบเกม' });
+def('wild', { name:'Wild Surge', type:'wild', cost:3, text:'เลือก 1: +2 พลัง <i>หรือ</i> เปิดการ์ดบนสุดในกองของศัตรู 1 คนแล้วใช้เป็นของคุณ',
+  play: async p => {
+    const os = opps(p);
+    let ch = p.isAI ? 'pw' : await humanChoose('Wild Surge', [{label:'+2 พลัง', value:'pw'}, {label:'ขโมยการ์ดบนสุดของศัตรู', value:'steal'}]);
+    if (ch === 'pw') { P(p, 2); return; }
+    const t = await pickTarget(p, os, { dmg:0, label:'เลือกศัตรูที่จะขโมยการ์ดบนสุด' });
+    const c = drawTop(t);
+    if (!c) { log(`${t.name} ไม่มีการ์ดให้ขโมย`); return; }
+    log(`${p.name} ขโมย ${c.name} จากกองของ ${t.name} มาใช้`, 'sys');
+    await playCard(p, c, { fromOther: t });
+  } });
+
+// spells
+def('fireball', { name:'Hiccup Fireball', type:'spell', cost:3, vp:1, atk:1, text:'<b>โจมตี:</b> คนทางซ้ายรับ 3 ดาเมจ',
+  play: async p => { await attack(p, { to:'left', dmg:3 }); } });
+def('lightning', { name:'Snot Lightning', type:'spell', cost:5, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ',
+  play: async p => { await attack(p, { to:'each', dmg:2 }); } });
+def('meteor', { name:'Meteor Belch', type:'spell', cost:6, vp:2, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 5 ดาเมจ ถ้าฆ่าได้ +2 พลัง',
+  play: async p => { await attack(p, { to:'choose', dmg:5, onKill: async () => P(p, 2) }); } });
+def('rot', { name:'Hex of Rot', type:'spell', cost:3, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูที่แข็งแกร่งที่สุด (HP มากสุด) รับ 1 ดาเมจ และได้ Bent Wand',
+  play: async p => { await attack(p, { to:'strongest', dmg:1, bent:1 }); } });
+def('leech', { name:'Mind Leech', type:'spell', cost:4, vp:1, atk:1, power:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนทิ้งการ์ดในมือ 1 ใบ',
+  play: async p => { await attack(p, { to:'each', discard:1 }); } });
+def('torrent', { name:'Arcane Torrent', type:'spell', cost:2, power:2, text:'+2 พลัง' });
+def('chain', { name:'Chain Zap', type:'spell', cost:4, vp:1, atk:1, text:'<b>โจมตี:</b> คนทางซ้ายและทางขวารับคนละ 2 ดาเมจ',
+  play: async p => { await attack(p, { to:'lr', dmg:2 }); } });
+def('siphon', { name:'Soul Siphon', type:'spell', cost:5, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูที่อ่อนแอที่สุด (HP น้อยสุด) รับ 3 ดาเมจ<br>คุณฟื้น 3 HP',
+  play: async p => { await attack(p, { to:'weakest', dmg:3 }); heal(p, 3); } });
+def('purge', { name:'Purge Ritual', type:'spell', cost:3, vp:1, power:1, text:'+1 พลัง<br>ทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ (เลือกไม่ทำก็ได้)',
+  play: async p => { await destroyOwn(p); } });
+def('scry', { name:'Scry Burst', type:'spell', cost:3, vp:1, text:'จั่ว 2 ใบ', draws:1, play: async p => draw(p, 2) });
+def('doom', { name:'Doom Rain', type:'spell', cost:7, vp:3, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ<br>+1 พลังต่อการฆ่าแต่ละครั้ง',
+  play: async p => { const k = await attack(p, { to:'each', dmg:3 }); P(p, k); } });
+def('vortex', { name:'Vortex Burp', type:'spell', cost:5, vp:2, atk:1, power:2, text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 2 ดาเมจ และได้ Bent Wand',
+  play: async p => { await attack(p, { to:'choose', dmg:2, bent:1 }); } });
+def('ward', { name:'Ward Bubble', type:'spell', cost:2, power:1, def:1, text:'+1 พลัง<br><b>ป้องกัน:</b> เปิดจากมือเพื่อไม่โดนการโจมตี' });
+
+// creatures
+def('goblin', { name:'Pustule Goblin', type:'creature', cost:2, vp:1, atk:1, power:1, text:'+1 พลัง<br><b>โจมตี:</b> คนทางซ้ายรับ 1 ดาเมจ',
+  play: async p => { await attack(p, { to:'left', dmg:1 }); } });
+def('toad', { name:'Gloom Toad', type:'creature', cost:3, vp:1, power:2, def:1, text:'+2 พลัง<br><b>ป้องกัน:</b> เปิดจากมือเพื่อไม่โดนการโจมตี' });
+def('hound', { name:'Bone Hound', type:'creature', cost:4, vp:1, atk:1, power:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 2 ดาเมจ ถ้าฆ่าได้ จั่ว 1',
+  play: async p => { await attack(p, { to:'choose', dmg:2, onKill: async () => draw(p, 1) }); } });
+def('troll', { name:'Swamp Troll', type:'creature', cost:5, vp:2, ongoing:1, power:1, text:'+1 พลัง<br><b>ต่อเนื่อง:</b> ต้นเทิร์นของคุณ +1 พลัง',
+  onStart: async p => P(p, 1) });
+def('bat', { name:'Shadow Bat', type:'creature', cost:3, vp:1, power:1, def:1, defDiscard:1, draws:1, text:'+1 พลัง จั่ว 1<br><b>ป้องกัน:</b> ทิ้งจากมือเพื่อไม่โดนโจมตี แล้วจั่ว 1',
+  play: async p => draw(p, 1), onDefend: async t => draw(t, 1) });
+def('dragon', { name:'Mire Dragon', type:'creature', cost:7, vp:3, atk:1, power:2, text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ',
+  play: async p => { await attack(p, { to:'each', dmg:2 }); } });
+def('mimic', { name:'Mimic Chest', type:'creature', cost:4, vp:1, text:'+1 พลัง ต่อสัตว์อสูรแต่ละตัวที่คุณเล่นเทิร์นนี้ (รวมตัวนี้)',
+  play: async p => P(p, G.turn.types.creature || 1) });
+
+// treasures
+def('crystal', { name:'Cracked Crystal', type:'treasure', cost:3, power:1, draws:1, text:'+1 พลัง<br>จั่ว 1', play: async p => draw(p, 1) });
+def('skull', { name:'Gold Skull', type:'treasure', cost:3, vp:1, power:2, text:'+2 พลัง' });
+def('mirror', { name:'Mirror Shield', type:'treasure', cost:3, vp:1, power:1, def:1, text:'+1 พลัง<br><b>ป้องกัน:</b> เปิดเพื่อไม่โดนโจมตี ผู้โจมตีรับ 1 ดาเมจ',
+  onDefend: async (t, src) => { if (src) await damage(src, 1, t); } });
+def('flask', { name:'Healing Flask', type:'treasure', cost:2, power:1, text:'+1 พลัง<br>ฟื้น 4 HP', play: async p => heal(p, 4) });
+def('crown', { name:'Cursed Crown', type:'treasure', cost:5, vp:3, power:3, text:'+3 พลัง<br>คุณได้รับ Bent Wand 1 ใบ', play: async p => gainBent(p) });
+def('tome', { name:'Ancient Tome', type:'treasure', cost:6, vp:3, power:1, draws:1, text:'+1 พลัง<br>จั่ว 2', play: async p => draw(p, 2) });
+
+// wizards
+def('glom', { name:'Apprentice Glom', type:'wizard', cost:2, vp:1, power:1, text:'+1 พลัง<br>ถ้าเล่นพ่อมดใบอื่นมาก่อนในเทิร์นนี้ +1 พลัง',
+  play: async p => { if ((G.turn.types.wizard || 0) > 1) P(p, 1); } });
+def('witch', { name:'Hedge Witch', type:'wizard', cost:4, vp:1, def:1, draws:1, text:'ฟื้น 3 HP จั่ว 1<br><b>ป้องกัน:</b> เปิดเพื่อไม่โดนโจมตี และฟื้น 2 HP',
+  play: async p => { heal(p, 3); await draw(p, 1); }, onDefend: async t => heal(t, 2) });
+def('battlemage', { name:'Battle Mage', type:'wizard', cost:5, vp:2, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 3 ดาเมจ +1 ต่อพ่อมดใบอื่นที่เล่นเทิร์นนี้',
+  play: async p => { await attack(p, { to:'choose', dmg: 3 + Math.max(0, (G.turn.types.wizard || 1) - 1) }); } });
+def('vexx', { name:'Archmage Vexx', type:'wizard', cost:6, vp:2, power:2, text:'+2 พลัง<br>รับการ์ดราคาไม่เกิน 4 จาก Line-Up ฟรี',
+  play: async p => gainFromLineup(p, 4) });
+def('necro', { name:'Necro Scholar', type:'wizard', cost:4, vp:1, text:'ทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ ถ้าทำ +2 พลัง',
+  play: async p => { if (await destroyOwn(p)) P(p, 2); } });
+
+// locations (ongoing)
+def('altar', { name:'Blood Altar', type:'location', cost:4, vp:1, ongoing:1, power:1, atk:1, text:'+1 พลัง<br><b>ต่อเนื่อง:</b> ต้นเทิร์นคุณ <b>โจมตี</b> คนทางซ้าย 1 ดาเมจ',
+  onStart: async p => { G.curLabel = 'Blood Altar'; await attack(p, { to:'left', dmg:1 }); } });
+def('tower', { name:'Tower of Eyes', type:'location', cost:5, vp:2, ongoing:1, text:'<b>ต่อเนื่อง:</b> ต้นเทิร์นคุณ จั่ว 1', onStart: async p => draw(p, 1) });
+def('grove', { name:'Fungal Grove', type:'location', cost:3, vp:1, ongoing:1, text:'ฟื้น 2 HP<br><b>ต่อเนื่อง:</b> ต้นเทิร์นคุณ ฟื้น 2 HP',
+  play: async p => heal(p, 2), onStart: async p => heal(p, 2) });
+
+// chaos (resolve when revealed into Line-Up)
+def('storm', { name:'Brimstone Storm', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนรับ 2 ดาเมจ', chaos: async () => attack(null, { to:'all', dmg:2, chaos:true }) });
+def('toads', { name:'Plague of Toads', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนได้ Bent Wand', chaos: async () => attack(null, { to:'all', bent:1, chaos:true }) });
+def('leak', { name:'Mana Leak', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนทิ้งการ์ดในมือ 1 ใบ', chaos: async () => attack(null, { to:'all', discard:1, chaos:true }) });
+def('quake', { name:'Earthquake', type:'chaos', text:'พ่อมดทุกคนทำลายการ์ดต่อเนื่องของตัวเอง 1 ใบ (ป้องกันไม่ได้)',
+  chaos: async () => { for (const t of G.players) await destroyOngoing(t); } });
+def('tithe', { name:'Soul Tithe', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดที่ HP มากที่สุดรับ 4 ดาเมจ', chaos: async () => attack(null, { to:'strongest', dmg:4, chaos:true }) });
+def('gift', { name:'Wild Gift', type:'chaos', text:'พ่อมดทุกคนฟื้น 3 HP', chaos: async () => { G.players.forEach(t => heal(t, 3)); } });
+
+// legends
+def('grimbald', { name:'Old Grimbald', type:'legend', cost:8, vp:3, power:3, draws:1, text:'+3 พลัง จั่ว 1', play: async p => draw(p, 1), group:'—' });
+def('ashra', { name:'Queen Ashra', type:'legend', cost:9, vp:4, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ', group:'พ่อมดทุกคนรับ 2 ดาเมจ',
+  play: async p => { await attack(p, { to:'each', dmg:3 }); }, gattack: () => attack(null, { to:'all', dmg:2 }) });
+def('morgrath', { name:'Morgrath Undying', type:'legend', cost:10, vp:5, draws:1, text:'จั่ว 3', group:'พ่อมดทุกคนได้ Bent Wand',
+  play: async p => draw(p, 3), gattack: () => attack(null, { to:'all', bent:1 }) });
+def('zil', { name:'Zil the Mad', type:'legend', cost:9, vp:4, power:4, text:'+4 พลัง', group:'พ่อมดทุกคนทิ้งการ์ด 1 ใบ',
+  gattack: () => attack(null, { to:'all', discard:1 }) });
+def('oblivia', { name:'Oblivia', type:'legend', cost:11, vp:5, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 6 ดาเมจ<br>คุณฟื้น 3 HP', group:'พ่อมดทุกคนรับ 3 ดาเมจ',
+  play: async p => { await attack(p, { to:'choose', dmg:6 }); heal(p, 3); }, gattack: () => attack(null, { to:'all', dmg:3 }) });
+def('hrothgut', { name:'Hrothgut', type:'legend', cost:10, vp:4, power:2, text:'+2 พลัง<br>ทำลายการ์ดจากมือ/กองทิ้งได้สูงสุด 2 ใบ', group:'พ่อมดที่ HP มากสุดรับ 4 ดาเมจ',
+  play: async p => { if (await destroyOwn(p)) await destroyOwn(p); }, gattack: () => attack(null, { to:'strongest', dmg:4 }) });
+def('vile', { name:'Sister Vile', type:'legend', cost:12, vp:6, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ', group:'พ่อมดทุกคนรับ 2 ดาเมจ และได้ Bent Wand',
+  play: async p => { await attack(p, { to:'each', dmg:4 }); }, gattack: () => attack(null, { to:'all', dmg:2, bent:1 }) });
+def('pudge', { name:'Old Pudge', type:'legend', cost:8, vp:3, draws:1, text:'ฟื้น 5 HP จั่ว 2', group:'พ่อมดทุกคนทิ้งการ์ด 1 ใบ',
+  play: async p => { heal(p, 5); await draw(p, 2); }, gattack: () => attack(null, { to:'all', discard:1 }) });
+def('duke', { name:'The Pale Duke', type:'legend', cost:11, vp:5, power:3, text:'+3 พลัง<br>รับการ์ดราคาไม่เกิน 5 จาก Line-Up ฟรี', group:'พ่อมดทุกคนรับ 3 ดาเมจ',
+  play: async p => gainFromLineup(p, 5), gattack: () => attack(null, { to:'all', dmg:3 }) });
+def('kaz', { name:'Kaz Bonecrown', type:'legend', cost:12, vp:6, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ<br>จั่ว 1 ต่อการฆ่า', group:'พ่อมดทุกคนรับ 4 ดาเมจ',
+  play: async p => { const k = await attack(p, { to:'each', dmg:3 }); await draw(p, k); }, gattack: () => attack(null, { to:'all', dmg:4 }) });
+
+// familiars (only the owner may buy)
+def('imp', { name:'Imp Pip', type:'familiar', cost:4, vp:1, power:2, def:1, redirect:1, text:'+2 พลัง<br><b>ป้องกัน:</b> เปิดเพื่อสะท้อนดาเมจกลับไปหาผู้โจมตี' });
+def('gcat', { name:'Grave Cat', type:'familiar', cost:4, vp:1, draws:1, text:'จั่ว 2', play: async p => draw(p, 2) });
+def('newt', { name:'Ember Newt', type:'familiar', cost:5, vp:1, atk:1, def:1, redirect:1, text:'<b>โจมตี:</b> ซ้ายและขวารับคนละ 2<br><b>ป้องกัน:</b> สะท้อนดาเมจกลับ',
+  play: async p => { await attack(p, { to:'lr', dmg:2 }); } });
+def('oracle', { name:'Toad Oracle', type:'familiar', cost:3, vp:1, power:1, text:'+1 พลัง ฟื้น 2 HP<br>ทำลายการ์ด 1 ใบได้', play: async p => { heal(p, 2); await destroyOwn(p); } });
+def('raven', { name:'Hex Raven', type:'familiar', cost:5, vp:2, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 2 ดาเมจ และได้ Bent Wand',
+  play: async p => { await attack(p, { to:'choose', dmg:2, bent:1 }); } });
+def('golem', { name:'Moss Golem', type:'familiar', cost:5, vp:2, power:2, def:1, text:'+2 พลัง<br><b>ป้องกัน:</b> เปิดเพื่อไม่โดนโจมตี ฟื้น 2 HP', onDefend: async t => heal(t, 2) });
+def('sprite', { name:'Spore Sprite', type:'familiar', cost:4, vp:1, draws:1, text:'ทำลายการ์ด 1 ใบได้<br>จั่ว 1', play: async p => { await destroyOwn(p); await draw(p, 1); } });
+def('eel', { name:'Void Eel', type:'familiar', cost:6, vp:2, power:1, atk:1, def:1, redirect:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 3<br><b>ป้องกัน:</b> สะท้อนดาเมจกลับ',
+  play: async p => { await attack(p, { to:'choose', dmg:3 }); } });
+
+const MAIN = { fireball:4, lightning:2, meteor:2, rot:3, leech:2, torrent:5, chain:3, siphon:2, purge:3, scry:3, doom:1, vortex:2, ward:3,
+  goblin:4, toad:3, hound:3, troll:2, bat:3, dragon:1, mimic:2, crystal:3, skull:3, mirror:3, flask:3, crown:2, tome:2,
+  glom:4, witch:3, battlemage:2, vexx:1, necro:3, altar:2, tower:1, grove:2, storm:2, toads:1, leak:1, quake:1, tithe:1, gift:1 };
+const LEGENDS = ['ashra','morgrath','zil','oblivia','hrothgut','vile','pudge','duke','kaz'];
+const FAMILIARS = ['imp','gcat','newt','oracle','raven','golem','sprite','eel'];
+
+const TRAITS = [
+  { id:'ember', name:'Ember Lord', text:'การโจมตีครั้งแรกในแต่ละเทิร์นของคุณ +1 ดาเมจ' },
+  { id:'coin', name:'Coin Witch', text:'ต้นเทิร์น: ถ้ามีสมบัติ (Treasure) ในมือ +1 พลัง' },
+  { id:'bone', name:'Bone Collector', text:'เมื่อคุณฆ่าพ่อมด: ฟื้น 3 HP และจั่ว 1' },
+  { id:'monk', name:'Grave Monk', text:'จบเทิร์น: ถ้าเทิร์นนี้ไม่ได้โจมตี ฟื้น 2 HP' },
+  { id:'mind', name:'Mind Thief', text:'ครั้งแรกที่ซื้อคาถาในแต่ละเทิร์น จั่ว 1' },
+  { id:'beast', name:'Beast Caller', text:'สัตว์อสูรราคาถูกลง 1 (ขั้นต่ำ 1)' },
+  { id:'hex', name:'Hex Scholar', text:'Wild Surge ราคา 2 สำหรับคุณ' },
+  { id:'iron', name:'Iron Hide', text:'ดาเมจครั้งแรกที่คุณได้รับในแต่ละรอบ ลดลง 1' },
+];
+const TOKENS = [
+  { id:'plain', name:'หลุมศพธรรมดา', text:'ไม่มีผลเพิ่ม' },
+  { id:'plain', name:'หลุมศพธรรมดา', text:'ไม่มีผลเพิ่ม' },
+  { id:'veng', name:'ผีแค้น', text:'ผู้ฆ่ารับ 3 ดาเมจ', now: async (t, k) => { if (k && k !== t) { log(`ผีแค้นของ ${t.name} หลอกหลอน ${k.name}`, 'dmg'); await damage(k, 3, null); } } },
+  { id:'weak', name:'ฟื้นอ่อนแรง', text:'ฟื้นด้วย 15 HP', respawn:15 },
+  { id:'second', name:'ลมหายใจที่สอง', text:'ฟื้นด้วย 23 HP', respawn:23 },
+  { id:'bitter', name:'เถ้าขม', text:'ผู้ฆ่าได้ Bent Wand', now: async (t, k) => { if (k && k !== t) gainBent(k); } },
+  { id:'haunt', name:'วิญญาณหลอน', text:'ต่อเนื่อง: ต้นเทิร์นคุณ +1 พลัง', start: async p => P(p, 1) },
+  { id:'cursed', name:'กระดูกต้องสาป', text:'ต่อเนื่อง: ป้องกันการโจมตีจาก Chaos ไม่ได้' },
+  { id:'tax', name:'ภาษีวิญญาณ', text:'ทิ้งการ์ดในมือแบบสุ่ม 1 ใบ', now: async t => { if (t.hand.length) t.discard.push(t.hand.splice(rnd(t.hand.length), 1)[0]); } },
+  { id:'insight', name:'ญาณหลุมศพ', text:'จั่ว 1 ใบ', now: async t => draw(t, 1) },
+  { id:'hexk', name:'คำสาปค้างคา', text:'ต่อเนื่อง: ต้นเทิร์นคุณเสีย 1 HP (ไม่ต่ำกว่า 1)', start: async p => { if (p.hp > 1) p.hp--; } },
+];
+
+/* ---------------- helpers ---------------- */
+function log(msg, cls = '') { G.log.unshift({ msg, cls }); if (G.log.length > 200) G.log.pop(); renderLog(); }
+const cur = () => G.players[G.cur];
+const opps = p => G.players.filter(x => x !== p);
+const leftOf = p => G.players[(G.players.indexOf(p) + 1) % G.players.length];
+const rightOf = p => G.players[(G.players.indexOf(p) - 1 + G.players.length) % G.players.length];
+const allCards = p => [...p.deck, ...p.hand, ...p.discard, ...p.ongoing, ...(p === cur() && G.turn ? G.turn.played : [])];
+const wait = () => sleep(cur().isAI ? AI_DELAY : 0);
+
+function drawTop(p) {
+  if (!p.deck.length) { if (!p.discard.length) return null; p.deck = shuffle(p.discard); p.discard = []; }
+  return p.deck.pop();
+}
+async function draw(p, n) { for (let i = 0; i < n; i++) { const c = drawTop(p); if (!c) break; p.hand.push(c); } render(); }
+function heal(p, n) { const b = p.hp; p.hp = Math.min(25, p.hp + n); if (p.hp > b) log(`${p.name} ฟื้น ${p.hp - b} HP (${p.hp})`, 'good'); }
+function gainBent(t) { if (G.bent <= 0) return; G.bent--; t.discard.push(make('bent')); log(`${t.name} ได้รับ Bent Wand`, 'dmg'); }
+function costFor(p, c) {
+  let k = c.cost;
+  if (p.trait.id === 'beast' && c.type === 'creature') k = Math.max(1, k - 1);
+  if (p.trait.id === 'hex' && c.id === 'wild') k = 2;
+  return k;
+}
+const aiVal = c => (c.id === 'fizzle' || c.id === 'bent') ? -2 : c.id === 'rune' ? 0 : c.cost + (c.power || 0) + (c.vp || 0);
+
+async function pickTarget(p, list, spec) {
+  if (list.length === 1) return list[0];
+  if (p.isAI) {
+    const d = spec.dmg || 0;
+    const killable = list.filter(t => t.hp <= d);
+    const pool = killable.length ? killable : list;
+    return pool.slice().sort((a, b) => a.hp - b.hp || (b.isAI ? -1 : 1))[0];
+  }
+  return humanChoose(spec.label || `เลือกเป้าหมาย (${G.curLabel})`, list.map(t => ({ label: `${t.name} · ${t.hp} HP`, value: t })));
+}
+
+async function attack(src, spec) {
+  const pool = src ? opps(src) : G.players.slice();
+  let targets = [];
+  switch (spec.to) {
+    case 'choose': targets = [await pickTarget(src, pool, spec)]; break;
+    case 'left': targets = [leftOf(src)]; break;
+    case 'right': targets = [rightOf(src)]; break;
+    case 'lr': { const l = leftOf(src), r = rightOf(src); targets = l === r ? [l] : [l, r]; break; }
+    case 'each': case 'all': targets = pool; break;
+    case 'strongest': case 'weakest': {
+      const f = spec.to === 'strongest' ? Math.max : Math.min;
+      const m = f(...pool.map(x => x.hp)); const c = pool.filter(x => x.hp === m);
+      targets = [src && c.length > 1 ? await pickTarget(src, c, spec) : c[0]]; break;
+    }
+  }
+  let bonus = 0;
+  if (src && src === cur()) {
+    G.turn.attacked = true;
+    if (src.trait.id === 'ember' && !G.turn.emberUsed && spec.dmg) { bonus = 1; G.turn.emberUsed = true; }
+  }
+  let kills = 0;
+  for (const t of targets) {
+    const d = await tryDefend(t, src, spec);
+    if (d === 'avoid') continue;
+    if (d === 'redirect') {
+      if (spec.dmg) { log(`${t.name} สะท้อน ${spec.dmg} ดาเมจกลับไปหา ${src.name}!`, 'dmg'); await damage(src, spec.dmg, t); }
+      continue;
+    }
+    if (spec.dmg && await damage(t, spec.dmg + bonus, src)) { kills++; if (spec.onKill) await spec.onKill(t); }
+    for (let i = 0; i < (spec.bent || 0); i++) gainBent(t);
+    if (spec.discard) await discardFromHand(t, spec.discard);
+    render(); await sleep(AI_DELAY / 3);
+  }
+  return kills;
+}
+
+function describe(spec) {
+  const a = [];
+  if (spec.dmg) a.push(`${spec.dmg} ดาเมจ`);
+  if (spec.bent) a.push('ได้ Bent Wand');
+  if (spec.discard) a.push(`ทิ้งการ์ด ${spec.discard} ใบ`);
+  return a.join(' + ');
+}
+
+async function tryDefend(t, src, spec) {
+  if (spec.chaos && t.tokens.some(k => k.id === 'cursed')) return null;
+  const defs = t.hand.filter(c => c.def);
+  if (!defs.length) return null;
+  let choice;
+  if (t.isAI) {
+    choice = defs.slice().sort((a, b) => (b.redirect && src ? 1 : 0) - (a.redirect && src ? 1 : 0))[0];
+  } else {
+    const who = src ? src.name : (G.curLabel || 'โกลาหล');
+    choice = await humanChoose(`${who} โจมตีคุณ!`, [
+      ...defs.map(c => ({ card: c, value: c })), { label: 'ไม่ป้องกัน รับการโจมตี', value: null, ghost: true }],
+      `${G.curLabel}: ${describe(spec)} · เลือกการ์ดป้องกันจากมือ (ใช้ได้ 1 ใบต่อการโจมตี)`);
+  }
+  if (!choice) return null;
+  log(`${t.name} ป้องกันด้วย ${choice.name}`, 'good');
+  if (choice.defDiscard) { t.hand.splice(t.hand.indexOf(choice), 1); t.discard.push(choice); }
+  if (choice.onDefend) await choice.onDefend(t, src);
+  return choice.redirect && src ? 'redirect' : 'avoid';
+}
+
+async function damage(t, n, killer) {
+  if (t.trait.id === 'iron' && !t.ironUsed && n > 0) { n -= 1; t.ironUsed = true; }
+  if (n <= 0) return false;
+  t.hp -= n; t.hitFlash = true;
+  log(`${t.name} รับ ${n} ดาเมจ (${Math.max(t.hp, 0)} HP)`, 'dmg');
+  render();
+  if (t.hp < 1) { await kill(t, killer); return true; }
+  return false;
+}
+
+async function kill(t, killer) {
+  const tok = G.tokens.pop() || { id:'plain', name:'หลุมศพธรรมดา', text:'ไม่มีผลเพิ่ม' };
+  t.tokens.push(tok);
+  t.hp = tok.respawn || 20;
+  log(`☠ ${t.name} ตาย!${killer && killer !== t ? ` (โดย ${killer.name})` : ''} ได้รับเหรียญพ่อมดตาย “${tok.name}”: ${tok.text} · ฟื้นคืนชีพที่ ${t.hp} HP`, 'kill');
+  if (killer && killer !== t) {
+    if (G.trophy !== killer) { G.trophy = killer; log(`${killer.name} ได้ถ้วยรางวัลแชมป์ (จั่ว 6 ทิ้ง 1 ตอนจบเทิร์น)`, 'sys'); }
+    if (killer.trait.id === 'bone') { heal(killer, 3); await draw(killer, 1); }
+  }
+  if (tok.now) await tok.now(t, killer);
+  if (G.tokens.length === 0 && !G.ending) { G.ending = 'เหรียญพ่อมดตายหมดกอง'; log('เหรียญพ่อมดตายหมดแล้ว! เกมจะจบเมื่อจบเทิร์นนี้', 'sys'); }
+  render();
+}
+
+async function discardFromHand(t, n) {
+  for (let i = 0; i < n && t.hand.length; i++) {
+    let c;
+    if (t.isAI) c = t.hand.slice().sort((a, b) => aiVal(a) - aiVal(b))[0];
+    else c = await humanChoose('ทิ้งการ์ดจากมือ 1 ใบ', t.hand.map(x => ({ card: x, value: x })));
+    t.hand.splice(t.hand.indexOf(c), 1); t.discard.push(c);
+    log(`${t.name} ทิ้ง ${c.name}`);
+  }
+}
+
+async function destroyOwn(p) {
+  const pool = [...p.hand, ...p.discard];
+  if (!pool.length) return null;
+  let c;
+  if (p.isAI) c = pool.find(x => x.id === 'bent') || pool.find(x => x.id === 'fizzle') || (allCards(p).length > 16 ? pool.find(x => x.id === 'rune') : null) || null;
+  else c = await humanChoose('ทำลายการ์ด 1 ใบ (จากมือหรือกองทิ้ง)', [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }],
+    'การ์ดที่ถูกทำลายจะออกจากเกมถาวร · ทำลาย Fizzle / Bent Wand ช่วยให้เด็คดีขึ้น');
+  if (!c) return null;
+  const arr = p.hand.includes(c) ? p.hand : p.discard;
+  arr.splice(arr.indexOf(c), 1); G.destroyed.push(c);
+  log(`${p.name} ทำลาย ${c.name}`);
+  render();
+  return c;
+}
+
+async function destroyOngoing(t) {
+  if (!t.ongoing.length) return;
+  let c;
+  if (t.isAI) c = t.ongoing.slice().sort((a, b) => a.cost - b.cost)[0];
+  else c = await humanChoose('แผ่นดินไหว! ทำลายการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
+  t.ongoing.splice(t.ongoing.indexOf(c), 1); G.destroyed.push(c);
+  log(`${t.name} เสีย ${c.name}`, 'dmg');
+}
+
+async function gainFromLineup(p, max) {
+  const opts = G.lineup.map((c, i) => ({ c, i })).filter(o => o.c && o.c.cost <= max);
+  if (!opts.length) { log('ไม่มีการ์ดใน Line-Up ที่รับได้'); return; }
+  let pick;
+  if (p.isAI) pick = opts.sort((a, b) => b.c.cost + b.c.vp - a.c.cost - a.c.vp)[0];
+  else pick = await humanChoose(`รับการ์ดราคาไม่เกิน ${max} ฟรี`, opts.map(o => ({ card: o.c, value: o })));
+  G.lineup[pick.i] = null; p.discard.push(pick.c);
+  log(`${p.name} รับ ${pick.c.name} ฟรี`, 'good');
+}
+
+async function playCard(p, card, { fromOther = null } = {}) {
+  if (!fromOther) p.hand.splice(p.hand.indexOf(card), 1);
+  G.turn.types[card.type] = (G.turn.types[card.type] || 0) + 1;
+  G.curLabel = card.name;
+  G.turn.shown.push(card);
+  log(`${p.name} ใช้ ${card.name}`);
+  if (card.power) P(p, card.power);
+  if (card.ongoing && !fromOther) p.ongoing.push(card); else if (!fromOther) G.turn.played.push(card);
+  render();
+  if (card.play) await card.play(p, card);
+  if (fromOther) fromOther.discard.push(card);
+  render();
+}
+
+async function buy(p, src, i) {
+  let card;
+  if (src === 'lineup') card = G.lineup[i];
+  else if (src === 'wild') card = G.wild > 0 ? make('wild') : null;
+  else if (src === 'legend') card = G.legendUp ? G.legends[0] : null;
+  else if (src === 'familiar') card = p.familiar;
+  if (!card) return false;
+  const k = costFor(p, card);
+  if (k > G.turn.power) return false;
+  G.turn.power -= k;
+  if (src === 'lineup') G.lineup[i] = null;
+  if (src === 'wild') G.wild--;
+  if (src === 'legend') { G.legends.shift(); G.legendUp = false; }
+  if (src === 'familiar') p.familiar = null;
+  p.discard.push(card);
+  log(`${p.name} ซื้อ ${card.name} (${k})`, src === 'legend' ? 'sys' : '');
+  if (src === 'legend') log(`${p.name} ล้มตำนาน ${card.name} ได้!`, 'sys');
+  if (card.type === 'spell' && p.trait.id === 'mind' && !G.turn.mindUsed) { G.turn.mindUsed = true; await draw(p, 1); }
+  render();
+  return true;
+}
+
+/* ---------------- turn flow ---------------- */
+async function refillLineup() {
+  for (let i = 0; i < 5; i++) {
+    while (!G.lineup[i]) {
+      if (!G.main.length) { G.ending = 'การ์ดในกองหลักไม่พอเติม Line-Up'; return; }
+      const c = G.main.pop();
+      if (c.type === 'chaos') {
+        G.curLabel = c.name;
+        log(`โกลาหล! ${c.name}: ${c.text.replace(/<[^>]+>/g, '')}`, 'sys');
+        G.chaosShown = c; render(); await sleep(AI_DELAY);
+        await c.chaos();
+        G.destroyed.push(c); G.chaosShown = null;
+      } else G.lineup[i] = c;
+    }
+  }
+}
+
+async function startTurn(p) {
+  G.turn = { power: 0, played: [], shown: [], types: {}, attacked: false };
+  p.ironUsed = false;
+  log(`เทิร์นของ ${p.name}`, 'turn');
+  render();
+  await refillLineup(); if (G.ending) return;
+  for (const c of p.ongoing.slice()) if (c.onStart) { G.curLabel = c.name; await c.onStart(p); }
+  for (const k of p.tokens) if (k.start) await k.start(p);
+  if (p.trait.id === 'coin' && p.hand.some(c => c.type === 'treasure')) { P(p, 1); log(`${p.name} (Coin Witch) +1 พลัง`); }
+  render();
+}
+
+async function endTurn(p) {
+  p.lastPlayed = G.turn.shown.slice();
+  p.discard.push(...p.hand, ...G.turn.played); p.hand = []; G.turn.played = [];
+  if (p.trait.id === 'monk' && !G.turn.attacked) heal(p, 2);
+  G.turn.power = 0;
+  if (G.trophy === p) {
+    await draw(p, 6);
+    let c;
+    if (p.isAI) c = p.hand.slice().sort((a, b) => aiVal(a) - aiVal(b))[0];
+    else c = await humanChoose('ถ้วยรางวัลแชมป์: ทิ้งการ์ด 1 ใบ', p.hand.map(x => ({ card: x, value: x })), 'คุณจั่ว 6 ใบ ทิ้ง 1 เพื่อให้เหลือ 5');
+    if (c) { p.hand.splice(p.hand.indexOf(c), 1); p.discard.push(c); }
+  } else await draw(p, 5);
+  if (!G.legendUp && !G.ending) {
+    if (!G.legends.length) G.ending = 'ล้มตำนานครบทุกตนแล้ว';
+    else {
+      G.legendUp = true;
+      const L = G.legends[0];
+      G.curLabel = L.name + ' (Group Attack)';
+      log(`ตำนาน ${L.name} ปรากฏ! Group Attack: ${L.group}`, 'sys');
+      render(); await sleep(AI_DELAY);
+      if (L.gattack) await L.gattack();
+    }
+  }
+  render();
+}
+
+async function aiTurn(p) {
+  await wait();
+  const pri = c => c.draws ? 0 : c.atk ? 2 : 1;
+  while (p.hand.length) {
+    const c = p.hand.slice().sort((a, b) => pri(a) - pri(b))[0];
+    await playCard(p, c); await wait();
+  }
+  while (true) {
+    const opts = [];
+    G.lineup.forEach((c, i) => { if (c && costFor(p, c) <= G.turn.power) opts.push({ src:'lineup', i, s: c.vp * 3 + c.cost * 2 + (c.atk ? 2 : 0) + (c.def ? 1 : 0) }); });
+    if (G.legendUp && G.legends[0] && G.legends[0].cost <= G.turn.power) opts.push({ src:'legend', s: 1000 });
+    if (p.familiar && costFor(p, p.familiar) <= G.turn.power) opts.push({ src:'familiar', s: p.familiar.cost * 2 + p.familiar.vp * 3 + 3 });
+    if (G.wild > 0 && costFor(p, DEFS.wild) <= G.turn.power) opts.push({ src:'wild', s: 5 });
+    if (!opts.length) break;
+    // save up for a Legend when close
+    const L = G.legendUp && G.legends[0];
+    opts.sort((a, b) => b.s - a.s);
+    if (!(await buy(p, opts[0].src, opts[0].i))) break;
+    await wait();
+    if (L && L !== G.legends[0]) break;
+  }
+}
+
+function humanTurn() {
+  return new Promise(res => { G.endTurnResolve = res; render(); });
+}
+
+async function runGame() {
+  const myGame = G;
+  while (G === myGame) {
+    const p = cur();
+    await startTurn(p);
+    if (G !== myGame) return;
+    if (!G.ending) { if (p.isAI) await aiTurn(p); else await humanTurn(p); }
+    if (G !== myGame) return;
+    await endTurn(p);
+    if (G.ending) return finish();
+    G.cur = (G.cur + 1) % G.players.length;
+  }
+}
+
+function finish() {
+  G.over = true;
+  const rows = G.players.map(p => {
+    const cards = allCards(p);
+    const vp = cards.reduce((s, c) => s + (c.vp > 0 ? c.vp : 0), 0);
+    const bents = cards.filter(c => c.id === 'bent').length;
+    const legends = cards.filter(c => c.type === 'legend').length;
+    const total = vp - bents - p.tokens.length * 3;
+    return { p, vp, bents, legends, tokens: p.tokens.length, total };
+  }).sort((a, b) => b.total - a.total || b.legends - a.legends || a.tokens - b.tokens);
+  log(`เกมจบ: ${G.ending}`, 'sys');
+  render();
+  const m = $('#modal'); m.hidden = false;
+  $('#m-title').textContent = `${rows[0].p.name} ชนะ!`;
+  $('#m-sub').innerHTML = `เกมจบเพราะ${G.ending}`;
+  $('#m-opts').innerHTML = `<div class="tablewrap" style="width:100%"><table class="score"><tr><th>พ่อมด</th><th>VP การ์ด</th><th>Bent Wand</th><th>เหรียญตาย (×3)</th><th>ตำนาน</th><th>รวม</th></tr>
+    ${rows.map((r, i) => `<tr class="${i === 0 ? 'win' : ''}"><td>${r.p.name}</td><td>${r.vp}</td><td>-${r.bents}</td><td>-${r.tokens * 3}</td><td>${r.legends}</td><td>${r.total}</td></tr>`).join('')}</table></div>
+    <button class="btn" id="again">เล่นอีกครั้ง</button>`;
+  $('#m-opts').onclick = e => { if (e.target.id === 'again') { m.hidden = true; showSetup(); } };
+}
+
+/* ---------------- setup ---------------- */
+function newGame(name, nAI) {
+  uidc = 1;
+  const traits = shuffle(TRAITS.slice()), fams = shuffle(FAMILIARS.slice());
+  const aiNames = shuffle(['Morla the Moist', 'Quibb Tallhat', 'Snaggle Fenwick', 'Dame Gristle']);
+  const players = [];
+  for (let i = 0; i <= nAI; i++) {
+    const deck = [];
+    for (let k = 0; k < 6; k++) deck.push(make('rune'));
+    deck.push(make('wand'));
+    for (let k = 0; k < 3; k++) deck.push(make('fizzle'));
+    players.push({ name: i === 0 ? name : aiNames[i - 1], isAI: i > 0, hp: 20, deck: shuffle(deck), hand: [], discard: [], ongoing: [],
+      tokens: [], trait: traits[i], famChoices: [make(fams[i * 2]), make(fams[i * 2 + 1])], familiar: null });
+  }
+  const main = [];
+  for (const [id, n] of Object.entries(MAIN)) for (let k = 0; k < n; k++) main.push(make(id));
+  shuffle(main);
+  const nLeg = { 2:5, 3:6, 4:7, 5:8 }[players.length];
+  const tokPool = [];
+  for (let k = 0; k < players.length * 4; k++) tokPool.push({ ...TOKENS[rnd(TOKENS.length)] });
+  G = { players, cur: 0, main, lineup: [null, null, null, null, null], wild: 16, bent: 16, destroyed: [], log: [],
+    legends: [make('grimbald'), ...shuffle(LEGENDS.slice()).slice(0, nLeg).map(make)], legendUp: true,
+    tokens: shuffle(tokPool), trophy: null, turn: { power: 0, played: [], shown: [], types: {} }, ending: null, busy: false, curLabel: '' };
+  // initial line-up has no Chaos
+  const chaos = [];
+  while (G.lineup.includes(null)) {
+    const c = G.main.pop();
+    if (c.type === 'chaos') chaos.push(c); else G.lineup[G.lineup.indexOf(null)] = c;
+  }
+  G.main.push(...chaos); shuffle(G.main);
+  players.forEach(p => { for (let k = 0; k < 5; k++) p.hand.push(p.deck.pop()); });
+  G.cur = rnd(players.length);
+}
+
+async function startGame(name, nAI) {
+  newGame(name, nAI);
+  const me = G.players[0];
+  for (const p of G.players) {
+    if (p.isAI) p.familiar = p.famChoices[rnd(2)];
+  }
+  render();
+  me.familiar = await humanChoose('เลือกสัตว์รับใช้ของคุณ', me.famChoices.map(c => ({ card: c, value: c })),
+    `ความสามารถพ่อมดของคุณ: <b>${me.trait.name}</b> — ${me.trait.text}<br>สัตว์รับใช้วางข้างตัวคุณ มีแค่คุณที่ซื้อได้`);
+  log(`เริ่มเกม! ${G.players[G.cur].name} เล่นก่อน`, 'sys');
+  runGame();
+}
+
+function showSetup() {
+  const m = $('#modal'); m.hidden = false;
+  $('#m-title').textContent = 'เข้าสู่สนามประลองเวท';
+  $('#m-sub').innerHTML = 'พ่อมดทุกคนเริ่มที่ 20 HP · ซื้อการ์ด สร้างเด็ค ระเบิดศัตรู ล้มตำนาน แล้วเก็บ VP ให้มากที่สุด';
+  $('#m-opts').innerHTML = `<div class="setup-grid" style="width:100%">
+    <label class="fld" for="in-name">ชื่อพ่อมดของคุณ<input id="in-name" value="Grand Wizard" maxlength="20"></label>
+    <label class="fld" for="in-n">จำนวนคู่ต่อสู้ (AI)<select id="in-n"><option value="1">1 คน (2 ผู้เล่น)</option><option value="2">2 คน (3 ผู้เล่น)</option><option value="3" selected>3 คน (4 ผู้เล่น)</option><option value="4">4 คน (5 ผู้เล่น)</option></select></label>
+    </div>
+    <button class="btn" id="go">เริ่มเกม</button> <button class="btn ghost" id="show-rules">อ่านกติกา</button>`;
+  $('#m-opts').onclick = e => {
+    if (e.target.id === 'go') {
+      const n = $('#in-name').value.trim() || 'Grand Wizard', k = +$('#in-n').value;
+      m.hidden = true; $('#m-opts').onclick = null; startGame(n, k);
+    } else if (e.target.id === 'show-rules') showRules(true);
+  };
+}
+
+const RULES_HTML = `<div class="rules">
+<h3>เป้าหมาย</h3>มี VP มากที่สุดเมื่อเกมจบ VP มาจากดาว ★ บนการ์ดในเด็คทั้งหมด ลบ 3 ต่อเหรียญพ่อมดตาย และลบ 1 ต่อ Bent Wand · เสมอกัน: ตำนานมากกว่าชนะ แล้วดูเหรียญตายน้อยกว่า
+<h3>เริ่มเกม</h3><ul><li>เด็คเริ่มต้น 10 ใบ: Rune ×6 (+1 พลัง), Wand ×1 (+1 พลัง และโจมตี 1), Fizzle ×3 (ไม่มีผล) · จั่ว 5 ใบ</li>
+<li>HP 20 (ฟื้นได้สูงสุด 25) · ได้ความสามารถพ่อมดแบบสุ่ม และเลือกสัตว์รับใช้ 1 จาก 2 (ซื้อได้เฉพาะคุณ)</li>
+<li>Line-Up 5 ใบ · กองตำนาน: Old Grimbald อยู่บน ตามด้วยตำนานคว่ำ 5–8 ใบตามจำนวนผู้เล่น · Wild Surge 16 ใบ (ราคา 3) · Bent Wand 16 ใบ · เหรียญพ่อมดตาย 4 อันต่อผู้เล่น</li></ul>
+<h3>ลำดับเทิร์น</h3><ul><li>เติม Line-Up ให้ครบ 5 ใบ ถ้าเปิดเจอการ์ดโกลาหล (Chaos) ให้ทำผลทันทีแล้วนำออก</li>
+<li>ทำผล "ต้นเทิร์น" (การ์ดต่อเนื่อง ความสามารถพ่อมด เหรียญตาย)</li>
+<li>เล่นการ์ดจากมือลำดับใดก็ได้ รวมพลัง แล้วซื้อการ์ดกี่ใบก็ได้ที่ราคารวมไม่เกินพลัง (ซื้อแล้วเข้ากองทิ้ง) · เล่นการ์ดต่อหลังซื้อได้ · พลังที่เหลือหายไปตอนจบเทิร์น</li>
+<li>จบเทิร์น: ทิ้งมือและการ์ดที่เล่น จั่ว 5 ใบใหม่ (ผู้ถือถ้วยรางวัลจั่ว 6 ทิ้ง 1)</li>
+<li>ถ้าตำนานบนสุดถูกซื้อไป ให้เปิดตำนานถัดไป และพ่อมดทุกคนโดน Group Attack ของมัน</li></ul>
+<h3>โจมตีและป้องกัน</h3>การ์ดที่มี <b>โจมตี</b> ทำร้ายเป้าหมาย (ที่เลือก / ซ้าย / ขวา / ทุกคน / แข็งแกร่งที่สุด = HP มากสุด / อ่อนแอที่สุด = HP น้อยสุด) · เมื่อโดนโจมตี เปิดการ์ด <b>ป้องกัน</b> จากมือได้ 1 ใบต่อการโจมตีเพื่อไม่โดน สัตว์รับใช้บางตัวสะท้อนดาเมจกลับไปหาผู้โจมตี
+<h3>ตายแล้วเกิดใหม่</h3>HP ต่ำกว่า 1 = ตาย ได้รับเหรียญพ่อมดตายแบบสุ่ม (-3 VP และอาจมีผลพิเศษ) แล้วฟื้นที่ 20 HP · คนที่ฆ่าได้ถ้วยรางวัลแชมป์ (จั่ว 6 ทิ้ง 1 ทุกจบเทิร์น) จนกว่าจะมีคนอื่นฆ่าได้
+<h3>คำสำคัญ</h3><ul><li><b>ต่อเนื่อง</b>: เล่นแล้ววางค้างไว้ ทำผลทุกต้นเทิร์นของคุณ</li><li><b>ทำลาย</b>: นำการ์ดออกจากเกมถาวร</li><li><b>Wild Surge</b>: +2 พลัง หรือเปิดการ์ดบนสุดของศัตรูมาเล่นเป็นของคุณ</li></ul>
+<h3>เกมจบเมื่อ</h3>เปิดตำนานใหม่ไม่ได้ · กองหลักไม่พอเติม Line-Up · หรือเหรียญพ่อมดตายหมดกอง
+<h3>วิธีเล่นในเกมนี้</h3>คลิกการ์ดในมือเพื่อเล่น · คลิกการ์ดบนกระดานที่มีกรอบทองเพื่อซื้อ · กด "จบเทิร์น" เมื่อเสร็จ · การ์ดที่ทุกคนเล่นจะวางเต็มใบใน "สนามร่ายเวท" กลางกระดาน · กดปุ่ม "ดูเด็ค" / "ดูกองทิ้ง" ที่ที่นั่งของคุณ หรือ "เทิร์นล่าสุด" / "กองทิ้ง" ที่ที่นั่งคู่ต่อสู้ · ปรับ AI เป็น "ช้า" ถ้าอยากอ่านการ์ดคู่ต่อสู้ทัน</div>`;
+
+function showRules(backToSetup) {
+  const m = $('#modal'); m.hidden = false;
+  $('#m-title').textContent = 'กติกา'; $('#m-sub').textContent = '';
+  $('#m-opts').innerHTML = RULES_HTML + `<button class="btn" id="close-rules">${backToSetup ? 'กลับ' : 'ปิด'}</button>`;
+  $('#m-opts').onclick = e => { if (e.target.id === 'close-rules') { if (backToSetup) showSetup(); else m.hidden = true; } };
+}
+
+/* ---------------- UI ---------------- */
+let modalStack = null;
+function humanChoose(title, options, sub = '') {
+  return new Promise(res => {
+    const m = $('#modal'); m.hidden = false;
+    $('#m-title').textContent = title; $('#m-sub').innerHTML = sub;
+    const box = $('#m-opts');
+    box.innerHTML = options.map((o, i) => o.card
+      ? `<div class="opt-card" data-i="${i}">${cardHTML(o.card, { small: true })}</div>`
+      : `<button class="btn ${o.ghost ? 'ghost' : ''}" data-i="${i}">${o.label}</button>`).join('');
+    box.onclick = e => {
+      const el = e.target.closest('[data-i]'); if (!el) return;
+      m.hidden = true; box.onclick = null; res(options[+el.dataset.i].value);
+    };
+  });
+}
+
+function cardHTML(c, o = {}) {
+  const cls = ['card', 't-' + c.type];
+  if (o.buy) cls.push('buyable'); if (o.play) cls.push('playable'); if (o.dim) cls.push('dim');
+  if (o.small) cls.push('small'); if (o.mini) cls.push('mini'); if (o.cls) cls.push(o.cls);
+  const tags = [];
+  if (c.atk) tags.push('<span class="tag atk">โจมตี</span>');
+  if (c.def) tags.push('<span class="tag def">ป้องกัน</span>');
+  if (c.ongoing) tags.push('<span class="tag ong">ต่อเนื่อง</span>');
+  const cost = o.cost != null ? o.cost : (c.cost || '');
+  const vp = c.vp ? `<span class="c-vp">${c.vp > 0 ? '★' + c.vp : c.vp} VP</span>` : '';
+  const extra = c.type === 'legend' && c.group && c.group !== '—' ? `<br><i>เมื่อปรากฏ: ${c.group}</i>` : '';
+  return `<div class="${cls.join(' ')}" ${o.attrs || ''} ${o.attrs ? 'tabindex="0"' : ''} title="${c.name}">
+    <div class="c-head"><span class="c-cost">${cost}</span><span class="c-name">${c.name}</span></div>
+    <div class="c-art art-${c.id}"></div>
+    <div class="c-type">${TYPE_TH[c.type]}</div>
+    <div class="c-text">${c.text || ''}${extra}</div>
+    <div class="c-foot"><span>${tags.join('')}</span>${vp}</div></div>`;
+}
+
+const hpPct = p => Math.max(0, Math.min(100, p.hp / 25 * 100));
+function chipsFor(p) {
+  const a = [];
+  if (G.trophy === p) a.push('<span class="chip trophy">ถ้วยแชมป์</span>');
+  if (p.tokens.length) a.push(`<span class="chip skull" title="${p.tokens.map(t => t.name + ': ' + t.text).join('\n')}">☠ ×${p.tokens.length}</span>`);
+  const leg = allCards(p).filter(c => c.type === 'legend').length;
+  if (leg) a.push(`<span class="chip">ตำนาน ×${leg}</span>`);
+  return a.join('');
+}
+
+function seatHTML(p, dir) {
+  const ong = p.ongoing.length ? `<div class="ong">${p.ongoing.map(c => cardHTML(c, { small: true })).join('')}</div>` : '';
+  const i = G.players.indexOf(p);
+  return `
+    <div class="rival ${cur() === p ? 'active' : ''} ${p.hitFlash ? 'hit' : ''}">
+      <div class="seatdir">${dir}</div>
+      <div class="rname"><b>${p.name}</b>${cur() === p ? '<span class="trait">กำลังร่ายเวท…</span>' : ''}</div>
+      <div class="trait">${p.trait.name}: ${p.trait.text}</div>
+      <div style="display:flex;align-items:center;gap:8px"><div class="hpbar" style="flex:1"><i style="width:${hpPct(p)}%"></i></div><span class="hpnum">${p.hp} HP</span></div>
+      <div class="stats"><span>มือ <b>${p.hand.length}</b></span><span>เด็ค <b>${p.deck.length}</b></span><span>ทิ้ง <b>${p.discard.length}</b></span></div>
+      <div class="chips">${chipsFor(p, false)}</div>
+      ${ong}
+      <div class="pilebtns">
+        <button class="linkbtn" data-act="view" data-what="last" data-p="${i}">เทิร์นล่าสุด (${(p.lastPlayed || []).length})</button>
+        <button class="linkbtn" data-act="view" data-what="discard" data-p="${i}">กองทิ้ง (${p.discard.length})</button>
+        <button class="linkbtn" data-act="view" data-what="familiar" data-p="${i}">สัตว์รับใช้</button>
+      </div>
+    </div>`;
+}
+
+function render() {
+  if (!G) return;
+  const me = G.players[0];
+  const myTurn = cur() === me && !G.over && !G.ending && G.endTurnResolve;
+  const pw = G.turn ? G.turn.power : 0;
+  // seating: clockwise from you → your left, across, your right
+  const others = G.players.slice(1);
+  const seats = { left: [], top: [], right: [] };
+  const n = others.length;
+  const plan = n === 1 ? ['top'] : n === 2 ? ['left', 'right'] : n === 3 ? ['left', 'top', 'right'] : ['left', 'top', 'top', 'right'];
+  const dirName = { left: 'ฝั่งซ้ายของคุณ', top: 'ฝั่งตรงข้าม', right: 'ฝั่งขวาของคุณ' };
+  others.forEach((p, k) => seats[plan[k]].push(seatHTML(p, dirName[plan[k]])));
+
+  const L = G.legends[0];
+  const legendHTML = L ? (G.legendUp
+    ? cardHTML(L, { buy: myTurn && L.cost <= pw, attrs: 'data-act="buy" data-src="legend"' })
+    : `<div class="card back">ตำนานถัดไป<br>(คว่ำ)</div>`) : `<div class="card back">ไม่มีตำนานเหลือ</div>`;
+  const lineup = G.lineup.map((c, i) => c
+    ? cardHTML(c, { cost: costFor(me, c), buy: myTurn && costFor(me, c) <= pw, attrs: `data-act="buy" data-src="lineup" data-i="${i}"` })
+    : `<div class="card back" style="opacity:.35">ว่าง</div>`).join('');
+  const wildC = DEFS.wild;
+  const wildHTML = G.wild > 0 ? cardHTML(wildC, { cost: costFor(me, wildC), buy: myTurn && costFor(me, wildC) <= pw, attrs: 'data-act="buy" data-src="wild"' }) : '<div class="card back">หมด</div>';
+
+  const shown = G.turn && G.turn.shown ? G.turn.shown : [];
+  const arenaCards = [
+    ...(G.chaosShown ? [cardHTML(G.chaosShown)] : []),
+    ...shown.map(c => {
+      const fresh = c.uid > (G.animUid || 0);
+      return cardHTML(c, { cls: fresh ? 'fresh' : '' });
+    })].join('');
+  shown.forEach(c => { if (c.uid > (G.animUid || 0)) G.animUid = c.uid; });
+  const who = G.chaosShown ? 'การ์ดโกลาหลเปิดขึ้น!' : `${cur().name} ${cur() === me ? '(คุณ)' : ''}`;
+  const arena = `<div class="arena">
+      <div class="arena-title">สนามร่ายเวท · ${who} <span>· พลังเทิร์นนี้ ${pw}</span></div>
+      <div class="cards">${arenaCards || '<div class="empty">ยังไม่มีการ์ดถูกเล่นในเทิร์นนี้</div>'}</div>
+    </div>`;
+
+  const hand = me.hand.length ? me.hand.map((c, i) => cardHTML(c, { play: myTurn, attrs: `data-act="play" data-i="${i}"` })).join('') : '<div class="empty">มือว่าง</div>';
+  const fam = me.familiar ? cardHTML(me.familiar, { cost: costFor(me, me.familiar), buy: myTurn && costFor(me, me.familiar) <= pw, attrs: 'data-act="buy" data-src="familiar"' }) : '<div class="empty">ซื้อสัตว์รับใช้แล้ว</div>';
+  const ongoing = me.ongoing.length ? me.ongoing.map(c => cardHTML(c, { small: true })).join('') : '';
+
+  $('#board').innerHTML = `
+    <div class="seat-top">${seats.top.join('')}</div>
+    <div class="seat-left">${seats.left.join('')}</div>
+    <div class="seat-right">${seats.right.join('')}</div>
+    <section class="boardc">
+      <div class="mrow">
+        <div class="mgroup"><span class="cap">ตำนาน (เหลือ ${G.legends.length})</span>${legendHTML}</div>
+        <div class="mgroup" style="min-width:0;flex:1"><span class="cap">Line-Up</span><div class="cards">${lineup}</div></div>
+        <div class="mgroup"><span class="cap">Wild Surge (${G.wild})</span>${wildHTML}</div>
+        <div class="piles">
+          <span>กองหลัก <b>${G.main.length}</b></span>
+          <span>Bent Wand <b>${G.bent}</b></span>
+          <span>เหรียญตายเหลือ <b>${G.tokens.length}</b></span>
+          <button class="linkbtn" data-act="view" data-what="destroyed">ถูกทำลาย (${G.destroyed.length})</button>
+        </div>
+      </div>
+      ${arena}
+    </section>
+    <section class="you ${cur() === me ? 'active' : ''} ${me.hitFlash ? 'hit' : ''}">
+      <div class="youbar">
+        <div class="big hp"><span class="v">${me.hp}</span><span class="k">HP</span></div>
+        <div class="big pw"><span class="v">${cur() === me ? pw : '–'}</span><span class="k">พลัง</span></div>
+        <div style="min-width:0;flex:1">
+          <div style="font-family:var(--f-display);font-size:24px">${me.name} <span class="seatdir">ที่นั่งของคุณ</span></div>
+          <div class="trait">${me.trait.name}: ${me.trait.text}</div>
+          <div class="chips" style="margin-top:4px">${chipsFor(me, true)}</div>
+          <div class="pilebtns">
+            <button class="linkbtn" data-act="view" data-what="deck" data-p="0">ดูเด็ค (${me.deck.length})</button>
+            <button class="linkbtn" data-act="view" data-what="discard" data-p="0">ดูกองทิ้ง (${me.discard.length})</button>
+            <button class="linkbtn" data-act="view" data-what="all" data-p="0">การ์ดทั้งหมด (${allCards(me).length})</button>
+            <button class="linkbtn" data-act="view" data-what="tokens" data-p="0">เหรียญพ่อมดตาย (${me.tokens.length})</button>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" data-act="playall" ${myTurn && me.hand.length ? '' : 'disabled'}>เล่นทั้งมือ</button>
+          <button class="btn" data-act="end" ${myTurn ? '' : 'disabled'}>จบเทิร์น</button>
+        </div>
+      </div>
+      <div class="zones">
+        <div class="zone"><div class="sect-label">สัตว์รับใช้</div>${fam}</div>
+        <div class="zone"><div class="sect-label">มือของคุณ ${myTurn ? '· คลิกเพื่อเล่น' : ''}</div><div class="cards">${hand}</div>
+          ${ongoing ? `<div class="sect-label" style="margin-top:10px">การ์ดต่อเนื่องของคุณ</div><div class="cards">${ongoing}</div>` : ''}</div>
+        <div class="logbox"><div class="sect-label">บันทึกการต่อสู้</div><div class="loglist" id="log"></div></div>
+      </div>
+    </section>`;
+  G.players.forEach(p => p.hitFlash = false);
+  renderLog();
+  if (!$('#viewer').hidden && viewerState && viewerState.what !== 'art') openViewer(viewerState.what, viewerState.p);
+}
+
+/* ---------------- card viewer ---------------- */
+let viewerState = null;
+const TYPE_ORDER = ['legend','familiar','wizard','spell','creature','treasure','location','wild','starter','bent','chaos'];
+function groupCards(list) {
+  const m = new Map();
+  for (const c of list) { const g = m.get(c.id); if (g) g.n++; else m.set(c.id, { c, n: 1 }); }
+  return [...m.values()];
+}
+function cardsBlock(list, { group = false, sort = false } = {}) {
+  if (!list.length) return '<div class="empty">ไม่มีการ์ด</div>';
+  let items = group ? groupCards(list) : list.map(c => ({ c, n: 1 }));
+  if (sort) items.sort((a, b) => TYPE_ORDER.indexOf(a.c.type) - TYPE_ORDER.indexOf(b.c.type) || b.c.cost - a.c.cost || a.c.name.localeCompare(b.c.name));
+  return `<div class="cards">${items.map(({ c, n }) => `<div style="position:relative">${cardHTML(c)}${n > 1 ? `<span class="count-badge">×${n}</span>` : ''}</div>`).join('')}</div>`;
+}
+function openViewer(what, pi) {
+  viewerState = { what, p: pi };
+  const p = pi != null ? G.players[pi] : null;
+  let title = '', sub = '', body = '';
+  if (what === 'deck') {
+    title = `เด็คของคุณ · ${p.deck.length} ใบ`;
+    sub = 'แสดงว่าในเด็คเหลือการ์ดอะไรบ้าง เรียงตามประเภท ไม่ใช่ลำดับที่จะจั่วจริง';
+    body = cardsBlock(p.deck, { group: true, sort: true });
+  } else if (what === 'discard') {
+    title = `กองทิ้งของ ${p === G.players[0] ? 'คุณ' : p.name} · ${p.discard.length} ใบ`;
+    sub = 'ใบซ้ายสุดคือใบบนสุดของกอง (ทิ้งล่าสุด)';
+    body = cardsBlock(p.discard.slice().reverse());
+  } else if (what === 'all') {
+    const cards = allCards(p);
+    const vp = cards.reduce((s, c) => s + c.vp, 0) - p.tokens.length * 3;
+    title = `การ์ดทั้งหมดของคุณ · ${cards.length} ใบ`;
+    sub = `VP ตอนนี้ (รวม Bent Wand และเหรียญตาย): <b>${vp}</b>`;
+    body = cardsBlock(cards, { group: true, sort: true });
+  } else if (what === 'tokens') {
+    title = 'เหรียญพ่อมดตายของคุณ';
+    sub = 'แต่ละเหรียญ -3 VP ตอนจบเกม';
+    body = p.tokens.length ? `<div class="chips">${p.tokens.map(t => `<span class="chip skull">☠ ${t.name}: ${t.text}</span>`).join('')}</div>` : '<div class="empty">ยังไม่เคยตาย</div>';
+  } else if (what === 'last') {
+    const isNow = cur() === p && G.turn && G.turn.shown;
+    const list = isNow ? G.turn.shown : (p.lastPlayed || []);
+    title = `${p.name} · ${isNow ? 'เทิร์นนี้' : 'เทิร์นล่าสุด'}`;
+    sub = 'การ์ดที่เล่นตามลำดับ';
+    body = cardsBlock(list);
+  } else if (what === 'familiar') {
+    title = `${p.name} · สัตว์รับใช้และการ์ดต่อเนื่อง`;
+    body = `<div class="vgroup"><h4>สัตว์รับใช้</h4>${p.familiar ? cardsBlock([p.familiar]) : '<div class="empty">ซื้อเข้าเด็คไปแล้ว</div>'}</div>
+      <div class="vgroup"><h4>การ์ดต่อเนื่อง</h4>${cardsBlock(p.ongoing)}</div>
+      <div class="vgroup"><h4>เหรียญพ่อมดตาย</h4>${p.tokens.length ? `<div class="chips">${p.tokens.map(t => `<span class="chip skull">☠ ${t.name}: ${t.text}</span>`).join('')}</div>` : '<div class="empty">ยังไม่เคยตาย</div>'}</div>`;
+  } else if (what === 'destroyed') {
+    title = `การ์ดที่ถูกทำลาย · ${G.destroyed.length} ใบ`;
+    body = cardsBlock(G.destroyed.slice().reverse(), { group: true });
+  }
+  $('#v-title').textContent = title; $('#v-sub').innerHTML = sub; $('#v-body').innerHTML = body;
+  $('#viewer').hidden = false;
+}
+
+function renderLog() {
+  const el = $('#log'); if (!el) return;
+  el.innerHTML = G.log.map(l => `<div class="${l.cls}">${l.msg}</div>`).join('');
+}
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const act = el.dataset.act;
+  if (act === 'rules') { if ($('#modal').hidden) showRules(false); return; }
+  if (act === 'speed') {
+    const steps = [[650, 'AI: ปกติ'], [1400, 'AI: ช้า'], [150, 'AI: เร็ว']];
+    const k = (steps.findIndex(s => s[0] === AI_DELAY) + 1) % steps.length;
+    AI_DELAY = steps[k][0]; el.textContent = steps[k][1]; return;
+  }
+  if (act === 'artedit') { openArtEditor(); return; }
+  if (act === 'art-pick') { artTarget = el.dataset.id; $('#art-file').value = ''; $('#art-file').click(); return; }
+  if (act === 'art-clear') { delete ART[el.dataset.id]; saveArt(); openArtEditor(); return; }
+  if (act === 'view') { if (G) openViewer(el.dataset.what, el.dataset.p != null ? +el.dataset.p : null); return; }
+  if (act === 'vclose') { $('#viewer').hidden = true; viewerState = null; return; }
+  if (act === 'newgame') { location.reload(); return; }
+  if (!G || G.busy || G.over) return;
+  const me = G.players[0];
+  if (cur() !== me || !G.endTurnResolve) return;
+  G.busy = true;
+  try {
+    if (act === 'play') { const c = me.hand[+el.dataset.i]; if (c) await playCard(me, c); }
+    else if (act === 'playall') { while (me.hand.length && G.players[0] === me) await playCard(me, me.hand[0]); }
+    else if (act === 'buy') { await buy(me, el.dataset.src, +el.dataset.i); }
+    else if (act === 'end') { const r = G.endTurnResolve; G.endTurnResolve = null; G.busy = false; r(); return; }
+  } finally { if (G) { G.busy = false; render(); } }
+});
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card[data-act]')) { e.preventDefault(); e.target.click(); }
+});
+
+/* ---------------- card art ----------------
+   1) In-game: "ภาพการ์ด" button → pick an image per card (resized, saved in this browser).
+   2) Folder: put art/<card-id>.png or .jpg next to this HTML file (works when opened from disk). */
+const ART_KEY = 'spellbrawl-art';
+const ART_FOLDER = location.protocol === 'file:' || /^(localhost|127\.)/.test(location.hostname);
+let ART = {}, artTarget = null;
+try { ART = JSON.parse(localStorage.getItem(ART_KEY) || '{}'); } catch (e) { ART = {}; }
+
+let BOARD_FILE = null; // art/board.(jpg|png) found next to the game file
+if (ART_FOLDER) for (const ext of ['jpg', 'png', 'webp']) {
+  const im = new Image();
+  im.onload = () => { if (!BOARD_FILE) { BOARD_FILE = `art/board.${ext}`; buildArtCSS(); } };
+  im.src = `art/board.${ext}`;
+}
+function boardCSS() {
+  const src = ART.__board ? ART.__board : BOARD_FILE;
+  if (!src) return '';
+  const dim = (ART.__dim != null ? ART.__dim : 45) / 100;
+  return `.boardc,.board-preview{background-image:linear-gradient(rgba(10,6,14,${dim}),rgba(10,6,14,${dim})),url("${src}");background-size:cover;background-position:center}`;
+}
+function buildArtCSS() {
+  const rules = [boardCSS(), ...Object.keys(DEFS).map(id => {
+    const layers = [];
+    if (ART[id]) layers.push(`url("${ART[id]}")`);
+    if (ART_FOLDER) layers.push(`url("art/${id}.png")`, `url("art/${id}.jpg")`);
+    if (!layers.length) return '';
+    layers.push('linear-gradient(135deg,var(--band),#00000055)');
+    return `.card .c-art.art-${id}{background-image:${layers.join(',')}}`;
+  })];
+  $('#art-css').textContent = rules.join('\n');
+}
+function saveArt() {
+  let ok = true;
+  try { localStorage.setItem(ART_KEY, JSON.stringify(ART)); } catch (e) { ok = false; }
+  buildArtCSS();
+  return ok;
+}
+function openArtEditor() {
+  viewerState = { what: 'art' };
+  $('#v-title').textContent = 'ภาพกระดานและการ์ด';
+  $('#v-sub').innerHTML = `ภาพที่เลือกจะถูกย่อขนาดแล้วบันทึกไว้ในเบราว์เซอร์นี้
+    ${ART_FOLDER ? '<br>หรือวางไฟล์ไว้ในโฟลเดอร์ <b>art/</b> ข้างไฟล์เกม: พื้นหลังกระดานใช้ชื่อ <b>art/board.jpg</b> การ์ดใช้รหัสการ์ด เช่น <b>art/fireball.png</b>' : ''}`;
+  const dim = ART.__dim != null ? ART.__dim : 45;
+  const hasBoard = ART.__board || BOARD_FILE;
+  $('#v-body').innerHTML = `<div class="vgroup"><h4>พื้นหลังกระดาน</h4>
+    <div class="board-preview">${hasBoard ? '' : 'ยังไม่มีภาพ · ใช้ผ้าสักหลาดเริ่มต้น'}</div>
+    <div class="pilebtns" style="align-items:center">
+      <button class="linkbtn" data-act="art-pick" data-id="__board">เลือกภาพพื้นหลัง</button>
+      ${ART.__board ? '<button class="linkbtn" data-act="art-clear" data-id="__board">ลบภาพ</button>' : ''}
+      <label for="board-dim" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute)">ความมืดทับภาพ (ให้อ่านการ์ดง่าย)
+        <input type="range" id="board-dim" min="0" max="85" step="5" value="${dim}"> <b id="board-dim-v" style="color:var(--ink)">${dim}%</b></label>
+    </div></div>
+    <div class="vgroup"><h4>ภาพการ์ด · ใส่แล้ว ${Object.keys(ART).filter(k => !k.startsWith('__')).length} ใบ</h4></div>
+    <div class="art-grid">${Object.values(DEFS).map(d => `
+    <div class="art-item">${cardHTML(d, { small: true })}
+      <code style="font-size:11px;color:var(--mute)">${d.id}</code>
+      <div class="row"><button class="linkbtn" data-act="art-pick" data-id="${d.id}">เลือกภาพ</button>
+      ${ART[d.id] ? `<button class="linkbtn" data-act="art-clear" data-id="${d.id}">ลบ</button>` : ''}</div>
+    </div>`).join('')}</div>`;
+  $('#viewer').hidden = false;
+}
+$('#art-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f || !artTarget) return;
+  const id = artTarget;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement('canvas');
+      if (id === '__board') {
+        // keep the whole picture, max 1600×1000
+        const s = Math.min(1, 1600 / img.width, 1000 / img.height);
+        cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      } else {
+        const W = 400, H = 220;
+        cv.width = W; cv.height = H;
+        const s = Math.max(W / img.width, H / img.height);
+        const w = img.width * s, h = img.height * s;
+        cv.getContext('2d').drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+      }
+      ART[id] = cv.toDataURL('image/jpeg', id === '__board' ? 0.85 : 0.82);
+      if (!saveArt()) $('#v-sub').innerHTML += '<br><b style="color:var(--hp)">พื้นที่เก็บในเบราว์เซอร์เต็ม ภาพนี้จะหายเมื่อปิดหน้า ลองลบภาพอื่นออกก่อน</b>';
+      if (viewerState && viewerState.what === 'art') openArtEditor();
+      render();
+    };
+    img.onerror = () => { $('#v-sub').innerHTML += '<br><b style="color:var(--hp)">เปิดไฟล์นี้ไม่ได้ ลองใช้ไฟล์ PNG หรือ JPG</b>'; };
+    img.src = rd.result;
+  };
+  rd.readAsDataURL(f);
+});
+document.addEventListener('input', e => {
+  if (e.target.id !== 'board-dim') return;
+  ART.__dim = +e.target.value; $('#board-dim-v').textContent = e.target.value + '%';
+  saveArt();
+});
+buildArtCSS();
+
+showSetup();
+</script>
