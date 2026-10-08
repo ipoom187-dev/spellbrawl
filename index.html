@@ -323,6 +323,12 @@ def('dragon', { name:'Mire Dragon', type:'creature', cost:7, vp:3, atk:1, power:
   play: async p => { await attack(p, { to:'each', dmg:2 }); } });
 def('mimic', { name:'Mimic Chest', type:'creature', cost:4, vp:1, text:'+1 พลัง ต่อสัตว์อสูรแต่ละตัวที่คุณเล่นเทิร์นนี้ (รวมตัวนี้)',
   play: async p => P(p, G.turn.types.creature || 1) });
+def('kobang', { name:'โก๋แบง', type:'creature', cost:6, vp:1, atk:1, power:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูแบบสุ่ม 1 คน รับ 2 ดาเมจ ต่อสัตว์อสูรแต่ละใบในกองทิ้งของคุณ',
+  play: async p => {
+    const n = p.discard.filter(c => c.type === 'creature').length;
+    if (!n) { log(`ไม่มีสัตว์อสูรในกองทิ้งของ ${p.name} · โก๋แบงไม่มีแรงตี`); return; }
+    await attack(p, { to:'random', dmg: n * 2 });
+  } });
 
 // treasures
 def('crystal', { name:'Cracked Crystal', type:'treasure', cost:3, power:1, draws:1, text:'+1 พลัง<br>จั่ว 1', play: async p => draw(p, 1) });
@@ -396,7 +402,7 @@ def('eel', { name:'Void Eel', type:'familiar', cost:6, vp:2, power:1, atk:1, def
   play: async p => { await attack(p, { to:'choose', dmg:3 }); } });
 
 const MAIN = { fireball:4, lightning:2, meteor:2, rot:3, leech:2, torrent:5, chain:3, siphon:2, purge:3, scry:3, doom:1, vortex:2, ward:3,
-  goblin:4, toad:3, hound:3, troll:2, bat:3, dragon:1, mimic:2, crystal:3, skull:3, mirror:3, flask:3, crown:2, tome:2,
+  goblin:4, toad:3, hound:3, troll:2, bat:3, dragon:1, mimic:2, kobang:2, crystal:3, skull:3, mirror:3, flask:3, crown:2, tome:2,
   glom:4, witch:3, battlemage:2, vexx:1, necro:3, altar:2, tower:1, grove:2, storm:2, toads:1, leak:1, quake:1, tithe:1, gift:1 };
 const LEGENDS = ['ashra','morgrath','zil','oblivia','hrothgut','vile','pudge','duke','kaz'];
 const FAMILIARS = ['imp','gcat','newt','oracle','raven','golem','sprite','eel'];
@@ -931,6 +937,7 @@ async function attack(src, spec) {
     case 'choose': targets = [await pickTarget(src, pool, spec)]; break;
     case 'left': targets = [leftOf(src)]; break;
     case 'right': targets = [rightOf(src)]; break;
+    case 'random': targets = [pool[rnd(pool.length)]]; break;
     case 'lr': { const l = leftOf(src), r = rightOf(src); targets = l === r ? [l] : [l, r]; break; }
     case 'each': case 'all': targets = pool; break;
     case 'strongest': case 'weakest': {
