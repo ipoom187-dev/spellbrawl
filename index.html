@@ -266,7 +266,9 @@ const TYPE_TH = { starter:'การ์ดเริ่มต้น', spell:'ค�
 
 /* ---------------- card definitions ---------------- */
 const DEFS = {};
-function def(id, o) { DEFS[id] = { id, cost: 0, vp: 0, ...o }; }
+const DUP_IDS = []; // a second def() with the same id silently replaces the first card: simulate() reports these
+function def(id, o) {
+  if (DEFS[id]) DUP_IDS.push(id); DEFS[id] = { id, cost: 0, vp: 0, ...o }; }
 function make(id) { return { ...DEFS[id], uid: uidc++ }; }
 const P = (p, n) => { if (G.attackOnly && G.attackOnly.owner === p) return; G.turn.power += n; };
 
@@ -1670,7 +1672,7 @@ def('devil', { name:'Deal with the Devil', type:'legend', alsoType:'spell', cost
 def('mrbun', { name:'Mr. Bun, Rogue Familiar', type:'legend', alsoType:'creature', cost:17, vp:6, atk:1, draws:1,
   text:'จั่ว 3 ใบ<br><b>โจมตี:</b> ศัตรูทุกคนรับ 20 ดาเมจ', group:'—',
   play: async p => { await draw(p, 3); await attack(p, { to:'each', dmg:20 }); } });
-def('vortex', { name:'The Vortex of Ultimate Fuckery', type:'legend', alsoType:'location', cost:18, vp:6, ongoing:1,
+def('vortexfuckery', { name:'The Vortex of Ultimate Fuckery', type:'legend', alsoType:'location', cost:18, vp:6, ongoing:1,
   text:'<b>ต่อเนื่อง:</b> ครั้งแรกในแต่ละเทิร์นที่การโจมตีของคุณทำดาเมจ ได้พลังเท่ากับดาเมจรวมที่ทำได้', group:'—' });
 def('schadenfreude', { name:'Saint Schadenfreude', type:'legend', alsoType:'wizard', cost:19, vp:7, power:5, atk:1,
   text:'+5 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกได้เหรียญพ่อมดตาย 2 อันจากนอกเกม (สะท้อนกลับไม่ได้ แต่ป้องกันได้)', group:'—',
@@ -1731,7 +1733,7 @@ fam('goldyfam', { name:'Goldy!', power:3, ...REFLECT,
 fam('hairy', { name:'Hairy the Eldritch Pube', power:2, atk:1, ...REFLECT,
   text:`+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 7 ดาเมจ<br>${REFLECT_TXT}`,
   play: async p => { await attack(p, { to:'choose', dmg:7 }); } });
-fam('hocus', { name:'Hocus Porkus', draws:1, ...REFLECT,
+fam('hocusporkus', { name:'Hocus Porkus', draws:1, ...REFLECT,
   text:`จั่ว 2 ใบ แล้วฟื้น HP เท่ากับราคารวมของ 2 ใบนั้น<br>${REFLECT_TXT}`,
   play: async p => { const b = p.hand.length; await draw(p, 2); const n = p.hand.slice(b).reduce((s, c) => s + (c.cost || 0), 0); if (n) heal(p, n); } });
 fam('hank', { name:'Horny Hank, Party Demon', ...REFLECT,
@@ -2050,9 +2052,9 @@ const MAIN = { fireball:4, lightning:2, meteor:2, rot:3, leech:2, torrent:5, cha
 const LEGENDS = ['grimbald','ashra','morgrath','zil','oblivia','hrothgut','vile','pudge','duke','kaz',
   'bennana','krazztar','lickity','chafia','ciggy','papaboner','cosmicglyph','darklord','skullzor','extinction','jenny','peetfarm','blackbart','goreorgy','elderwand','sinobiting',
   'blistreria','explozivo','snackcart','goldy','dingler','rlyeh','limpwandlegend','throne','orbital',
-  'kombatant','pylon','viagrus','deathlunch','continuum','gatling','nacho','heist','reaper','devil','mrbun','vortex','schadenfreude','winnerwand'];
+  'kombatant','pylon','viagrus','deathlunch','continuum','gatling','nacho','heist','reaper','devil','mrbun','vortexfuckery','schadenfreude','winnerwand'];
 const FAMILIARS = ['imp','gcat','newt','oracle','raven','golem','sprite','eel',
-  'goldyfam','hairy','hocus','hank','hugchuck','kids','squeakers','poof','stinkus','phlegm','sparky','spoogy','dungeonmaster','juice','lastlaugh',
+  'goldyfam','hairy','hocusporkus','hank','hugchuck','kids','squeakers','poof','stinkus','phlegm','sparky','spoogy','dungeonmaster','juice','lastlaugh',
   'buzzy','candy','cosmo','suitors','dogo','dukefreak','gimby','hando','yore','leviathan','nil','palcenta','pussy','ramon','spellboy','spoiledmilk',
   'breakfast','scaredstiff','skeeve','turdlings','tiny','tombofnil','weeby','wolfeye','orangypsy','treats'];
 
@@ -2699,7 +2701,7 @@ async function attack(src, spec) {
     render(); await sleep(AI_DELAY / 3);
   }
   // The Vortex of Ultimate Fuckery: the first attack each turn that deals damage gives that much power
-  if (src && src === cur() && dealtTotal && !G.turn.vortexUsed && src.ongoing.some(c => c.id === 'vortex')) {
+  if (src && src === cur() && dealtTotal && !G.turn.vortexUsed && src.ongoing.some(c => c.id === 'vortexfuckery')) {
     G.turn.vortexUsed = true; P(src, dealtTotal); log(`The Vortex: ${src.name} +${dealtTotal} พลัง`, 'sys');
   }
   return kills;
@@ -3587,6 +3589,7 @@ async function simulate(games = 3, { maxPlayers = 4, timeoutMs = 30000 } = {}) {
       }
     });
   } finally { removeEventListener('unhandledrejection', onRej); $('#modal').hidden = true; }
+  if (DUP_IDS.length) errors.push('duplicate card ids (later def replaced earlier): ' + DUP_IDS.join(', '));
   return { ok: !errors.length && results.every(r => r.ended !== 'TIMEOUT'), results, errors };
 }
 

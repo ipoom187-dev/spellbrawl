@@ -68,7 +68,7 @@ Ignore stray lines like "ชุด 1" (left over from copy-paste). If the copies
   `t => number` worked out per target after defence, with `dmgText` for the defence prompt), `draw`, `heal`, `gainBent`, `revealTop`,
   `destroyOwn` (hand or discard), `destroyFromHand(p, n)` (up to n, optional), `discardFromHand`, `gainFromLineup`, `P(p, n)` for power,
   `tokenCount`, `ongoingCount`; this-turn Legend discount → `G.turn.legendDiscount += n` (prices always go through `costFor`). Add a new helper/target only if none fits — and `grep` for the name first: both machines
-  add helpers, and a second `function` with the same name silently replaces the first.
+  add helpers, and a second `function` with the same name silently replaces the first. Same for card ids: `grep "'<id>'"` before choosing one — a second `def` overwrites the first card (this happened to `hocus` / `vortex`); `simulate()` now lists duplicates in `errors`.
 - **✲ เปิดใช้** (activated ability): text before ✲ goes in `play` as usual; the part after ✲ goes in
   `activate: async (p, card) => {...}`, with an optional condition `canActivate: p => bool` and `needText`
   (tooltip when it can't be used yet). The player gets a "✲ ใช้" button under the card in the arena and may
