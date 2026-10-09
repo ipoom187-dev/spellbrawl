@@ -1,7 +1,13 @@
 # Spellbrawl
 
 Single-file HTML deck-building game (`index.html`), rules modelled on Epic Spell Wars: Annihilageddon.
-All card names, text and characters are original — never copy official card content. UI and card text are in Thai.
+UI and card text are in Thai; card text is always written fresh in Thai, never translated word-for-word.
+
+**Naming plan (decided 2026-10-09):** the user is entering cards under the official game's names for now. Once
+every card is in, the user will ask for all of them to be renamed to original names (keeping the abilities and
+the humour) before the game is shared with anyone. Until then: keep the repo private, don't publish or update the
+claude.ai artifact, and don't put official card art in `art/`. When the rename happens, also remove the official
+game's name from the rules page and descriptions ("inspired by …" is fine).
 
 ## Adding a card — the user's 6-line format
 
@@ -26,6 +32,7 @@ Example:
 ```
 
 Several cards may come in one message, separated by blank lines. Ask only if a line is genuinely ambiguous.
+Ignore stray lines like "ชุด 1" (left over from copy-paste). If the copies line is missing, use 2 (1 for Chaos cards) and say so.
 
 ### Type mapping (line 1)
 
@@ -36,8 +43,8 @@ Several cards may come in one message, separated by blank lines. Ask only if a l
 | สมบัติ / Treasure | `treasure` | `MAIN` |
 | พ่อมด / Wizard | `wizard` | `MAIN` |
 | สถานที่ / Location | `location` (set `ongoing:1`, effect in `onStart`) | `MAIN` |
-| โกลาหล / Chaos / Mayhem | `chaos` (effect in `chaos: async by => …`; pass `by` into `attack` so a player who triggers it gets kill credit) | `MAIN` |
-| ตำนาน / Legend | `legend` (needs `group` text + `gattack`) | `LEGENDS` (count ignored) |
+| โกลาหล / Chaos / Mayhem | `chaos` (effect in `chaos: async by => …`; pass `by` into `attack` so a player who triggers it gets kill credit). The user writes "Mayhem" (the official term) — always show it as **Chaos / โกลาหล**, never "Mayhem", in names, text and UI | `MAIN` |
+| ตำนาน / Legend | `legend` (needs `group` text + `gattack`; make Group Attacks defendable by wrapping them in `attack(null, {to:'all', …})`). "Legend · Wizard/Location" → add `alsoType` (checked with `isType(c, t)`). Legends sit in a 3-card face-up row `G.legendRow` (Willy always starts in it) over a face-down stack `G.legends`; buying empties a slot, refilled at end of turn with that Legend's Group Attack | `LEGENDS` (count ignored) |
 | สัตว์รับใช้ / Familiar | `familiar` | `FAMILIARS` (count ignored) |
 
 ### How to implement
@@ -45,8 +52,13 @@ Several cards may come in one message, separated by blank lines. Ask only if a l
 - Add a `def('<id>', {...})` next to the other cards of the same type. `<id>` is a short lowercase ASCII
   romanisation of the name (e.g. โก๋แบง → `kobang`); tell the user the id, since card art uses `art/<id>.png`.
 - Set `name`, `type`, `cost`, `vp`; flat `+N พลัง` goes in `power:N`; add `atk:1` / `def:1` / `ongoing:1` / `draws:1` as the ability implies.
+- Attack extras: `noRedirect:true` (can be dodged, never reflected), `tokenPick:n` (killer picks the token from n). Arena / Nacho Arena double attack damage (stacking), Vortex turns a turn's first damaging attack into power, Snack Cart heals on damage. `G.turn.gainToHand` (Dr. Continuum) sends gains to hand; `G.instantWinner` + `G.ending` ends the game with that winner.
+- Wizard abilities: check with `hasTrait(p, id)` (covers the temporary second ability from Papa Boner, `p.trait2`). `G.optOut` = a player sitting out a Chaos card (The Cosmic Glyph); `turnOrder()` and `attack` skip them.
+- Official terms the user may paste: Glyph = `rune`, Wild Magic = Wild Surge (`wild`), Limp Wand = `bent`, Mayhem = Chaos.
+- Chaos helpers: `turnOrder()` (turn player first), `handCost(p)`, `gainTopOfMain(p)` (skips/destroys Chaos), `attackOnly(card, owner, self)` (resolve just a card's attack — Chaos O/Q), attack `benign:true` (AI won't defend a helpful "attack" — Chaos S/T).
 - Limp Wand: the -1 VP junk card (16 in its own stack, not in `MAIN`); internal id is still `bent`, so use `bent:1` / `gainBent` and `art/bent.png`.
 - "ครอบครองได้แค่ 1 ใบ" (each player may own only one) → `unique:1`; buying, free gains and the AI all respect it, and the card shows a "1 ใบ/คน" tag.
+- Effects that count Dead Wizard tokens use `tokenCount(p)` (includes Huge Boner); scoring/stealing/removal use `p.tokens`.
 - VP that depends on the game state at the end ("จบเกม: มีค่า …") → `vp:0` plus `vpCalc: p => number`; scoring,
   the VP viewer and AI buying use it, and the card shows `★? VP`. Example: `mib`.
 - Write `text` in the same style as existing cards (`<b>โจมตี:</b>`, `<b>ป้องกัน:</b>`, `<b>ต่อเนื่อง:</b>`, `<br>` between effects).
@@ -54,7 +66,9 @@ Several cards may come in one message, separated by blank lines. Ask only if a l
   (`to`: `choose` `left` `right` `lr` `each` `random` `strongest` `weakest`, or `where` with
   `where: t => bool` to hit every opponent matching a condition; `among: t => bool` limits who `choose` can pick; `onHit: (t, dealt) => …` runs after damage lands with the amount actually dealt (0 if dodged → not called); `onDodge: t => …` runs when a target avoids or reflects the attack; `dmg` may be a function
   `t => number` worked out per target after defence, with `dmgText` for the defence prompt), `draw`, `heal`, `gainBent`, `revealTop`,
-  `destroyOwn`, `discardFromHand`, `gainFromLineup`, `P(p, n)` for power. Add a new helper/target only if none fits.
+  `destroyOwn` (hand or discard), `destroyFromHand(p, n)` (up to n, optional), `discardFromHand`, `gainFromLineup`, `P(p, n)` for power,
+  `tokenCount`, `ongoingCount`; this-turn Legend discount → `G.turn.legendDiscount += n` (prices always go through `costFor`). Add a new helper/target only if none fits — and `grep` for the name first: both machines
+  add helpers, and a second `function` with the same name silently replaces the first.
 - **✲ เปิดใช้** (activated ability): text before ✲ goes in `play` as usual; the part after ✲ goes in
   `activate: async (p, card) => {...}`, with an optional condition `canActivate: p => bool` and `needText`
   (tooltip when it can't be used yet). The player gets a "✲ ใช้" button under the card in the arena and may
@@ -63,8 +77,13 @@ Several cards may come in one message, separated by blank lines. Ask only if a l
 - "Ongoing: ทำลายการ์ดใบนี้เพื่อ …" → `ongoing:1` + `sacrifice: async p => {...}`, `sacText` (button tooltip) and
   `aiSacrifice: p => bool` (when the AI should cash it in, checked at the start of its turn). The player gets a
   "ทำลายเพื่อใช้" button under it in their Ongoing row on their turn. Example: `wizardwaste`.
+- Ongoing card that defends from the table ("Ongoing - ป้องกัน: ทิ้งใบนี้ออกจากสนาม…") → `ongoing:1, defInPlay:1` (no `def`); it leaves play to the discard pile, then `onDefend` runs. AI uses it after hand defences. Example: `dragonballz`.
 - Defence that leaves the hand: `defDiscard:1` (to the discard) or `defTopdeck:1` (face up on top of the deck,
   drawn again next hand, e.g. `lamps`). Each defence card can be used once per turn either way.
+- Familiars: build with `fam(id, {...})` (cost 6 / 2 VP defaults); the shared defence is `...REFLECT` (+ `REFLECT_TXT`), `DODGE_DRAW(n)` for dodge-and-draw. Defence extras: `redirect` now bounces the whole effect (damage, Limp Wand, discard), `redirectTimes`, `defBottom`, `aiDefOk(t, src, spec)` (AI skips a costly defence), `onDefend(t, src, card, spec)`. Other hooks: `endBottom` (goes under the deck at end of turn), `allTypes` (counts as every type), `p.drawPenalty`, `G.turn.nextUnblockable`, `c.owner` on familiars. Move cards into a hand with `await toHand(p, c)` (Leviathan Seed check).
+- Where a bought/gained card lands is decided in `placeGained(p, c)` (async — always `await` it): Grab-O top-decks, Gift Shop lets a Legend go on top.
+- `G.curCard` is the card whose `play` is resolving right now (null otherwise), so `attack` can tell which card attacked (e.g. `isWand` for The Dirty Wand).
+- Ongoing card reacting to its owner playing another card → `onCardPlayed: async (p, card) => …` (runs after that card resolves; `G.turn.types[type]` already counts it). Example: `tentakill`.
 - AI play order: `playFirst:1` casts a card before everything else (e.g. it counts cards still in hand), `playLate:1`
   after everything else (e.g. "if you control another creature" checked on play, like `orc`).
 - Add the copy count from line 5 to `MAIN` (main-deck types only).
