@@ -47,12 +47,26 @@ Several cards may come in one message, separated by blank lines. Ask only if a l
 - Set `name`, `type`, `cost`, `vp`; flat `+N พลัง` goes in `power:N`; add `atk:1` / `def:1` / `ongoing:1` / `draws:1` as the ability implies.
 - Limp Wand: the -1 VP junk card (16 in its own stack, not in `MAIN`); internal id is still `bent`, so use `bent:1` / `gainBent` and `art/bent.png`.
 - "ครอบครองได้แค่ 1 ใบ" (each player may own only one) → `unique:1`; buying, free gains and the AI all respect it, and the card shows a "1 ใบ/คน" tag.
+- VP that depends on the game state at the end ("จบเกม: มีค่า …") → `vp:0` plus `vpCalc: p => number`; scoring,
+  the VP viewer and AI buying use it, and the card shows `★? VP`. Example: `mib`.
 - Write `text` in the same style as existing cards (`<b>โจมตี:</b>`, `<b>ป้องกัน:</b>`, `<b>ต่อเนื่อง:</b>`, `<br>` between effects).
 - Put the logic in `play: async p => {...}` using the existing helpers: `attack(p, {to, dmg, bent, discard, onKill})`
   (`to`: `choose` `left` `right` `lr` `each` `random` `strongest` `weakest`, or `where` with
-  `where: t => bool` to hit every opponent matching a condition; `among: t => bool` limits who `choose` can pick; `onHit: (t, dealt) => …` runs after damage lands with the amount actually dealt (0 if dodged → not called); `dmg` may be a function
+  `where: t => bool` to hit every opponent matching a condition; `among: t => bool` limits who `choose` can pick; `onHit: (t, dealt) => …` runs after damage lands with the amount actually dealt (0 if dodged → not called); `onDodge: t => …` runs when a target avoids or reflects the attack; `dmg` may be a function
   `t => number` worked out per target after defence, with `dmgText` for the defence prompt), `draw`, `heal`, `gainBent`, `revealTop`,
   `destroyOwn`, `discardFromHand`, `gainFromLineup`, `P(p, n)` for power. Add a new helper/target only if none fits.
+- **✲ เปิดใช้** (activated ability): text before ✲ goes in `play` as usual; the part after ✲ goes in
+  `activate: async (p, card) => {...}`, with an optional condition `canActivate: p => bool` and `needText`
+  (tooltip when it can't be used yet). The player gets a "✲ ใช้" button under the card in the arena and may
+  use it once, any time later that turn; unused abilities lapse at end of turn. The AI uses every ✲ it can
+  after playing its hand. Example: `storkos`.
+- "Ongoing: ทำลายการ์ดใบนี้เพื่อ …" → `ongoing:1` + `sacrifice: async p => {...}`, `sacText` (button tooltip) and
+  `aiSacrifice: p => bool` (when the AI should cash it in, checked at the start of its turn). The player gets a
+  "ทำลายเพื่อใช้" button under it in their Ongoing row on their turn. Example: `wizardwaste`.
+- Defence that leaves the hand: `defDiscard:1` (to the discard) or `defTopdeck:1` (face up on top of the deck,
+  drawn again next hand, e.g. `lamps`). Each defence card can be used once per turn either way.
+- AI play order: `playFirst:1` casts a card before everything else (e.g. it counts cards still in hand), `playLate:1`
+  after everything else (e.g. "if you control another creature" checked on play, like `orc`).
 - Add the copy count from line 5 to `MAIN` (main-deck types only).
 - Mention balance concerns briefly (e.g. uncapped damage) but implement what the user asked.
 
@@ -66,7 +80,7 @@ browser pane, reload it after editing, then call the built-in helpers from the c
   game and returns `before` / `after` snapshots (power, own hp/hand/deck/discard/ongoing/tokens, each
   opponent's hp/hand/discard/bent/tokens). Instant. Use `setup` to arrange the state the card needs.
   Wizard abilities are off by default (Iron Hide etc. would skew numbers); pass `keepTraits: true` to test one.
-- `await simulate(3)` — 3 full all-AI games (2, 3, 4 players), ~5 s each. Returns `{ ok, results, errors }`;
+- `await simulate(3)` — 3 full all-AI games (2, 3, 4 players), ~5–15 s each (30 s timeout per game). Returns `{ ok, results, errors }`;
   `results[i].bought` counts every card each game ended with.
 
 Which to run:
