@@ -1,13 +1,15 @@
 # Spellbrawl
 
-Single-file HTML deck-building game (`index.html`), rules modelled on Epic Spell Wars: Annihilageddon.
+Single-file HTML deck-building game (`index.html`), rules modelled on a well-known wizard-battle deck-builder (keep that game unnamed in anything players see).
 UI and card text are in Thai; card text is always written fresh in Thai, never translated word-for-word.
 
-**Naming plan (decided 2026-10-09):** the user is entering cards under the official game's names for now. Once
-every card is in, the user will ask for all of them to be renamed to original names (keeping the abilities and
-the humour) before the game is shared with anyone. Until then: keep the repo private, don't publish or update the
-claude.ai artifact, and don't put official card art in `art/`. When the rename happens, also remove the official
-game's name from the rules page and descriptions ("inspired by …" is fine).
+**Naming (done 2026-10-10):** every card the user had entered under an official name was renamed to an original
+English pun name (abilities unchanged, ids unchanged so `art/<id>.png` still works); the official game's name was
+removed from the page and README. New cards the user sends from the official game must get an **original name**
+too: implement the ability, pick a fresh pun name (no apostrophes — names live in quoted JS strings), and tell the
+user the name you chose. Cards whose ability depends on the word "Wand" must keep "Wand" in the new name (`isWand`).
+Don't put official card art in `art/`. When replacing names in code, never touch identifiers (a name inside
+`offerFriendality` once broke the script).
 
 ## Adding a card — the user's 6-line format
 
@@ -53,11 +55,13 @@ Ignore stray lines like "ชุด 1" (left over from copy-paste). If the copies
   romanisation of the name (e.g. โก๋แบง → `kobang`); tell the user the id, since card art uses `art/<id>.png`.
 - Set `name`, `type`, `cost`, `vp`; flat `+N พลัง` goes in `power:N`; add `atk:1` / `def:1` / `ongoing:1` / `draws:1` as the ability implies.
 - Attack extras: `noRedirect:true` (can be dodged, never reflected), `tokenPick:n` (killer picks the token from n). Arena / Nacho Arena double attack damage (stacking), Vortex turns a turn's first damaging attack into power, Snack Cart heals on damage. `G.turn.gainToHand` (Dr. Continuum) sends gains to hand; `G.instantWinner` + `G.ending` ends the game with that winner.
-- Wizard abilities: check with `hasTrait(p, id)` (covers the temporary second ability from Papa Boner, `p.trait2`). `G.optOut` = a player sitting out a Chaos card (The Cosmic Glyph); `turnOrder()` and `attack` skip them.
+- Wizard ability tiles (`TRAITS`, the user's set 1 + set 2, one per player): check with `hasTrait(p, id)` (covers Papa Boner's temporary `p.trait2`; `traitsOf(p)` lists both). Tile hooks: `onCardPlayed(p, card)` (own turn), `activate` + `canActivate` + `actText` + `aiUse` (once-per-turn button, `useTrait`). Engine checks: `cheapTop` (uses `G.gainSrc`), `creatureTop`, `wizardDraw`/`spellDraw` (`G.turn.gainedWiz/gainedSpell`), `treasureLover`, `weirdWand` (+ `weirdwand` starter card). The old placeholder abilities (ember, iron…) are gone; their `hasTrait` checks are now inert. `G.optOut` = a player sitting out a Chaos card (The Cosmic Glyph); `turnOrder()` and `attack` skip them.
 - Official terms the user may paste: Glyph = `rune`, Wild Magic = Wild Surge (`wild`), Limp Wand = `bent`, Mayhem = Chaos.
 - Chaos helpers: `turnOrder()` (turn player first), `handCost(p)`, `gainTopOfMain(p)` (skips/destroys Chaos), `attackOnly(card, owner, self)` (resolve just a card's attack — Chaos O/Q), attack `benign:true` (AI won't defend a helpful "attack" — Chaos S/T).
 - Limp Wand: the -1 VP junk card (16 in its own stack, not in `MAIN`); internal id is still `bent`, so use `bent:1` / `gainBent` and `art/bent.png`.
 - "ครอบครองได้แค่ 1 ใบ" (each player may own only one) → `unique:1`; buying, free gains and the AI all respect it, and the card shows a "1 ใบ/คน" tag.
+- Dead Wizard tokens (`TOKENS`, 38 kinds: the user's set 1 + set 2 mixed, each once; pile = 4 per player): fields `vp` (default -3, see `tokenVP` / `tokensVP(p)`), `now(t, killer)`, `respawn`, `ongoing:1` with text starting "ต่อเนื่อง:", `costUp:[types or 'wild']`. `badToken(k)` = ongoing or worse than -3 (AI gets rid of these first). Special ids checked in code: `nododge` (Chaos attacks), `wandweak` (+3 from the starter Wand). `G.onlyTarget` aims a Group Attack at one player. Set 2 adds `limpDouble` (see `limpVP`), `wand4`, `trophyless`, the `pairA`/`pairB` pair (cancel in `tokensVP`). Helpers: `loseHP(t, n)` (HP loss, not damage), `extraToken(t)` (a token from outside the game), `announceToken(p, k)` (pop-up; call it whenever a player gets a token).
+- In Thai card/UI text write the token as **Dead Wizard Token** (or just **Token**), never "เหรียญพ่อมดตาย" / "เหรียญ" (changed 2026-10-11 at the user's request).
 - Effects that count Dead Wizard tokens use `tokenCount(p)` (includes Huge Boner); scoring/stealing/removal use `p.tokens`.
 - VP that depends on the game state at the end ("จบเกม: มีค่า …") → `vp:0` plus `vpCalc: p => number`; scoring,
   the VP viewer and AI buying use it, and the card shows `★? VP`. Example: `mib`.
@@ -82,6 +86,7 @@ Ignore stray lines like "ชุด 1" (left over from copy-paste). If the copies
   drawn again next hand, e.g. `lamps`). Each defence card can be used once per turn either way.
 - Familiars: build with `fam(id, {...})` (cost 6 / 2 VP defaults); the shared defence is `...REFLECT` (+ `REFLECT_TXT`), `DODGE_DRAW(n)` for dodge-and-draw. Defence extras: `redirect` now bounces the whole effect (damage, Limp Wand, discard), `redirectTimes`, `defBottom`, `aiDefOk(t, src, spec)` (AI skips a costly defence), `onDefend(t, src, card, spec)`. Other hooks: `endBottom` (goes under the deck at end of turn), `allTypes` (counts as every type), `p.drawPenalty`, `G.turn.nextUnblockable`, `c.owner` on familiars. Move cards into a hand with `await toHand(p, c)` (Leviathan Seed check).
 - Where a bought/gained card lands is decided in `placeGained(p, c)` (async — always `await` it): Grab-O top-decks, Gift Shop lets a Legend go on top.
+- Card pop-ups: `trackMoves()` (run by every `render()`) diffs where each card is and calls `showEvent(card, label, kind)` for public moves — received, passed between players, discarded, destroyed, taken from / put back from the discard — so new cards need nothing extra. Moves that are not a change of place (reveal, defend, ✲) call `showEvent` directly. Draws and hand↔deck stay hidden; `G.quietMoves` silences end-of-turn cleanup.
 - `G.curCard` is the card whose `play` is resolving right now (null otherwise), so `attack` can tell which card attacked (e.g. `isWand` for The Dirty Wand).
 - Ongoing card reacting to its owner playing another card → `onCardPlayed: async (p, card) => …` (runs after that card resolves; `G.turn.types[type]` already counts it). Example: `tentakill`.
 - AI play order: `playFirst:1` casts a card before everything else (e.g. it counts cards still in hand), `playLate:1`
@@ -116,4 +121,8 @@ Which to run:
 ## Repo
 
 - Launchers: `Spellbrawl.cmd` (Windows, CRLF) and `Spellbrawl.command` (macOS, executable bit).
+- Art: `art/<id>.png|jpg` per card, `art/board.jpg` (table), `art/mat.jpg` (rug under your own seat panel `.you`; same dim slider as the board).
+  AI art: `tools/gen-art.ps1` (Windows PowerShell, Google Gemini, key in the user's `GEMINI_API_KEY` env var — never ask for it in chat)
+  builds each prompt from `tools/art-prompts.tsv` + `tools/art-style.txt`; `-Only a,b -Force` re-rolls cards, `-Prompt … -Name … -Aspect 16:9` makes a one-off image.
+  The browser pane opens the game as a `data:` snapshot, so `art/` images never load there; ask the user to check art in the real game.
 - The user works on both Windows and macOS; `git pull` before editing.
