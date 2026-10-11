@@ -325,6 +325,23 @@ table.score tr.win td{color:var(--gold);font-weight:700}
 .chaos-show .cs-hint{font-size:12px;color:var(--mute);letter-spacing:.1em}
 @media (prefers-reduced-motion:reduce){.chaos-show .cs-card,.chaos-show .cs-title{animation:none}}
 @media (prefers-reduced-motion:reduce){.card.buyable,.rival.active,.you.active,.banner .b-title{animation:none}}
+/* online play: lobby, waiting pill, seat tags */
+.online-box{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px;width:100%}
+.online-btns{display:flex;gap:8px;flex-wrap:wrap}
+.lobby{display:flex;flex-direction:column;gap:10px;width:100%}
+.roomcode{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.roomcode .k{color:var(--mute);font-size:12px}
+.roomcode b{font-family:var(--f-display);font-size:40px;letter-spacing:.18em;color:var(--gold);line-height:1}
+.roomlink{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit;font-size:12px}
+.lobby-list{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
+.lobby-list .waiting{color:var(--mute);font-style:italic}
+.lobby-btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.seattag{display:inline-block;margin-left:6px;padding:1px 6px;border:1px solid var(--line);border-radius:999px;font-size:11px;color:var(--mute);font-weight:400;vertical-align:middle}
+.waitpill{display:inline-block;margin-left:8px;padding:2px 10px;border-radius:999px;background:#f0c35a22;border:1px solid #f0c35a66;color:var(--gold);font-size:12px;animation:waitp 1.6s ease-in-out infinite}
+@keyframes waitp{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.waitpill{animation:none}}
+.err{color:var(--hp)}
 </style>
 
 <canvas id="embers" aria-hidden="true"></canvas>
@@ -374,6 +391,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rnd = n => Math.floor(Math.random() * n);
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 let G = null, uidc = 1, AI_DELAY = 650;
+// ME = the seat this browser shows and controls: 0 offline and for the host of an online room, the guest's own seat otherwise
+let ME = 0;
+const meP = () => G.players[ME];
 
 const TYPE_TH = { token:'Dead Wizard Token', starter:'การ์ดเริ่มต้น', spell:'คาถา · Spell', creature:'สัตว์อสูร · Creature', treasure:'สมบัติ · Treasure',
   wizard:'พ่อมด · Wizard', location:'สถานที่ · Location', legend:'ตำนาน · Legend', wild:'เวทป่าเถื่อน · Wild', bent:'ไม้กายสิทธิ์ปวกเปียก',
@@ -399,7 +419,7 @@ def('weirdwand', { name:'Weird Wand', type:'starter', power:1, atk:1,
         // AI hands over its worst cards (Limp Wand / Fizzle first); a player may stop early
         const worst = p.discard.slice().sort((a, b) => aiVal(a) - aiVal(b))[0];
         const c = p.isAI ? (aiVal(worst) <= 0 ? worst : null)
-          : await humanChoose(`Weird Wand: ใส่การ์ดจากกองทิ้งเข้ามือ ${t.name} (${k + 1}/2)`, [...p.discard.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }]);
+          : await humanChoose(p, `Weird Wand: ใส่การ์ดจากกองทิ้งเข้ามือ ${t.name} (${k + 1}/2)`, [...p.discard.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }]);
         if (!c) break;
         p.discard.splice(p.discard.indexOf(c), 1); await toHand(t, c); log(`${p.name} ยัด ${c.name} ใส่มือ ${t.name}`);
       }
@@ -410,7 +430,7 @@ def('bent', { name:'Limp Wand', type:'bent', vp:-1, text:'ไม่มีผล<
 def('wild', { name:'Wild Surge', type:'wild', cost:3, text:'เลือก 1: +2 พลัง <i>หรือ</i> เปิดการ์ดบนสุดในกองของศัตรู 1 คนแล้วใช้เป็นของคุณ',
   play: async p => {
     const os = opps(p);
-    let ch = p.isAI ? 'pw' : await humanChoose('Wild Surge', [{label:'+2 พลัง', value:'pw'}, {label:'ขโมยการ์ดบนสุดของศัตรู', value:'steal'}]);
+    let ch = p.isAI ? 'pw' : await humanChoose(p, 'Wild Surge', [{label:'+2 พลัง', value:'pw'}, {label:'ขโมยการ์ดบนสุดของศัตรู', value:'steal'}]);
     if (ch === 'pw') { P(p, 2); return; }
     const t = await pickTarget(p, os, { dmg:0, label:'เลือกศัตรูที่จะขโมยการ์ดบนสุด' });
     const c = drawTop(t);
@@ -510,7 +530,7 @@ def('hocus', { name:'Laser Pointer Hex', type:'spell', cost:4, vp:1, power:1, at
     if (!c) { log(`${p.name} ไม่มีการ์ดในเด็คให้เปิด`); return; }
     const dmg = c.cost || 0;
     const melt = p.isAI ? isJunk(p)(c)
-      : await humanChoose('Laser Pointer Hex: การ์ดบนสุดของเด็คคุณ',
+      : await humanChoose(p, 'Laser Pointer Hex: การ์ดบนสุดของเด็คคุณ',
         [{ label: `ทำลาย ${c.name}`, value: true }, { label: `โจมตี: ${dmg} ดาเมจ (การ์ดอยู่บนเด็คต่อ)`, value: false }],
         cardHTML(c, { small: true }));
     if (melt) { p.deck.splice(p.deck.lastIndexOf(c), 1); G.destroyed.push(c); log(`${p.name} เผา ${c.name} ทิ้ง`); AUD.play('destroy'); render(); }
@@ -531,7 +551,7 @@ def('dontgive', { name:"Zero Bothers Given", type:'spell', cost:5, vp:1,
     if (!c) { log(`${p.name} ไม่มีการ์ดในเด็คให้เปิด`); return; }
     const n = c.cost || 0;
     const melt = p.isAI ? isJunk(p)(c)
-      : await humanChoose("Zero Bothers Given: การ์ดบนสุดของเด็คคุณ",
+      : await humanChoose(p, "Zero Bothers Given: การ์ดบนสุดของเด็คคุณ",
         [{ label: `ทำลาย ${c.name}`, value: true }, { label: `+${n} พลัง (การ์ดอยู่บนเด็คต่อ)`, value: false }],
         cardHTML(c, { small: true }));
     if (melt) { p.deck.splice(p.deck.lastIndexOf(c), 1); G.destroyed.push(c); log(`${p.name} ไม่แคร์ ทำลาย ${c.name}`); AUD.play('destroy'); render(); }
@@ -576,7 +596,7 @@ def('aciddragon', { name:'Heartburn Wyrm', type:'creature', cost:3, vp:1, power:
     if (!c) { log(`${p.name} ไม่มีการ์ดในเด็คให้ดู`); return; }
     // AI melts the same junk destroyOwn would: Limp Wand, Fizzle, and Rune once the deck is big enough
     const junk = c.id === 'bent' || c.id === 'fizzle' || (c.id === 'rune' && allCards(p).length + 1 > 16);
-    const melt = p.isAI ? junk : await humanChoose('Heartburn Wyrm: การ์ดบนสุดของเด็คคุณ',
+    const melt = p.isAI ? junk : await humanChoose(p, 'Heartburn Wyrm: การ์ดบนสุดของเด็คคุณ',
       [{ label: `ทำลาย ${c.name}`, value: true }, { label: 'วางไว้ที่เดิม', value: false, ghost: true }],
       `${cardHTML(c, { small: true })}<br>การ์ดที่ถูกทำลายจะออกจากเกมถาวร`);
     if (melt) { G.destroyed.push(c); log(`${p.name} พ่นกรดละลาย ${c.name} ทิ้ง`); AUD.play('destroy'); }
@@ -595,7 +615,7 @@ def('luckycharms', { name:"Leprechaun Leftovers", type:'creature', cost:4, vp:1,
     if (!pool.length) { log(`${p.name} ไม่มีสมบัติในกองทิ้ง · +2 พลังแทน`); P(p, 2); AUD.play('power'); return; }
     const c = pool.length === 1 ? pool[0]
       : p.isAI ? pool.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-      : await humanChoose("Leprechaun Leftovers: เลือกสมบัติจากกองทิ้งขึ้นมือ", pool.map(x => ({ card: x, value: x })));
+      : await humanChoose(p, "Leprechaun Leftovers: เลือกสมบัติจากกองทิ้งขึ้นมือ", pool.map(x => ({ card: x, value: x })));
     p.discard.splice(p.discard.indexOf(c), 1); p.hand.push(c);
     log(`${p.name} หยิบ ${c.name} จากกองทิ้งขึ้นมือ`, 'good');
     render();
@@ -608,7 +628,7 @@ def('sk8ratz', { name:'Kickflip Vermin', type:'creature', cost:4, vp:1, power:2,
     if (!pool.length) return;
     // AI only dumps junk on the attacker; giving away a good card would help them
     const c = t.isAI ? pool.find(x => x.id === 'bent') || pool.find(x => x.id === 'fizzle') || null
-      : await humanChoose(`Kickflip Vermin: ส่งการ์ดไปที่กองทิ้งของ ${src.name}`, [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }],
+      : await humanChoose(t, `Kickflip Vermin: ส่งการ์ดไปที่กองทิ้งของ ${src.name}`, [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }],
         'การ์ดจะออกจากเด็คคุณไปอยู่ในเด็คของเขา · ส่ง Limp Wand ไปให้ = เขาเสีย 1 VP');
     if (!c) return;
     const arr = t.hand.includes(c) ? t.hand : t.discard;
@@ -653,7 +673,7 @@ def('bfg', { name:'Big Grumpy Golem', type:'creature', cost:6, vp:2, power:2, de
     if (!t.hand.length) return;
     // AI only destroys junk, same rule as destroyOwn
     const c = t.isAI ? t.hand.find(x => x.id === 'bent') || t.hand.find(x => x.id === 'fizzle') || (allCards(t).length > 16 ? t.hand.find(x => x.id === 'rune') : null) || null
-      : await humanChoose('Big Grumpy Golem: ทำลายการ์ด 1 ใบในมือ', [...t.hand.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }],
+      : await humanChoose(t, 'Big Grumpy Golem: ทำลายการ์ด 1 ใบในมือ', [...t.hand.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }],
         'การ์ดที่ถูกทำลายจะออกจากเกมถาวร');
     if (!c) return;
     t.hand.splice(t.hand.indexOf(c), 1); G.destroyed.push(c);
@@ -698,7 +718,7 @@ def('ballz', { name:'Bouncy Boulder Bros', type:'creature', cost:4, vp:1, power:
     if (!pool.length) { log(`${t.name} ไม่มีสัตว์อสูรใบอื่นในกองทิ้ง`); return; }
     const c = pool.length === 1 ? pool[0]
       : t.isAI ? pool.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-      : await humanChoose('Bouncy Boulder Bros: เลือกสัตว์อสูรจากกองทิ้งขึ้นมือ', pool.map(x => ({ card: x, value: x })));
+      : await humanChoose(t, 'Bouncy Boulder Bros: เลือกสัตว์อสูรจากกองทิ้งขึ้นมือ', pool.map(x => ({ card: x, value: x })));
     t.discard.splice(t.discard.indexOf(c), 1); t.hand.push(c);
     log(`${t.name} เรียก ${c.name} กลับขึ้นมือ`, 'good'); render();
   } });
@@ -772,7 +792,7 @@ def('sexcalibur', { name:'Flirtcalibur', type:'treasure', cost:4, vp:1, draws:1,
     if (!wiz.length) { P(p, 2); log(`ไม่มีพ่อมดในกองทิ้งของ ${p.name} · ได้ +2 พลังแทน`); return; }
     const c = wiz.length === 1 ? wiz[0]
       : p.isAI ? wiz.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-      : await humanChoose('Flirtcalibur: เลือกพ่อมดจากกองทิ้งขึ้นมือ', wiz.map(x => ({ card: x, value: x })));
+      : await humanChoose(p, 'Flirtcalibur: เลือกพ่อมดจากกองทิ้งขึ้นมือ', wiz.map(x => ({ card: x, value: x })));
     p.discard.splice(p.discard.indexOf(c), 1); p.hand.push(c);
     log(`${p.name} หยิบ ${c.name} จากกองทิ้งขึ้นมือ`, 'good');
   } });
@@ -787,7 +807,7 @@ def('porkus', { name:'Wand of Hogwash', type:'treasure', cost:4, vp:1, atk:1, dr
       if (!pool.length) { log(`${p.name} ไม่มีการ์ดราคา 0 ให้ส่ง`); return 0; }
       const rank = c => ({ bent: 0, fizzle: 1, rune: 2 })[c.id] ?? 3; // AI hands over the worst junk first
       const c = p.isAI ? pool.slice().sort((a, b) => rank(a) - rank(b))[0]
-        : await humanChoose(`Wand of Hogwash: เลือกการ์ดราคา 0 ส่งให้ ${t.name}`, pool.map(x => ({ card: x, value: x })),
+        : await humanChoose(p, `Wand of Hogwash: เลือกการ์ดราคา 0 ส่งให้ ${t.name}`, pool.map(x => ({ card: x, value: x })),
             'การ์ดจะย้ายจากมือหรือกองทิ้งของคุณไปอยู่ในมือเขา');
       const from = p.hand.includes(c) ? p.hand : p.discard;
       from.splice(from.indexOf(c), 1); t.hand.push(c);
@@ -832,7 +852,7 @@ def('fatcula', { name:'Chubbula Wagon', type:'treasure', cost:6, vp:2, power:3, 
     if (G.turn.shown.length !== 1) return;
     const weak = p.hand.filter(c => aiVal(c) <= 0).length;
     const yes = p.isAI ? weak * 2 >= p.hand.length
-      : await humanChoose('Chubbula Wagon: เปลี่ยนมือไหม?', [{ label: `ทิ้งทั้งมือ (${p.hand.length} ใบ) แล้วจั่ว 4`, value: true }, { label: 'เก็บมือไว้', value: false, ghost: true }],
+      : await humanChoose(p, 'Chubbula Wagon: เปลี่ยนมือไหม?', [{ label: `ทิ้งทั้งมือ (${p.hand.length} ใบ) แล้วจั่ว 4`, value: true }, { label: 'เก็บมือไว้', value: false, ghost: true }],
           `มือตอนนี้: ${p.hand.map(c => c.name).join(', ') || '—'}`);
     if (!yes) return;
     const n = p.hand.length;
@@ -881,7 +901,7 @@ def('fishmonger', { name:'Barnacle the Fish Peddler', type:'wizard', cost:4, vp:
     if (!spells.length) { P(p, 2); log(`ไม่มีคาถาในกองทิ้งของ ${p.name} · ได้ +2 พลังแทน`); return; }
     const c = spells.length === 1 ? spells[0]
       : p.isAI ? spells.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-      : await humanChoose('Barnacle the Fish Peddler: เลือกคาถาจากกองทิ้งขึ้นมือ', spells.map(x => ({ card: x, value: x })));
+      : await humanChoose(p, 'Barnacle the Fish Peddler: เลือกคาถาจากกองทิ้งขึ้นมือ', spells.map(x => ({ card: x, value: x })));
     p.discard.splice(p.discard.indexOf(c), 1); p.hand.push(c);
     log(`${p.name} หยิบ ${c.name} จากกองทิ้งขึ้นมือ`, 'good');
   } });
@@ -895,7 +915,7 @@ def('sblendo', { name:'Snoozo the Nightmare Maker', type:'wizard', cost:4, vp:1,
     if (!c) { log(`${p.name} ไม่มีการ์ดเหลือให้ดู`); return; }
     const junk = c.id === 'bent' || c.id === 'fizzle' || (c.id === 'rune' && allCards(p).length > 16);
     const ch = p.isAI ? (junk ? 'destroy' : 'draw')
-      : await humanChoose('Sblendo: การ์ดบนสุดของเด็คคุณ', [{ label: 'จั่วขึ้นมือ', value: 'draw' }, { label: 'ทำลายทิ้ง', value: 'destroy', ghost: true }],
+      : await humanChoose(p, 'Sblendo: การ์ดบนสุดของเด็คคุณ', [{ label: 'จั่วขึ้นมือ', value: 'draw' }, { label: 'ทำลายทิ้ง', value: 'destroy', ghost: true }],
         `${cardHTML(c, { small: true })}<br>การ์ดที่ถูกทำลายจะออกจากเกมถาวร`);
     if (ch === 'destroy') { G.destroyed.push(c); log(`${p.name} ทำลาย ${c.name} จากบนสุดของเด็ค`); AUD.play('destroy'); }
     else { p.hand.push(c); log(`${p.name} จั่ว ${c.name} ขึ้นมือ`); }
@@ -908,7 +928,7 @@ def('expando', { name:'Bulgebrain the Thinker', type:'wizard', cost:5, vp:1, pow
       const big = t.hand.filter(c => (c.cost || 0) >= 5);
       if (!big.length) { log(`${t.name} ไม่มีการ์ดราคา 5+ ในมือ · ไม่เกิดอะไร`); return 0; }
       const c = t.isAI ? big.slice().sort((a, b) => aiVal(a) - aiVal(b))[0]
-        : await humanChoose('Bulgebrain the Thinker: ทิ้งการ์ดราคา 5+ หรือรับ 5 ดาเมจ',
+        : await humanChoose(t, 'Bulgebrain the Thinker: ทิ้งการ์ดราคา 5+ หรือรับ 5 ดาเมจ',
             [...big.map(x => ({ card: x, value: x })), { label: 'ไม่ทิ้ง · รับ 5 ดาเมจแทน', value: null, ghost: true }]);
       if (!c) { log(`${t.name} ไม่ยอมทิ้งการ์ด`); return 5; }
       t.hand.splice(t.hand.indexOf(c), 1); t.discard.push(c);
@@ -931,7 +951,7 @@ def('veearr', { name:'Goggle Wizard 3000', type:'wizard', cost:5, vp:1, power:2,
     t.hand.push(...got);
     const c = got.length === 1 ? got[0]
       : t.isAI ? got.slice().sort((a, b) => aiVal(a) - aiVal(b))[0]
-      : await humanChoose('Vee-Arr: ทิ้ง 1 ใบจากสองใบที่จั่วมา', got.map(x => ({ card: x, value: x })), 'อีกใบจะอยู่ในมือคุณ');
+      : await humanChoose(t, 'Vee-Arr: ทิ้ง 1 ใบจากสองใบที่จั่วมา', got.map(x => ({ card: x, value: x })), 'อีกใบจะอยู่ในมือคุณ');
     t.hand.splice(t.hand.indexOf(c), 1); t.discard.push(c);
     log(`${t.name} จั่ว ${got.length} ใบ แล้วทิ้ง ${c.name}`);
     render();
@@ -954,7 +974,7 @@ def('sugarpuss', { name:'Candy Witch Saccharina', type:'wizard', cost:6, vp:2, d
         // reaching 25 HP clears a Dead Wizard token (its VP back), so worth throwing a better card for it
         c = (p.tokens.length && byVal.find(x => p.hp + (x.cost || 0) >= 25)) || byVal[0];
       } else {
-        c = await humanChoose('Candy Witch Saccharina: ทิ้ง 1 ใบจากมือ', p.hand.map(x => ({ card: x, value: x })),
+        c = await humanChoose(p, 'Candy Witch Saccharina: ทิ้ง 1 ใบจากมือ', p.hand.map(x => ({ card: x, value: x })),
           `ฟื้น HP เท่ากับราคาใบที่ทิ้ง · ตอนนี้คุณมี ${p.hp} HP${p.tokens.length ? ' · ถ้าถึง 25 HP จะลบ Dead Wizard Token ได้ 1 อัน' : ''}`);
       }
       p.hand.splice(p.hand.indexOf(c), 1); p.discard.push(c);
@@ -965,7 +985,7 @@ def('sugarpuss', { name:'Candy Witch Saccharina', type:'wizard', cost:6, vp:2, d
     // the only way to lose a Dead Wizard token; effects that already happened stay
     const tok = p.tokens.length === 1 || p.isAI
       ? (p.tokens.find(k => badToken(k)) || p.tokens[0])
-      : await humanChoose('Candy Witch Saccharina: เลือก Dead Wizard Token ที่จะสับกลับเข้ากอง',
+      : await humanChoose(p, 'Candy Witch Saccharina: เลือก Dead Wizard Token ที่จะสับกลับเข้ากอง',
           p.tokens.map(k => ({ label: `☠ ${k.name}: ${k.text}`, value: k })));
     p.tokens.splice(p.tokens.indexOf(tok), 1);
     G.tokens.push(tok); shuffle(G.tokens);
@@ -1012,7 +1032,7 @@ def('bing', { name:'Barry Bigclaim the Underwriter', type:'wizard', cost:6, vp:2
     if (!chaos.length) return;
     const c = p.isAI
       ? (chaos.find(x => x.id !== 'quake' || !p.ongoing.length) || null)
-      : await humanChoose('Bing Ryerson: เล่นการ์ดโกลาหลที่ถูกทำลาย?', [...chaos.map(x => ({ card: x, value: x })), { label: 'ไม่เล่น', value: null, ghost: true }],
+      : await humanChoose(p, 'Bing Ryerson: เล่นการ์ดโกลาหลที่ถูกทำลาย?', [...chaos.map(x => ({ card: x, value: x })), { label: 'ไม่เล่น', value: null, ghost: true }],
           'ถ้าเล่น จะได้ +3 พลัง · โกลาหลจะเกิดกับพ่อมดทุกคนตามที่เขียนบนการ์ด รวมถึงตัวคุณ · ถ้ามีใครตาย นับว่าคุณเป็นคนฆ่า');
     if (!c) return;
     G.curLabel = c.name;
@@ -1086,7 +1106,7 @@ def('chaosA', { name:'Fresh Start Fiasco', type:'chaos',
       const t = turnOrder()[k]; if (!t) break;
       const weak = t.hand.filter(c => aiVal(c) <= 0).length;
       const swap = t.isAI ? t.hand.length <= 2 || weak * 2 >= t.hand.length
-        : await humanChoose('Fresh Start Fiasco: เลือก 1 อย่าง', [{ label: `ทิ้งทั้งมือ (${t.hand.length} ใบ) แล้วจั่ว 2`, value: true }, { label: 'รับ Limp Wand 1 ใบ', value: false, ghost: true }],
+        : await humanChoose(t, 'Fresh Start Fiasco: เลือก 1 อย่าง', [{ label: `ทิ้งทั้งมือ (${t.hand.length} ใบ) แล้วจั่ว 2`, value: true }, { label: 'รับ Limp Wand 1 ใบ', value: false, ghost: true }],
             `มือตอนนี้: ${t.hand.map(c => c.name).join(', ') || '—'}`);
       if (swap) { const m = t.hand.length; t.discard.push(...t.hand); t.hand = []; log(`${t.name} ทิ้งการ์ดในมือ ${m} ใบ แล้วจั่ว 2`); await draw(t, 2); }
       else gainBent(t);
@@ -1131,7 +1151,7 @@ def('chaosC', { name:'Swap Meet Shuffle', type:'chaos', atk:1,
     const receivers = shown.filter(s => cost(s) === lo).map(s => s.t);
     for (const g of shown.filter(s => cost(s) === hi)) {
       const to = receivers.length === 1 ? receivers[0] : g.t.isAI ? receivers[rnd(receivers.length)]
-        : await humanChoose(`Swap Meet Shuffle: ส่ง ${g.c.name} ให้ใคร?`, receivers.map(r => ({ label: r.name, value: r })));
+        : await humanChoose(t, `Swap Meet Shuffle: ส่ง ${g.c.name} ให้ใคร?`, receivers.map(r => ({ label: r.name, value: r })));
       g.t.deck.splice(g.t.deck.lastIndexOf(g.c), 1); to.discard.push(g.c);
       log(`${g.t.name} ส่ง ${g.c.name} ไปกองทิ้งของ ${to.name}`, 'sys');
     }
@@ -1143,7 +1163,7 @@ def('chaosD', { name:'Blood Bank Clearance', type:'chaos',
     for (const t of turnOrder()) {
       while (t.hp >= 4 && t.hand.length) {
         const c = t.isAI ? (t.hp > 12 ? t.hand.find(isJunk(t)) || null : null)
-          : await humanChoose(`Blood Bank Clearance: จ่าย 4 HP ทำลายการ์ดในมือ? (ตอนนี้ ${t.hp} HP)`, [...t.hand.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }],
+          : await humanChoose(t, `Blood Bank Clearance: จ่าย 4 HP ทำลายการ์ดในมือ? (ตอนนี้ ${t.hp} HP)`, [...t.hand.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }],
               'ทำซ้ำได้ตราบที่มีอย่างน้อย 4 HP · ถ้า HP เหลือ 0 คุณจะตาย');
         if (!c) break;
         t.hand.splice(t.hand.indexOf(c), 1); G.destroyed.push(c); t.hp -= 4; t.hitFlash = true;
@@ -1172,7 +1192,7 @@ def('chaosF', { name:'Deck Roulette', type:'chaos', atk:1,
       if (got.length === 2) {
         const junk = got.find(isJunk(t)), dear = got.slice().sort((a, b) => (b.cost || 0) - (a.cost || 0))[0];
         gone = t.isAI ? (junk || ((dear.cost || 0) >= t.hp ? dear : got.slice().sort((a, b) => aiVal(a) - aiVal(b))[0]))
-          : await humanChoose('Deck Roulette: เลือกใบที่จะทำลาย', got.map(x => ({ card: x, value: x })), 'อีกใบจะขึ้นมือ และคุณรับดาเมจเท่ากับราคาของใบนั้น');
+          : await humanChoose(t, 'Deck Roulette: เลือกใบที่จะทำลาย', got.map(x => ({ card: x, value: x })), 'อีกใบจะขึ้นมือ และคุณรับดาเมจเท่ากับราคาของใบนั้น');
         G.destroyed.push(gone);
       }
       const keep = got.find(x => x !== gone);
@@ -1213,7 +1233,7 @@ def('chaosJ', { name:'Free Sample Day', type:'chaos', text:'พ่อมดแ�
       const top = G.main[G.main.length - 1];
       if (!top) return;
       const yes = t.isAI ? (top.cost || 0) >= 3
-        : await humanChoose(`Free Sample Day: รับ ${top.name} ไหม?`, [{ label: 'รับ (ทำลายการ์ดบนสุดของเด็คคุณ)', value: true }, { label: 'ไม่รับ', value: false, ghost: true }], cardHTML(top, { small: true }));
+        : await humanChoose(t, `Free Sample Day: รับ ${top.name} ไหม?`, [{ label: 'รับ (ทำลายการ์ดบนสุดของเด็คคุณ)', value: true }, { label: 'ไม่รับ', value: false, ghost: true }], cardHTML(top, { small: true }));
       if (!yes) continue;
       const d = drawTop(t);
       if (d) { G.destroyed.push(d); log(`${t.name} ทำลาย ${d.name} จากบนสุดของเด็ค`); }
@@ -1228,7 +1248,7 @@ def('chaosK', { name:'Desperate Diet', type:'chaos', text:'พ่อมดแต
       if (!t.hand.length) continue;
       const m = Math.max(...t.hand.map(c => c.cost || 0)), c = t.hand.find(x => (x.cost || 0) === m);
       const yes = t.isAI ? t.hp <= 12
-        : await humanChoose(`Desperate Diet: ทำลาย ${c.name} (ราคา ${m}) เพื่อฟื้น 13 HP?`, [{ label: 'ทำลายแล้วฟื้น 13 HP', value: true }, { label: 'ไม่ทำ', value: false, ghost: true }], `ตอนนี้คุณมี ${t.hp} HP`);
+        : await humanChoose(t, `Desperate Diet: ทำลาย ${c.name} (ราคา ${m}) เพื่อฟื้น 13 HP?`, [{ label: 'ทำลายแล้วฟื้น 13 HP', value: true }, { label: 'ไม่ทำ', value: false, ghost: true }], `ตอนนี้คุณมี ${t.hp} HP`);
       if (!yes) continue;
       t.hand.splice(t.hand.indexOf(c), 1); G.destroyed.push(c); log(`${t.name} ทำลาย ${c.name}`); AUD.play('destroy');
       heal(t, 13);
@@ -1253,7 +1273,7 @@ def('chaosM', { name:'Recycling Drive', type:'chaos',
       const pool = [...t.hand, ...t.discard];
       if (!pool.length) continue;
       const c = t.isAI ? pool.find(isJunk(t)) || null
-        : await humanChoose('Recycling Drive: ทำลายการ์ด 1 ใบจากมือหรือกองทิ้ง?', [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }],
+        : await humanChoose(t, 'Recycling Drive: ทำลายการ์ด 1 ใบจากมือหรือกองทิ้ง?', [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }],
             'ถ้าใบที่ทำลายมี VP 1 ขึ้นไป ได้การ์ดจากบนสุดของกองหลักเท่ากับ VP นั้น (การ์ด ★? นับเป็น 3)');
       if (!c) continue;
       const arr = t.hand.includes(c) ? t.hand : t.discard;
@@ -1301,7 +1321,7 @@ def('chaosR', { name:'Grave Swap Party', type:'chaos',
     const pool = [];
     for (const t of holders) {
       const k = t.tokens.length === 1 ? t.tokens[0] : t.isAI ? (t.tokens.find(x => badToken(x)) || t.tokens[0])
-        : await humanChoose('Grave Swap Party: เลือก Token ที่จะวางรวมกองกลาง', t.tokens.map(x => ({ label: `☠ ${x.name}: ${x.text}`, value: x })));
+        : await humanChoose(t, 'Grave Swap Party: เลือก Token ที่จะวางรวมกองกลาง', t.tokens.map(x => ({ label: `☠ ${x.name}: ${x.text}`, value: x })));
       t.tokens.splice(t.tokens.indexOf(k), 1); pool.push(k);
     }
     shuffle(pool);
@@ -1349,7 +1369,7 @@ def('chaosW', { name:'Legendary Tantrum', type:'chaos', text:'ตำนานท
     if (!up.length) { log('ตำนานที่หงายอยู่ไม่มี Group Attack'); return; }
     const p = cur();
     const L = up.length === 1 ? up[0] : p.isAI ? up[rnd(up.length)]
-      : await humanChoose('Legendary Tantrum: ตำนานใบไหนใช้ Group Attack?', up.map(x => ({ card: x, value: x })));
+      : await humanChoose(p, 'Legendary Tantrum: ตำนานใบไหนใช้ Group Attack?', up.map(x => ({ card: x, value: x })));
     G.curLabel = L.name + ' (Group Attack)';
     log(`Legendary Tantrum: ${L.name} ใช้ Group Attack: ${L.group}`, 'sys');
     await L.gattack();
@@ -1388,7 +1408,7 @@ def('chaos2B', { name:'Roulette Pruning', type:'chaos',
         const canPay = t.hp >= 2 && left.length > 1;
         let ch;
         if (t.isAI) ch = isJunk(t)(c) ? 'destroy' : (canPay && t.hp > 10 && t.hand.some(x => !seen.includes(x) && isJunk(t)(x)) ? 'pay' : 'stop');
-        else ch = await humanChoose(`Roulette Pruning: เปิดได้ ${c.name}`, [
+        else ch = await humanChoose(t, `Roulette Pruning: เปิดได้ ${c.name}`, [
             { label: 'ทำลายใบนี้', value: 'destroy' },
             ...(canPay ? [{ label: `จ่าย 2 HP สุ่มเปิดใบใหม่ (ตอนนี้ ${t.hp} HP)`, value: 'pay' }] : []),
             { label: 'หยุด ไม่ทำลาย', value: 'stop', ghost: true }], cardHTML(c, { small: true }));
@@ -1411,7 +1431,7 @@ def('chaos2L', { name:'Mill Grinder', type:'chaos', text:'พ่อมดทุ�
       log(`${t.name} ทิ้งเด็ค ${n} ใบลงกองทิ้ง`);
       if (!t.discard.length) continue;
       const c = t.isAI ? t.discard.slice().sort((a, b) => aiVal(a) - aiVal(b))[0]   // mandatory: AI drops its weakest card
-        : await humanChoose('Mill Grinder: ต้องทำลายการ์ด 1 ใบในกองทิ้ง', t.discard.map(x => ({ card: x, value: x })), 'บังคับทำลาย · การ์ดจะออกจากเกมถาวร');
+        : await humanChoose(t, 'Mill Grinder: ต้องทำลายการ์ด 1 ใบในกองทิ้ง', t.discard.map(x => ({ card: x, value: x })), 'บังคับทำลาย · การ์ดจะออกจากเกมถาวร');
       t.discard.splice(t.discard.indexOf(c), 1); G.destroyed.push(c);
       log(`${t.name} ทำลาย ${c.name}`); AUD.play('destroy');
     }
@@ -1423,7 +1443,7 @@ def('chaos2O', { name:'Pick Your Poison', type:'chaos', text:'พ่อมดท
     for (const t of turnOrder()) {
       // AI keeps a strong hand only when it can afford the HP
       const swap = t.isAI ? !(t.hp > 12 && handCost(t) >= 10)
-        : await humanChoose('Pick Your Poison: ต้องเลือก 1 อย่าง', [{ label: `ทิ้งทั้งมือ (${t.hand.length} ใบ) แล้วจั่ว 5`, value: true }, { label: `เสีย 5 HP (ตอนนี้ ${t.hp} HP)`, value: false }],
+        : await humanChoose(t, 'Pick Your Poison: ต้องเลือก 1 อย่าง', [{ label: `ทิ้งทั้งมือ (${t.hand.length} ใบ) แล้วจั่ว 5`, value: true }, { label: `เสีย 5 HP (ตอนนี้ ${t.hp} HP)`, value: false }],
             `มือตอนนี้: ${t.hand.map(c => c.name).join(', ') || '—'}`);
       if (swap) { const m = t.hand.length; t.discard.push(...t.hand); t.hand = []; log(`${t.name} ทิ้งการ์ดในมือ ${m} ใบ แล้วจั่ว 5`); await draw(t, 5); continue; }
       t.hp -= 5; t.hitFlash = true; log(`${t.name} เสีย 5 HP (${Math.max(t.hp, 0)} HP)`, 'dmg'); render();
@@ -1439,7 +1459,7 @@ def('chaos2S', { name:'Double or Nothing Toss', type:'chaos', text:'พ่อม
       t.discard.push(...two);
       log(`${t.name} ทิ้ง ${two.map(c => c.name).join(', ')} จากบนสุดของเด็ค`);
       const kill2 = t.isAI ? two.every(isJunk(t))
-        : await humanChoose('Double or Nothing Toss: ทำลายทั้งสองใบไหม?', [{ label: 'ทำลายทั้งหมด', value: true }, { label: 'ไม่ทำลาย (อยู่ในกองทิ้ง)', value: false, ghost: true }],
+        : await humanChoose(t, 'Double or Nothing Toss: ทำลายทั้งสองใบไหม?', [{ label: 'ทำลายทั้งหมด', value: true }, { label: 'ไม่ทำลาย (อยู่ในกองทิ้ง)', value: false, ghost: true }],
             `<div class="cards">${two.map(c => cardHTML(c, { small: true })).join('')}</div>`);
       if (!kill2) continue;
       for (const c of two) { t.discard.splice(t.discard.indexOf(c), 1); G.destroyed.push(c); }
@@ -1454,7 +1474,7 @@ def('chaos2T', { name:'Wizard Poker Night', type:'chaos',
     const bettors = [];
     for (const t of turnOrder()) {
       const bet = t.isAI ? handCost(t) >= 7 + 2 * bettors.length   // AI gets choosier as more players bet
-        : await humanChoose('Wizard Poker Night: หมอบหรือแทง?', [{ label: 'แทง (bet)', value: true }, { label: 'หมอบ (fold)', value: false, ghost: true }],
+        : await humanChoose(t, 'Wizard Poker Night: หมอบหรือแทง?', [{ label: 'แทง (bet)', value: true }, { label: 'หมอบ (fold)', value: false, ghost: true }],
             `มือคุณรวมราคาได้ ${handCost(t)} · ${bettors.length ? 'แทงไปแล้ว: ' + bettors.map(b => b.name).join(', ') : 'ยังไม่มีใครแทง'}`);
       log(`${t.name} ${bet ? 'แทง' : 'หมอบ'}`);
       if (bet) bettors.push(t);
@@ -1474,7 +1494,7 @@ def('chaosZ', { name:'Eviction Notice', type:'chaos', atk:1, text:'<b>โจม�
     await attack(null, { to:'all', chaos:true, by, dmgText:'ทิ้งการ์ดต่อเนื่อง 1 ใบ', dmg: async t => {
       if (!t.ongoing.length) return 0;
       const c = t.ongoing.length === 1 ? t.ongoing[0] : t.isAI ? t.ongoing.slice().sort((a, b) => a.cost - b.cost)[0]
-        : await humanChoose('Eviction Notice: ทิ้งการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
+        : await humanChoose(t, 'Eviction Notice: ทิ้งการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
       t.ongoing.splice(t.ongoing.indexOf(c), 1); t.discard.push(c); log(`${t.name} ทิ้ง ${c.name} ออกจากสนาม`, 'dmg');
       return 0;
     } });
@@ -1523,7 +1543,7 @@ def('krazztar', { name:'Gore Baron Grimtusk', type:'legend', cost:9, vp:5, draws
     if (!t.hand.length) return 0;
     const L = G.onlyTarget ? t : leftOf(t); // the "Group Attack on yourself" token sends it to yourself
     const c = t.isAI ? t.hand.slice().sort((a, b) => (b.cost || 0) - (a.cost || 0))[0]
-      : await humanChoose(`Krazztar: เลือกการ์ดส่งให้ ${L.name}`, t.hand.map(x => ({ card: x, value: x })), 'เขาได้การ์ดใบนั้น และรับดาเมจ 2 เท่าของราคา');
+      : await humanChoose(t, `Krazztar: เลือกการ์ดส่งให้ ${L.name}`, t.hand.map(x => ({ card: x, value: x })), 'เขาได้การ์ดใบนั้น และรับดาเมจ 2 เท่าของราคา');
     t.hand.splice(t.hand.indexOf(c), 1); L.discard.push(c);
     log(`${t.name} ส่ง ${c.name} ให้ ${L.name}`);
     if (c.cost) await damage(L, 2 * c.cost, null);
@@ -1566,7 +1586,7 @@ def('ciggy', { name:'Smokey the Lingering Doom', type:'legend', cost:10, vp:5, p
       const same = t.hand.filter(c => c.type === type);
       if (same.length < 2) continue;
       const keep = t.isAI ? same.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-        : await humanChoose(`Ciggy: เก็บ${TYPE_TH[type] || type}ไว้ 1 ใบ (ใบอื่นถูกทำลาย)`, same.map(x => ({ card: x, value: x })));
+        : await humanChoose(t, `Ciggy: เก็บ${TYPE_TH[type] || type}ไว้ 1 ใบ (ใบอื่นถูกทำลาย)`, same.map(x => ({ card: x, value: x })));
       for (const c of same) if (c !== keep) { t.hand.splice(t.hand.indexOf(c), 1); G.destroyed.push(c); }
       log(`${t.name} ทำลาย${TYPE_TH[type] || type} ${same.length - 1} ใบ`);
     }
@@ -1588,7 +1608,7 @@ def('cosmicglyph', { name:'The Astral Rune', type:'legend', cost:10, vp:5,
     if (!pool.length) { log('ยังไม่มีการ์ดโกลาหลในกองที่ถูกทำลาย'); return; }
     const c = pool[rnd(pool.length)];
     const out = p.isAI ? c.id !== 'gift'
-      : !(await humanChoose(`The Astral Rune สุ่มได้ ${c.name}`, [{ label: 'เข้าร่วม', value: true }, { label: 'ไม่เข้าร่วม', value: false, ghost: true }], cardHTML(c, { small: true })));
+      : !(await humanChoose(p, `The Astral Rune สุ่มได้ ${c.name}`, [{ label: 'เข้าร่วม', value: true }, { label: 'ไม่เข้าร่วม', value: false, ghost: true }], cardHTML(c, { small: true })));
     G.optOut = out ? p : null;
     if (out) log(`${p.name} ไม่เข้าร่วม ${c.name}`);
     try { G.curLabel = c.name; G.chaosShown = c; render(); AUD.play('chaos'); await FX.chaos(c); await c.chaos(p); }
@@ -1598,7 +1618,7 @@ def('cosmicglyph', { name:'The Astral Rune', type:'legend', cost:10, vp:5,
     await discardFromHand(t, 2);
     if (t.ongoing.length) {
       const c = t.ongoing.length === 1 || t.isAI ? t.ongoing.slice().sort((a, b) => a.cost - b.cost)[0]
-        : await humanChoose('The Astral Rune: ทิ้งการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
+        : await humanChoose(t, 'The Astral Rune: ทิ้งการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
       t.ongoing.splice(t.ongoing.indexOf(c), 1); t.discard.push(c); log(`${t.name} ทิ้ง ${c.name} ออกจากสนาม`);
     }
     return 0;
@@ -1709,7 +1729,7 @@ def('limpwandlegend', { name:'The Floppiest Wand', type:'legend', alsoType:'trea
           ...(G.bent > 0 ? [{ label: `จากกอง Limp Wand (${G.bent})`, value: 'stack' }] : [])];
         if (!opts.length) break;
         const from = p.isAI ? opts[0].value   // AI clears its own junk first
-          : await humanChoose(`The Floppiest Wand: ให้ Limp Wand ${t.name} ใบที่ ${k + 1}/3`, [...opts, { label: 'พอแล้ว', value: null, ghost: true }]);
+          : await humanChoose(p, `The Floppiest Wand: ให้ Limp Wand ${t.name} ใบที่ ${k + 1}/3`, [...opts, { label: 'พอแล้ว', value: null, ghost: true }]);
         if (!from) break;
         if (from === 'stack') { gainBent(t); continue; }
         const pile = from === 'hand' ? p.hand : p.discard, c = from === 'hand' ? inHand : inDiscard;
@@ -1723,7 +1743,7 @@ def('throne', { name:'Seat of Shenanigans', type:'legend', alsoType:'location', 
     const mine = [...p.ongoing, ...(p === cur() ? G.turn.played : [])].filter(c => c !== self && (c.cost || 0) > 0);
     if (!mine.length) { log('ไม่มีการ์ดอื่นที่มีราคาในสนาม · Throne ไม่โจมตี'); return; }
     const c = mine.length === 1 || p.isAI ? mine.slice().sort((a, b) => b.cost - a.cost)[0]
-      : await humanChoose('Seat of Shenanigans: ใช้ราคาของการ์ดใบไหน?', mine.map(x => ({ card: x, value: x })));
+      : await humanChoose(p, 'Seat of Shenanigans: ใช้ราคาของการ์ดใบไหน?', mine.map(x => ({ card: x, value: x })));
     log(`Seat of Shenanigans ใช้ราคาของ ${c.name} (${c.cost})`);
     await attack(p, { to:'choose', dmg: c.cost });
   } });
@@ -1741,7 +1761,7 @@ def('viagrus', { name:'Stiffus the Unbending', type:'legend', alsoType:'wizard',
   text:'<b>ต่อเนื่อง:</b> ต้นเทิร์น เลือกรับ Limp Wand 1 ใบเข้ามือได้ · เมื่อคุณเล่น Limp Wand +3 พลัง<br><b>จบเกม:</b> Limp Wand ของคุณมีค่า +1 VP แทน -1', group:'—',
   onStart: async p => {
     if (G.bent <= 0) return;
-    const yes = p.isAI || await humanChoose('Viagrus: รับ Limp Wand เข้ามือไหม?', [{ label: 'รับ (+3 พลังเมื่อเล่น)', value: true }, { label: 'ไม่รับ', value: false, ghost: true }]);
+    const yes = p.isAI || await humanChoose(p, 'Viagrus: รับ Limp Wand เข้ามือไหม?', [{ label: 'รับ (+3 พลังเมื่อเล่น)', value: true }, { label: 'ไม่รับ', value: false, ghost: true }]);
     if (yes) { G.bent--; p.hand.push(make('bent')); log(`${p.name} รับ Limp Wand เข้ามือ (Viagrus)`); }
   },
   onCardPlayed: async (p, card) => { if (card.id === 'bent') { P(p, 3); log('Viagrus: +3 พลัง'); } } });
@@ -1751,7 +1771,7 @@ def('deathlunch', { name:'Doom Buffet!', type:'legend', alsoType:'spell', cost:1
     if (!tokenCount(p)) { P(p, 7); return; }
     if (!p.tokens.length) return; // only Bone of Contention's pretend token: nothing to destroy
     const k = p.isAI ? (p.tokens.find(x => badToken(x)) || p.tokens[0])
-      : await humanChoose('Doom Buffet!: ทำลาย Dead Wizard Token 1 อัน?', [...p.tokens.map(x => ({ label: `☠ ${x.name}: ${x.text}`, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }]);
+      : await humanChoose(p, 'Doom Buffet!: ทำลาย Dead Wizard Token 1 อัน?', [...p.tokens.map(x => ({ label: `☠ ${x.name}: ${x.text}`, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }]);
     if (!k) return;
     p.tokens.splice(p.tokens.indexOf(k), 1);
     log(`${p.name} ทำลาย Token “${k.name}” ออกจากเกม (+${-tokenVP(k)} VP)`, 'good'); render();
@@ -1777,7 +1797,7 @@ def('heist', { name:'Grand Larceny', type:'legend', alsoType:'spell', cost:16, v
     const five = G.legends.slice(0, 5); // the face-down stack (the 3 face-up Legends are not part of it)
     if (!five.length) { log('ไม่มีตำนานที่คว่ำอยู่'); return; }
     const c = p.isAI ? five.slice().sort((a, b) => b.vp - a.vp)[0]
-      : await humanChoose('Grand Larceny: เลือกตำนาน 1 ใบวางบนสุดของเด็คคุณ', five.map(x => ({ card: x, value: x })), 'ที่เหลือคืนกองตามลำดับเดิม');
+      : await humanChoose(p, 'Grand Larceny: เลือกตำนาน 1 ใบวางบนสุดของเด็คคุณ', five.map(x => ({ card: x, value: x })), 'ที่เหลือคืนกองตามลำดับเดิม');
     G.legends.splice(G.legends.indexOf(c), 1); p.deck.push(c); gainedCard(p, c);
     log(`${p.name} ขโมยตำนาน ${c.name} ไว้บนสุดของเด็ค!`, 'sys'); render();
   } });
@@ -1788,7 +1808,7 @@ def('reaper', { name:'The Jolly Grim Reaper', type:'legend', alsoType:'creature'
     await attack(p, { to:'choose', dmgText:'รับ Dead Wizard Token จากผู้โจมตี', dmg: async t => {
       if (t === p || !p.tokens.length) return 0;
       const k = p.isAI ? (p.tokens.find(x => badToken(x)) || p.tokens[0])
-        : await humanChoose(`The Jolly Grim Reaper: ส่ง Token อันไหนให้ ${t.name}?`, p.tokens.map(x => ({ label: `☠ ${x.name}: ${x.text}`, value: x })));
+        : await humanChoose(p, `The Jolly Grim Reaper: ส่ง Token อันไหนให้ ${t.name}?`, p.tokens.map(x => ({ label: `☠ ${x.name}: ${x.text}`, value: x })));
       p.tokens.splice(p.tokens.indexOf(k), 1); t.tokens.push(k); announceToken(t, k, `ได้ Token จาก ${p.name}`);
       log(`${p.name} ส่ง Token “${k.name}” ให้ ${t.name}`, 'dmg');
       if (k.now) await k.now(t, p);
@@ -1831,7 +1851,7 @@ def('blackbart', { name:'Captain Plunderbeard', type:'legend', alsoType:'wizard'
       if (!four.length) return 0;
       log(`${p.name} เปิด 4 ใบบนสุดของ ${t.name}: ${four.map(c => c.name).join(', ')}`);
       const c = p.isAI ? four.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-        : await humanChoose(`Blackbart: เลือกการ์ดของ ${t.name} มาเล่น 1 ใบ`, four.map(x => ({ card: x, value: x })), 'อีก 3 ใบลงกองทิ้งของเจ้าของ');
+        : await humanChoose(p, `Blackbart: เลือกการ์ดของ ${t.name} มาเล่น 1 ใบ`, four.map(x => ({ card: x, value: x })), 'อีก 3 ใบลงกองทิ้งของเจ้าของ');
       t.discard.push(...four.filter(x => x !== c));
       await playCard(p, c, { fromOther: t }); // goes back to its owner's discard pile afterwards
       return 0;
@@ -1886,7 +1906,7 @@ fam('stinkus', { name:'Saint Pongo', power:3, ...REFLECT,
   play: async p => {
     const opts = G.lineup.map((c, i) => ({ c, i })).filter(o => o.c);
     if (!opts.length || p.isAI) return; // the AI leaves the Line-Up alone
-    const pick = await humanChoose('Saint Pongo: ทำลายการ์ดใน Line-Up?', [...opts.map(o => ({ card: o.c, value: o })), { label: 'ไม่ทำลาย', value: null, ghost: true }]);
+    const pick = await humanChoose(p, 'Saint Pongo: ทำลายการ์ดใน Line-Up?', [...opts.map(o => ({ card: o.c, value: o })), { label: 'ไม่ทำลาย', value: null, ghost: true }]);
     if (!pick) return;
     G.lineup[pick.i] = null; G.destroyed.push(pick.c); log(`${p.name} ทำลาย ${pick.c.name} จาก Line-Up`); AUD.play('destroy');
     await refillLineup();
@@ -1901,7 +1921,7 @@ fam('sparky', { name:'Kindle, Page of Flames', power:2, ...REFLECT,
     const two = [drawTop(p), drawTop(p)].filter(Boolean);
     if (!two.length) return;
     const c = p.isAI ? two.find(isJunk(p)) || null
-      : await humanChoose('Sparky: ทำลาย 1 ใบ?', [...two.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }], 'ใบที่ไม่ทำลายกลับไปบนเด็คตามเดิม');
+      : await humanChoose(p, 'Sparky: ทำลาย 1 ใบ?', [...two.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }], 'ใบที่ไม่ทำลายกลับไปบนเด็คตามเดิม');
     if (c) { G.destroyed.push(c); log(`${p.name} ทำลาย ${c.name}`); AUD.play('destroy'); }
     p.deck.push(...two.filter(x => x !== c).reverse());
   } });
@@ -1913,8 +1933,8 @@ fam('dungeonmaster', { name:'The Game Master', power:2, ...REFLECT,
   play: async p => {
     const two = shuffle(G.destroyed.filter(c => c.type === 'chaos').slice()).slice(0, 2);
     if (!two.length) { log('ยังไม่มีการ์ดโกลาหลในกองที่ถูกทำลาย'); return; }
-    const c = two.length === 1 || p.isAI ? two[0] : await humanChoose('The Game Master: เล่นโกลาหลใบไหน?', two.map(x => ({ card: x, value: x })));
-    const out = p.isAI ? c.id !== 'gift' : !(await humanChoose(`เข้าร่วม ${c.name} ไหม?`, [{ label: 'เข้าร่วม', value: true }, { label: 'ไม่เข้าร่วม', value: false, ghost: true }]));
+    const c = two.length === 1 || p.isAI ? two[0] : await humanChoose(p, 'The Game Master: เล่นโกลาหลใบไหน?', two.map(x => ({ card: x, value: x })));
+    const out = p.isAI ? c.id !== 'gift' : !(await humanChoose(p, `เข้าร่วม ${c.name} ไหม?`, [{ label: 'เข้าร่วม', value: true }, { label: 'ไม่เข้าร่วม', value: false, ghost: true }]));
     G.optOut = out ? p : null;
     try { G.curLabel = c.name; G.chaosShown = c; render(); AUD.play('chaos'); await FX.chaos(c); await c.chaos(p); }
     finally { G.optOut = null; G.chaosShown = null; render(); }
@@ -1927,7 +1947,7 @@ fam('lastlaugh', { name:'The Final Chuckle', power:2, def:1, defDiscard:1,
   play: async p => {
     for (let k = 0; k < 2 && p.discard.length; k++) {
       const c = p.isAI ? p.discard.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-        : await humanChoose(`The Final Chuckle: วางการ์ดใต้เด็ค (${k + 1}/2)`, [...p.discard.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }]);
+        : await humanChoose(p, `The Final Chuckle: วางการ์ดใต้เด็ค (${k + 1}/2)`, [...p.discard.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }]);
       if (!c || (p.isAI && aiVal(c) <= 0)) break;
       p.discard.splice(p.discard.indexOf(c), 1); p.deck.unshift(c); log(`${p.name} วาง ${c.name} ใต้เด็ค`);
     }
@@ -1935,7 +1955,7 @@ fam('lastlaugh', { name:'The Final Chuckle', power:2, def:1, defDiscard:1,
   onDefend: async (t, src) => {
     await draw(t, 1);
     if (!src || t.hp > 5 || src.hp <= t.hp) return;
-    const yes = t.isAI || await humanChoose(`The Final Chuckle: สลับ HP กับ ${src.name}? (${t.hp} ↔ ${src.hp})`, [{ label: 'สลับ', value: true }, { label: 'ไม่สลับ', value: false, ghost: true }]);
+    const yes = t.isAI || await humanChoose(t, `The Final Chuckle: สลับ HP กับ ${src.name}? (${t.hp} ↔ ${src.hp})`, [{ label: 'สลับ', value: true }, { label: 'ไม่สลับ', value: false, ghost: true }]);
     if (yes) { [t.hp, src.hp] = [src.hp, t.hp]; log(`${t.name} สลับ HP กับ ${src.name}!`, 'sys'); render(); }
   } });
 
@@ -1951,7 +1971,7 @@ fam('candy', { name:'Sugar Rush Soldiers', power:3, atk:1, def:1, defDiscard:1,
   onDefend: async t => {
     await draw(t, 1);
     if (t.hp > 10) return;
-    const yes = t.isAI || await humanChoose('Sugar Rush Soldiers: ตั้ง HP เป็น 20?', [{ label: 'ตั้งเป็น 20', value: true }, { label: 'ไม่', value: false, ghost: true }]);
+    const yes = t.isAI || await humanChoose(t, 'Sugar Rush Soldiers: ตั้ง HP เป็น 20?', [{ label: 'ตั้งเป็น 20', value: true }, { label: 'ไม่', value: false, ghost: true }]);
     if (yes) { t.hp = 20; log(`${t.name} HP เป็น 20`, 'good'); render(); }
   } });
 fam('cosmo', { name:'Ticketmaster Comet', allTypes:1, draws:1, ...REFLECT,
@@ -1970,7 +1990,7 @@ fam('dukefreak', { name:'Baron Freakshow, Esquire', power:3, def:1, defDiscard:1
   onDefend: async t => {
     const c = G.main[G.main.length - 1];
     if (!c || c.type === 'chaos') { if (c) log(`${t.name} เห็น ${c.name} บนกองหลัก · เป็นโกลาหล`); return; }
-    const yes = t.isAI ? (c.cost || 0) >= 3 : await humanChoose(`Duke Freakout: นำ ${c.name} ขึ้นมือ?`, [{ label: 'นำขึ้นมือ', value: true }, { label: 'ไม่', value: false, ghost: true }], cardHTML(c, { small: true }));
+    const yes = t.isAI ? (c.cost || 0) >= 3 : await humanChoose(t, `Duke Freakout: นำ ${c.name} ขึ้นมือ?`, [{ label: 'นำขึ้นมือ', value: true }, { label: 'ไม่', value: false, ghost: true }], cardHTML(c, { small: true }));
     if (!yes) return;
     G.main.pop(); await toHand(t, c); gainedCard(t, c); log(`${t.name} ได้ ${c.name} จากกองหลัก`, 'good');
   } });
@@ -1989,7 +2009,7 @@ fam('hando', { name:'Gimme the Living Glove', power:3, atk:1, def:1, defDiscard:
       log(`${t.name} ทิ้ง ${w.map(c => c.name).join(', ')}`); return 0;
     } });
     for (const { c, owner } of got) {
-      const yes = p.isAI ? c.id !== 'bent' : await humanChoose(`Hando: เล่น ${c.name} ของ ${owner.name}?`, [{ label: 'เล่น', value: true }, { label: 'ไม่', value: false, ghost: true }], cardHTML(c, { small: true }));
+      const yes = p.isAI ? c.id !== 'bent' : await humanChoose(p, `Hando: เล่น ${c.name} ของ ${owner.name}?`, [{ label: 'เล่น', value: true }, { label: 'ไม่', value: false, ghost: true }], cardHTML(c, { small: true }));
       if (yes) { owner.discard.splice(owner.discard.indexOf(c), 1); await playCard(p, c, { fromOther: owner }); }
     }
   },
@@ -2004,7 +2024,7 @@ fam('yore', { name:'Tales of Olden Days', draws:1, ...DODGE_DRAW(2),
 fam('leviathan', { name:'Kraken Egg', power:3, def:1, defDiscard:1,
   text:'ถ้าใบนี้เข้ามือคนที่ไม่ใช่เจ้าของ คนนั้นเสีย 20 HP ทันที แล้วใบนี้สับกลับเข้าเด็คของเจ้าของ<br>+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนการโจมตี วางใบนี้ในกองทิ้งของผู้โจมตีได้ แล้วจั่ว 3 ใบ',
   onDefend: async (t, src, self) => {
-    if (src && (t.isAI || await humanChoose(`Kraken Egg: วางใบนี้ในกองทิ้งของ ${src.name}?`, [{ label: 'วาง', value: true }, { label: 'ไม่', value: false, ghost: true }]))) {
+    if (src && (t.isAI || await humanChoose(t, `Kraken Egg: วางใบนี้ในกองทิ้งของ ${src.name}?`, [{ label: 'วาง', value: true }, { label: 'ไม่', value: false, ghost: true }]))) {
       t.discard.splice(t.discard.indexOf(self), 1); src.discard.push(self); log(`${t.name} ฝาก Kraken Egg ไว้ในกองทิ้งของ ${src.name}...`, 'sys');
     }
     await draw(t, 3);
@@ -2018,7 +2038,7 @@ fam('palcenta', { name:'Snack-Sack! Your Lunch Buddy', def:1, defDiscard:1,
     if (!p.discard.length) { P(p, 3); return; }
     const c = p.discard[rnd(p.discard.length)], gain = 2 * (c.cost || 0);
     const yes = p.isAI ? gain > 3 && (vpOf(c, p) <= 1 || gain >= 10)
-      : await humanChoose(`Pal-Centa: สุ่มได้ ${c.name}`, [{ label: `ทำลาย รับ +${gain} พลัง`, value: true }, { label: 'ไม่ทำลาย รับ +3 พลัง', value: false, ghost: true }], cardHTML(c, { small: true }));
+      : await humanChoose(p, `Pal-Centa: สุ่มได้ ${c.name}`, [{ label: `ทำลาย รับ +${gain} พลัง`, value: true }, { label: 'ไม่ทำลาย รับ +3 พลัง', value: false, ghost: true }], cardHTML(c, { small: true }));
     if (yes) { p.discard.splice(p.discard.indexOf(c), 1); G.destroyed.push(c); P(p, gain); log(`${p.name} ทำลาย ${c.name} ได้ +${gain} พลัง`); }
     else P(p, 3);
   },
@@ -2030,7 +2050,7 @@ fam('pussy', { name:'Kitty the Henpecked', def:1, defDiscard:1,
     for (const t of turnOrder().filter(x => x !== p)) {
       if (!t.hand.length) continue;
       const c = t.isAI ? (t.hand.find(x => x.id === 'bent') || t.hand.find(x => x.id === 'fizzle') || null)
-        : await humanChoose(`Kitty the Henpecked: ส่งการ์ดให้ ${p.name}? (เขาได้ +3 พลัง)`, [...t.hand.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }]);
+        : await humanChoose(t, `Kitty the Henpecked: ส่งการ์ดให้ ${p.name}? (เขาได้ +3 พลัง)`, [...t.hand.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }]);
       if (!c) continue;
       t.hand.splice(t.hand.indexOf(c), 1); await toHand(p, c); n++; log(`${t.name} ส่ง ${c.name} ให้ ${p.name}`);
     }
@@ -2040,7 +2060,7 @@ fam('pussy', { name:'Kitty the Henpecked', def:1, defDiscard:1,
     for (let k = 0; k < 2; k++) {
       const pool = [...t.hand, ...t.discard]; if (!pool.length) break;
       const c = t.isAI ? pool.slice().sort((a, b) => aiVal(a) - aiVal(b))[0]
-        : await humanChoose(`Kitty the Henpecked: ทำลายการ์ด (${k + 1}/2)`, pool.map(x => ({ card: x, value: x })), 'ต้องทำลาย 2 ใบพอดี');
+        : await humanChoose(t, `Kitty the Henpecked: ทำลายการ์ด (${k + 1}/2)`, pool.map(x => ({ card: x, value: x })), 'ต้องทำลาย 2 ใบพอดี');
       const pile = t.hand.includes(c) ? t.hand : t.discard; pile.splice(pile.indexOf(c), 1); G.destroyed.push(c); log(`${t.name} ทำลาย ${c.name}`);
     }
   } });
@@ -2050,7 +2070,7 @@ fam('ramon', { name:'Mortimer Mold, the Bookmite', draws:1, def:1, defDiscard:1,
   onDefend: async (t, src) => {
     await draw(t, 1);
     if (!src || !t.tokens.length || !src.tokens.length) return;
-    const mine = t.isAI ? t.tokens.find(x => badToken(x)) : await humanChoose('Ramon Rot: แลก Token อันไหน?', [...t.tokens.map(x => ({ label: `☠ ${x.name}`, value: x })), { label: 'ไม่แลก', value: null, ghost: true }]);
+    const mine = t.isAI ? t.tokens.find(x => badToken(x)) : await humanChoose(t, 'Ramon Rot: แลก Token อันไหน?', [...t.tokens.map(x => ({ label: `☠ ${x.name}`, value: x })), { label: 'ไม่แลก', value: null, ghost: true }]);
     if (!mine) return;
     const theirs = src.tokens[rnd(src.tokens.length)];
     t.tokens.splice(t.tokens.indexOf(mine), 1, theirs); src.tokens.splice(src.tokens.indexOf(theirs), 1, mine);
@@ -2062,7 +2082,7 @@ fam('spellboy', { name:'Spellkid', power:3, def:1, defDiscard:1,
   onDefend: async t => {
     const w = t.discard.filter(isWand); if (!w.length) return;
     const yes = t.isAI ? w.filter(c => c.id !== 'bent').length > w.filter(c => c.id === 'bent').length
-      : await humanChoose(`Spellkid: นำ Wand ${w.length} ใบขึ้นมือ?`, [{ label: 'นำขึ้นมือ', value: true }, { label: 'ไม่', value: false, ghost: true }], w.map(c => c.name).join(', '));
+      : await humanChoose(t, `Spellkid: นำ Wand ${w.length} ใบขึ้นมือ?`, [{ label: 'นำขึ้นมือ', value: true }, { label: 'ไม่', value: false, ghost: true }], w.map(c => c.name).join(', '));
     if (yes) { t.discard = t.discard.filter(c => !w.includes(c)); for (const c of w) await toHand(t, c); log(`${t.name} นำ Wand ${w.length} ใบขึ้นมือ`); }
   } });
 fam('spoiledmilk', { name:'Sour Milk and the Brat Pack', power:3, atk:1, ...REFLECT,
@@ -2082,7 +2102,7 @@ fam('scaredstiff', { name:'The Petrified Social Club', alsoType:'location', ongo
     log(`${t.name} เปิด Token “${k.name}”: ${k.text}`);
     if (!k.now) return;
     // the attacker takes the token's effect as if it were theirs, with no killer (so "the killer takes…" effects don't bounce onto you)
-    const yes = t.isAI ? ['limp1', 'limp2', 'destroyRandHand', 'discardRand2', 'destroyRandDiscard', 'discard3'].includes(k.id) : await humanChoose(`ใช้ผล “${k.name}” กับ ${src.name}?`, [{ label: 'ใช้', value: true }, { label: 'ไม่', value: false, ghost: true }], k.text);
+    const yes = t.isAI ? ['limp1', 'limp2', 'destroyRandHand', 'discardRand2', 'destroyRandDiscard', 'discard3'].includes(k.id) : await humanChoose(t, `ใช้ผล “${k.name}” กับ ${src.name}?`, [{ label: 'ใช้', value: true }, { label: 'ไม่', value: false, ghost: true }], k.text);
     if (yes) { log(`${t.name} ใช้ผล “${k.name}” กับ ${src.name}`, 'sys'); await k.now(src, null); }
   } });
 fam('skeeve', { name:'The Sleazy Jester', power:3, atk:1, ...REFLECT,
@@ -2095,17 +2115,17 @@ fam('turdlings', { name:'The Stinklings', power:1, def:1, defDiscard:1,
     if (!pool.length || !line.length) return;
     const best = line.slice().sort((a, b) => b.c.cost - a.c.cost)[0];
     const c = p.isAI ? (() => { const x = pool.slice().sort((a, b) => a.cost - b.cost)[0]; return best.c.cost >= x.cost + 3 ? x : null; })()
-      : await humanChoose('The Stinklings: ทำลายการ์ดในมือ (ราคา 1+)?', [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }]);
+      : await humanChoose(p, 'The Stinklings: ทำลายการ์ดในมือ (ราคา 1+)?', [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }]);
     if (!c) return;
     p.hand.splice(p.hand.indexOf(c), 1); G.destroyed.push(c); log(`${p.name} ทำลาย ${c.name}`);
-    const pick = p.isAI ? best : await humanChoose('The Stinklings: เลือกการ์ดจาก Line-Up', line.map(o => ({ card: o.c, value: o })));
+    const pick = p.isAI ? best : await humanChoose(p, 'The Stinklings: เลือกการ์ดจาก Line-Up', line.map(o => ({ card: o.c, value: o })));
     G.lineup[pick.i] = null; p.deck.push(pick.c); gainedCard(p, pick.c); log(`${p.name} ได้ ${pick.c.name} วางบนสุดของเด็ค`, 'good');
   },
   onDefend: async (t, src) => {
     if (!src) return;
     const pool = [...t.hand, ...t.discard]; if (!pool.length) return;
     const c = t.isAI ? (pool.find(x => x.id === 'bent') || pool.find(x => x.id === 'fizzle') || null)
-      : await humanChoose(`The Stinklings: ส่งการ์ดให้ ${src.name}?`, [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }]);
+      : await humanChoose(t, `The Stinklings: ส่งการ์ดให้ ${src.name}?`, [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }]);
     if (!c) return;
     const pile = t.hand.includes(c) ? t.hand : t.discard; pile.splice(pile.indexOf(c), 1); await toHand(src, c); log(`${t.name} ยัด ${c.name} ใส่มือ ${src.name}`);
   } });
@@ -2114,7 +2134,7 @@ fam('tiny', { name:'Teeny, the Pocket Wizard', power:2, def:1, defDiscard:1,
   play: async p => {
     const sp = p.discard.filter(c => isType(c, 'spell')); if (!sp.length) return;
     const c = p.isAI ? sp.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-      : await humanChoose('Tiny: วางคาถาบนสุดของเด็ค?', [...sp.map(x => ({ card: x, value: x })), { label: 'ไม่', value: null, ghost: true }]);
+      : await humanChoose(p, 'Tiny: วางคาถาบนสุดของเด็ค?', [...sp.map(x => ({ card: x, value: x })), { label: 'ไม่', value: null, ghost: true }]);
     if (c) { p.discard.splice(p.discard.indexOf(c), 1); p.deck.push(c); log(`${p.name} วาง ${c.name} บนสุดของเด็ค`); }
   },
   onDefend: async (t, src) => { if (src && src.hp > t.hp) { log(`${src.name} HP ลดเหลือ ${t.hp} (Tiny)`, 'dmg'); src.hp = t.hp; src.hitFlash = true; render(); } } });
@@ -2136,7 +2156,7 @@ fam('wolfeye', { name:'Eye of the Moonwolf', power:3, def:1, defDiscard:1,
   play: async p => { if (G.turn.shown.length !== 1) return; const n = p.hand.length; p.discard.push(...p.hand); p.hand = []; P(p, 4); log(`${p.name} ทิ้งการ์ดในมือ ${n} ใบ · +4 พลัง`); },
   onDefend: async t => {
     const weak = t.hand.filter(c => aiVal(c) <= 0).length;
-    const yes = t.isAI ? weak * 2 >= t.hand.length : await humanChoose('Wolf Eye: ทิ้งทั้งมือแล้วจั่ว 5?', [{ label: 'ทิ้งแล้วจั่ว 5', value: true }, { label: 'ไม่', value: false, ghost: true }]);
+    const yes = t.isAI ? weak * 2 >= t.hand.length : await humanChoose(t, 'Wolf Eye: ทิ้งทั้งมือแล้วจั่ว 5?', [{ label: 'ทิ้งแล้วจั่ว 5', value: true }, { label: 'ไม่', value: false, ghost: true }]);
     if (yes) { t.discard.push(...t.hand); t.hand = []; await draw(t, 5); log(`${t.name} เปลี่ยนมือใหม่ 5 ใบ`); }
   } });
 fam('orangypsy', { name:'Tangerine Fortune Teller', atk:1, draws:1, def:1, defDiscard:1,
@@ -2147,7 +2167,7 @@ fam('orangypsy', { name:'Tangerine Fortune Teller', atk:1, draws:1, def:1, defDi
     await attack(p, { to:'each', dmgText:'เปิดมือ · ผู้โจมตีเลือกเล่นคาถา 1 ใบของคุณ', dmg: async t => {
       const sp = t.hand.filter(c => isType(c, 'spell')); if (!sp.length) return 0;
       log(`${t.name} เปิดมือ: ${t.hand.map(c => c.name).join(', ')}`);
-      const c = p.isAI ? sp.slice().sort((a, b) => aiVal(b) - aiVal(a))[0] : await humanChoose(`Tangerine Fortune Teller: เล่นคาถาของ ${t.name} ใบไหน?`, sp.map(x => ({ card: x, value: x })));
+      const c = p.isAI ? sp.slice().sort((a, b) => aiVal(b) - aiVal(a))[0] : await humanChoose(p, `Tangerine Fortune Teller: เล่นคาถาของ ${t.name} ใบไหน?`, sp.map(x => ({ card: x, value: x })));
       t.hand.splice(t.hand.indexOf(c), 1); picks.push({ c, t }); return 0;
     } });
     for (const { c, t } of picks) await playCard(p, c, { fromOther: t });
@@ -2161,11 +2181,11 @@ fam('treats', { name:'Trick-or-Treat Terror', atk:1, ...REFLECT,
     if (line.length) { const o = line[0]; G.lineup[o.i] = null; p.deck.push(o.c); gainedCard(p, o.c); log(`${p.name} ได้ ${o.c.name} วางบนสุดของเด็ค`); }
     await attack(p, { to:'choose', dmgText:'เลือก trick หรือ treat', dmg: async t => {
       if (t === p) return 0;
-      const trick = t.isAI ? true : await humanChoose('Trick or treat?', [{ label: 'Trick (เขาใส่การ์ดลงกองทิ้งคุณ)', value: true }, { label: 'Treat (เขาเอาการ์ดบนสุดของเด็คคุณไป)', value: false }]);
+      const trick = t.isAI ? true : await humanChoose(t, 'Trick or treat?', [{ label: 'Trick (เขาใส่การ์ดลงกองทิ้งคุณ)', value: true }, { label: 'Treat (เขาเอาการ์ดบนสุดของเด็คคุณไป)', value: false }]);
       if (trick) {
         if (!p.hand.length) return 0;
         const c = p.isAI ? (p.hand.find(x => x.id === 'bent') || p.hand.find(x => x.id === 'fizzle') || null)
-          : await humanChoose(`Trick! ใส่การ์ดลงกองทิ้งของ ${t.name}?`, [...p.hand.map(x => ({ card: x, value: x })), { label: 'ไม่ใส่', value: null, ghost: true }]);
+          : await humanChoose(p, `Trick! ใส่การ์ดลงกองทิ้งของ ${t.name}?`, [...p.hand.map(x => ({ card: x, value: x })), { label: 'ไม่ใส่', value: null, ghost: true }]);
         if (c) { p.hand.splice(p.hand.indexOf(c), 1); t.discard.push(c); log(`${p.name} ใส่ ${c.name} ลงกองทิ้งของ ${t.name}`); }
       } else { const c = drawTop(t); if (c) { p.discard.push(c); log(`${p.name} เอา ${c.name} จากเด็คของ ${t.name}`); } }
       return 0;
@@ -2207,7 +2227,7 @@ const TRAITS = [
     onCardPlayed: async (p, c) => {
       if (!isType(c, 'spell')) return;
       const top = drawTop(p); if (!top) return;
-      const yes = p.isAI ? isJunk(p)(top) : await humanChoose(`ตาทิพย์: ทิ้ง ${top.name}?`, [{ label: 'ทิ้ง', value: true }, { label: 'เก็บไว้บนเด็ค', value: false, ghost: true }], cardHTML(top, { small: true }));
+      const yes = p.isAI ? isJunk(p)(top) : await humanChoose(p, `ตาทิพย์: ทิ้ง ${top.name}?`, [{ label: 'ทิ้ง', value: true }, { label: 'เก็บไว้บนเด็ค', value: false, ghost: true }], cardHTML(top, { small: true }));
       if (yes) { p.discard.push(top); log(`${p.name} ทิ้ง ${top.name} จากบนเด็ค`); } else p.deck.push(top);
     } },
   { id:'pairs', name:'คู่หู', text:'ถ้าเทิร์นนี้ลงพ่อมดต่างชื่อกัน 2 ใบขึ้นไป +2 พลัง · ถ้าลงสัตว์อสูรต่างชื่อกัน 2 ใบขึ้นไป +2 พลัง (ได้ทั้งสองอย่าง)',
@@ -2223,7 +2243,7 @@ const TRAITS = [
       if (!isType(c, 'treasure') || G.turn.types.treasure !== 2 || !p.discard.length) return;
       const best = p.discard.slice().sort((a, b) => aiVal(b) - aiVal(a))[0];
       const pick = p.isAI ? (aiVal(best) > 0 ? best : null)
-        : await humanChoose('สมบัติชิ้นที่สอง: วางการ์ดจากกองทิ้งบนเด็ค?', [...p.discard.map(x => ({ card: x, value: x })), { label: 'ไม่', value: null, ghost: true }]);
+        : await humanChoose(p, 'สมบัติชิ้นที่สอง: วางการ์ดจากกองทิ้งบนเด็ค?', [...p.discard.map(x => ({ card: x, value: x })), { label: 'ไม่', value: null, ghost: true }]);
       if (pick) { p.discard.splice(p.discard.indexOf(pick), 1); p.deck.push(pick); log(`${p.name} วาง ${pick.name} บนสุดของเด็ค`); }
     } },
   { id:'thief', name:'นักล้วงเด็ค', text:'✲ เปิดใช้ (เทิร์นละครั้ง): ถ้าคุณควบคุมพ่อมดและ/หรือคาถารวม 2 ใบขึ้นไป เล่นการ์ดใบบนสุดของเด็คศัตรูที่เลือก แล้วใบนั้นลงกองทิ้งของเขา',
@@ -2250,7 +2270,7 @@ const TOKENS = [
     now: async t => {
       const up = (G.legendRow || []).filter(L => L && L.gattack);
       if (!up.length) { log('ไม่มีตำนานหงายที่มี Group Attack'); return; }
-      const L = up.length === 1 || t.isAI ? up[rnd(up.length)] : await humanChoose('ตำนานใบไหนใช้ Group Attack ใส่คุณ?', up.map(x => ({ card: x, value: x })));
+      const L = up.length === 1 || t.isAI ? up[rnd(up.length)] : await humanChoose(t, 'ตำนานใบไหนใช้ Group Attack ใส่คุณ?', up.map(x => ({ card: x, value: x })));
       log(`${L.name} ใช้ Group Attack ใส่ ${t.name}!`, 'sys');
       G.onlyTarget = t;
       try { G.curLabel = L.name + ' (Group Attack)'; await L.gattack(); } finally { G.onlyTarget = null; }
@@ -2265,7 +2285,7 @@ const TOKENS = [
     now: async t => {
       if (!t.discard.length) return;
       const c = t.isAI ? t.discard.slice().sort((a, b) => aiVal(a) - aiVal(b))[0]
-        : await humanChoose('Dead Wizard Token: ทำลายการ์ด 1 ใบในกองทิ้ง', t.discard.map(x => ({ card: x, value: x })), 'บังคับ · เลือก Fizzle หรือ Limp Wand ได้');
+        : await humanChoose(t, 'Dead Wizard Token: ทำลายการ์ด 1 ใบในกองทิ้ง', t.discard.map(x => ({ card: x, value: x })), 'บังคับ · เลือก Fizzle หรือ Limp Wand ได้');
       t.discard.splice(t.discard.indexOf(c), 1); G.destroyed.push(c); log(`${t.name} ทำลาย ${c.name}`);
     } },
   { id:'destroyRandDiscard', name:'ทำลายสุ่มในกองทิ้ง', text:'ทำลายการ์ด 1 ใบในกองทิ้งแบบสุ่ม',
@@ -2283,7 +2303,7 @@ const TOKENS = [
       for (const e of turnOrder().filter(x => x !== t)) {
         if (!e.discard.length) continue;
         const c = e.isAI ? (e.discard.find(x => x.id === 'bent') || e.discard.find(x => x.id === 'fizzle') || null)
-          : await humanChoose(`ส่งการ์ดจากกองทิ้งของคุณให้ ${t.name}?`, [...e.discard.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }]);
+          : await humanChoose(e, `ส่งการ์ดจากกองทิ้งของคุณให้ ${t.name}?`, [...e.discard.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }]);
         if (c) { e.discard.splice(e.discard.indexOf(c), 1); t.discard.push(c); log(`${e.name} ส่ง ${c.name} ให้ ${t.name}`); }
       }
     } },
@@ -2294,7 +2314,7 @@ const TOKENS = [
       log(`${t.name} เปิด ${c.name}`);
       // AI: junk goes to the strongest rival, a good card to the weakest
       const e = t.isAI ? foes.slice().sort((a, b) => aiVal(c) <= 0 ? b.hp - a.hp : a.hp - b.hp)[0]
-        : await humanChoose(`ส่ง ${c.name} เข้ามือใคร?`, foes.map(x => ({ label: `${x.name} · ${x.hp} HP`, value: x })), cardHTML(c, { small: true }));
+        : await humanChoose(t, `ส่ง ${c.name} เข้ามือใคร?`, foes.map(x => ({ label: `${x.name} · ${x.hp} HP`, value: x })), cardHTML(c, { small: true }));
       await toHand(e, c); log(`${t.name} ส่ง ${c.name} เข้ามือ ${e.name}`);
     } },
   { id:'nododge', name:'หลบโกลาหลไม่ได้', ongoing:1, text:'ต่อเนื่อง: คุณป้องกันการโจมตีจากการ์ดโกลาหลไม่ได้ (ยังเลือกไม่เข้าร่วมโกลาหลที่ไม่ใช่การโจมตีได้)' },
@@ -2315,14 +2335,14 @@ const TOKENS = [
       const c = t.discard[rnd(t.discard.length)], foes = opps(t);
       // AI: junk to the strongest rival, a good card to the weakest
       const e = t.isAI ? foes.slice().sort((a, b) => aiVal(c) <= 0 ? b.hp - a.hp : a.hp - b.hp)[0]
-        : await humanChoose(`ให้ ${c.name} กับใคร?`, foes.map(x => ({ label: `${x.name} · ${x.hp} HP`, value: x })), cardHTML(c, { small: true }));
+        : await humanChoose(t, `ให้ ${c.name} กับใคร?`, foes.map(x => ({ label: `${x.name} · ${x.hp} HP`, value: x })), cardHTML(c, { small: true }));
       t.discard.splice(t.discard.indexOf(c), 1); e.discard.push(c); log(`${t.name} ให้ ${c.name} กับ ${e.name}`);
     } },
   { id:'middlefinger', name:'ชูนิ้วกลาง', text:'ศัตรูแต่ละคนเลือกชูนิ้วกลางใส่คุณได้ ใครชู คุณทิ้งการ์ด 1 ใบต่อคน',
     now: async t => {
       let n = 0;
       for (const e of turnOrder().filter(x => x !== t)) {
-        const yes = e.isAI || await humanChoose(`ชูนิ้วกลางใส่ ${t.name}? (เขาทิ้งการ์ด 1 ใบ)`, [{ label: 'ชู 🖕', value: true }, { label: 'ไม่ชู', value: false, ghost: true }]);
+        const yes = e.isAI || await humanChoose(e, `ชูนิ้วกลางใส่ ${t.name}? (เขาทิ้งการ์ด 1 ใบ)`, [{ label: 'ชู 🖕', value: true }, { label: 'ไม่ชู', value: false, ghost: true }]);
         if (yes) { n++; log(`${e.name} ชูนิ้วกลางใส่ ${t.name}`); }
       }
       if (n) await discardFromHand(t, n);
@@ -2339,14 +2359,14 @@ const TOKENS = [
   { id:'revealDestroy', name:'เปิดแล้วทำลาย', text:'เปิดการ์ดใบบนสุดของเด็ค แล้วเลือกทำลายได้',
     now: async t => {
       const c = revealTop(t); if (!c) return;
-      const yes = t.isAI ? isJunk(t)(c) : await humanChoose(`ทำลาย ${c.name}?`, [{ label: 'ทำลาย', value: true }, { label: 'ไม่', value: false, ghost: true }], cardHTML(c, { small: true }));
+      const yes = t.isAI ? isJunk(t)(c) : await humanChoose(t, `ทำลาย ${c.name}?`, [{ label: 'ทำลาย', value: true }, { label: 'ไม่', value: false, ghost: true }], cardHTML(c, { small: true }));
       if (yes) { t.deck.splice(t.deck.lastIndexOf(c), 1); G.destroyed.push(c); log(`${t.name} ทำลาย ${c.name}`); }
     } },
   { id:'swapHP', name:'สลับ HP', text:'หลังเกิดใหม่ สลับ HP กับผู้เล่นอื่น 1 คน (คุณเลือก)',
     now: async t => {
       const foes = opps(t); if (!foes.length) return;
       const e = t.isAI ? foes.slice().sort((a, b) => b.hp - a.hp)[0]
-        : await humanChoose('สลับ HP กับใคร?', foes.map(x => ({ label: `${x.name} · ${x.hp} HP`, value: x })), `ตอนนี้คุณมี ${t.hp} HP`);
+        : await humanChoose(t, 'สลับ HP กับใคร?', foes.map(x => ({ label: `${x.name} · ${x.hp} HP`, value: x })), `ตอนนี้คุณมี ${t.hp} HP`);
       [t.hp, e.hp] = [e.hp, t.hp]; t.hitFlash = e.hitFlash = true; log(`${t.name} สลับ HP กับ ${e.name} (${t.hp} ↔ ${e.hp})`, 'sys');
     } },
   { id:'legendShuffle', name:'สับตำนานคืน', text:'สับตำนานทุกใบในมือกลับเข้าเด็ค',
@@ -2386,7 +2406,7 @@ async function extraToken(t) {
 const badToken = k => !!k.ongoing || tokenVP(k) < -3;                        // worth getting rid of first
 
 /* ---------------- helpers ---------------- */
-function log(msg, cls = '') { G.log.unshift({ msg, cls }); if (G.log.length > 200) G.log.pop(); renderLog(); }
+function log(msg, cls = '') { G.log.unshift({ msg, cls }); if (G.log.length > 200) G.log.pop(); renderLog(); NET.dirty(); }
 const cur = () => G.players[G.cur];
 const opps = p => G.players.filter(x => x !== p);
 const leftOf = p => G.players[(G.players.indexOf(p) + 1) % G.players.length];
@@ -2408,7 +2428,7 @@ async function draw(p, n) {
   if (G.attackOnly && G.attackOnly.owner === p) return; // Backfire Day/Q: only the attack part of a card resolves
   let k = 0;
   for (; k < n; k++) { const c = drawTop(p); if (!c) break; await toHand(p, c); }
-  if (k && p === G.players[0]) AUD.play('draw');
+  if (k) soundFor(p, 'draw');
   render();
 }
 // put a card into p's hand; Kraken Egg punishes anyone but its owner
@@ -2453,17 +2473,17 @@ async function placeGained(p, c) {
   // abilities that count Wizards / Spells gained this turn (extra cards at end of turn)
   if (p === cur() && G.turn) { if (isType(c, 'wizard')) G.turn.gainedWiz = (G.turn.gainedWiz || 0) + 1; if (isType(c, 'spell')) G.turn.gainedSpell = (G.turn.gainedSpell || 0) + 1; }
   // Dr. Continuum: this turn, gained cards may go straight to hand
-  if (p === cur() && G.turn.gainToHand && (p.isAI || await humanChoose(`Dr. Continuum: นำ ${c.name} เข้ามือเลยไหม?`,
+  if (p === cur() && G.turn.gainToHand && (p.isAI || await humanChoose(p, `Dr. Continuum: นำ ${c.name} เข้ามือเลยไหม?`,
       [{ label: 'เข้ามือ (เล่นได้เทิร์นนี้)', value: true }, { label: 'ไปตามปกติ', value: false, ghost: true }]))) {
     p.hand.push(c); log(`${p.name} นำ ${c.name} เข้ามือ`, 'good');
   }
   // ability: cheap Line-Up cards go on top of the deck (mandatory)
   else if (hasTrait(p, 'cheapTop') && G.gainSrc === 'lineup' && (c.cost || 0) <= 4) { p.deck.push(c); log(`${c.name} ไปอยู่บนสุดของเด็ค ${p.name} (ของถูกขึ้นเด็ค)`); }
   // ability: a gained creature may go on top of the deck
-  else if (hasTrait(p, 'creatureTop') && isType(c, 'creature') && (p.isAI || await humanChoose(`วาง ${c.name} บนสุดของเด็ค?`,
+  else if (hasTrait(p, 'creatureTop') && isType(c, 'creature') && (p.isAI || await humanChoose(p, `วาง ${c.name} บนสุดของเด็ค?`,
       [{ label: 'บนสุดของเด็ค', value: true }, { label: 'กองทิ้ง', value: false, ghost: true }]))) { p.deck.push(c); log(`${p.name} วาง ${c.name} บนสุดของเด็ค`); }
   else if (p === cur() && G.turn.topdeck > 0) { G.turn.topdeck--; p.deck.push(c); log(`${c.name} ถูกวางบนสุดของเด็ค ${p.name}`, 'good'); }
-  else if (c.type === 'legend' && p.ongoing.some(o => o.id === 'giftshop') && (p.isAI || await humanChoose(`Gift Shop: วาง ${c.name} ไว้ที่ไหน?`,
+  else if (c.type === 'legend' && p.ongoing.some(o => o.id === 'giftshop') && (p.isAI || await humanChoose(p, `Gift Shop: วาง ${c.name} ไว้ที่ไหน?`,
       [{ label: 'บนสุดของเด็ค (จั่วได้รอบหน้า)', value: true }, { label: 'กองทิ้ง', value: false, ghost: true }]))) {
     p.deck.push(c); log(`${p.name} วาง ${c.name} ไว้บนสุดของเด็ค (Gift Shop)`, 'good');
   }
@@ -2867,7 +2887,7 @@ const FX = (() => {
       seatFlash(t, 'rgba(229,72,95,.5)');
       float(t, '-' + n, n >= 4 ? 'dmg crit' : 'dmg');
       sparks(x, y, '#ff6a3d', 8 + n * 3, 50 + n * 14, 9);
-      shake(t === G.players[0] ? 6 + n * 2 : n >= 3 ? 2 + n * 1.5 : 0);
+      shake(t === meP() ? 6 + n * 2 : n >= 3 ? 2 + n * 1.5 : 0);
     },
     heal(p, n) { const { x, y } = at(p); float(p, '+' + n, 'heal'); sparks(x, y, '#7dffa0', 10, 50, 6, 60); },
     curse(t) { const { x, y } = at(t); float(t, 'Limp Wand', 'curse'); sparks(x, y, '#b07cff', 8, 40, 6); },
@@ -2890,7 +2910,8 @@ const FX = (() => {
       return banner(`☠ ${t.name} ตาย!`, `Dead Wizard Token: ${tok.name}`, 'kill', T(1500));
     },
     turn(p) {
-      if (p.isAI) { banner(`เทิร์นของ ${p.name}`, '', 'turn small', T(800)); return null; }
+      AUD.play(p === meP() ? 'turnMe' : 'turnAI');
+      if (p.isAI || p !== meP()) { banner(`เทิร์นของ ${p.name}`, '', 'turn small', T(800)); return null; }
       banner('เทิร์นของคุณ!', 'ร่ายเวท ซื้อการ์ด ถล่มศัตรู', 'turn', 1100);
       return sleep(450);
     },
@@ -2949,7 +2970,7 @@ async function pickTarget(p, list, spec) {
     const pool = killable.length ? killable : list;
     return pool.slice().sort((a, b) => a.hp - b.hp || (b.isAI ? -1 : 1))[0];
   }
-  return humanChoose(spec.label || `เลือกเป้าหมาย (${G.curLabel})`, list.map(t => ({ label: `${t === p ? 'ตัวคุณเอง' : t.name} · ${t.hp} HP`, value: t })));
+  return humanChoose(p, spec.label || `เลือกเป้าหมาย (${G.curLabel})`, list.map(t => ({ label: `${t === p ? 'ตัวคุณเอง' : t.name} · ${t.hp} HP`, value: t })));
 }
 
 async function attack(src, spec) {
@@ -3055,7 +3076,7 @@ async function tryDefend(t, src, spec) {
     choice = defs.slice().sort((a, b) => ((b.redirect && src ? 1 : 0) - (a.redirect && src ? 1 : 0)) || ((a.defInPlay ? 1 : 0) - (b.defInPlay ? 1 : 0)))[0];
   } else {
     const who = src ? src.name : (G.curLabel || 'โกลาหล');
-    choice = await humanChoose(`${who} โจมตีคุณ!`, [
+    choice = await humanChoose(t, `${who} โจมตีคุณ!`, [
       ...defs.map(c => ({ card: c, value: c })), { label: 'ไม่ป้องกัน รับการโจมตี', value: null, ghost: true }],
       `${G.curLabel}: ${describe(spec)} · เลือกการ์ดป้องกันจากมือหรือในสนาม (ใช้ได้ 1 ใบต่อการโจมตี · แต่ละใบใช้ได้ครั้งเดียวต่อเทิร์น)`);
   }
@@ -3097,7 +3118,7 @@ async function pickToken(t, killer, n) {
   log(`${killer.name} เปิด Dead Wizard Token ${shown.length} อัน: ${shown.map(k => k.name).join(', ')}`, 'sys');
   const tok = killer.isAI
     ? shown.slice().sort((a, b) => (TOKEN_SPITE[b.id] || 0) - (TOKEN_SPITE[a.id] || 0))[0]
-    : await humanChoose(`เลือก Dead Wizard Token ให้ ${t.name}`, shown.map(k => ({ label: `${k.name}: ${k.text}`, value: k })),
+    : await humanChoose(killer, `เลือก Dead Wizard Token ให้ ${t.name}`, shown.map(k => ({ label: `${k.name}: ${k.text}`, value: k })),
       'อันที่ไม่ได้เลือกจะถูกสับกลับเข้ากอง');
   shown.splice(shown.indexOf(tok), 1);
   G.tokens.push(...shown); shuffle(G.tokens);
@@ -3112,7 +3133,7 @@ async function offerFriendality(t, killer) {
   const L = up.slice().sort((a, b) => b.vp - a.vp)[0]; // shown as the prize; the player picks which one when gaining
   if (!L) { log('Frenemy Finisher: ไม่มีตำนานเหลือให้รับ'); return false; }
   const yes = killer.isAI ? L.vp >= 4
-    : await humanChoose(`Frenemy Finisher! ไว้ชีวิต ${t.name}?`, [{ label: `ใช่ · คุณรับ Dead Wizard Token แทน และได้ ${L.name}`, value: true }, { label: 'ไม่ · ให้เขารับ Token ตามปกติ', value: false, ghost: true }],
+    : await humanChoose(killer, `Frenemy Finisher! ไว้ชีวิต ${t.name}?`, [{ label: `ใช่ · คุณรับ Dead Wizard Token แทน และได้ ${L.name}`, value: true }, { label: 'ไม่ · ให้เขารับ Token ตามปกติ', value: false, ghost: true }],
       `${cardHTML(L, { small: true })}<br>Dead Wizard Token หัก VP ตอนจบเกม (ส่วนใหญ่ -3)`);
   if (yes) log(`${killer.name} ใช้ Frenemy Finisher! รับ Dead Wizard Token แทน ${t.name}`, 'sys');
   return yes;
@@ -3121,7 +3142,7 @@ async function offerFriendality(t, killer) {
 async function gainTopLegend(p) {
   const up = G.legendRow.filter(Boolean); if (!up.length) return;
   const L = up.length === 1 ? up[0] : p.isAI ? up.slice().sort((a, b) => b.vp - a.vp)[0]
-    : await humanChoose('เลือกตำนาน 1 ใบ (ฟรี)', up.map(x => ({ card: x, value: x })));
+    : await humanChoose(p, 'เลือกตำนาน 1 ใบ (ฟรี)', up.map(x => ({ card: x, value: x })));
   G.legendRow[G.legendRow.indexOf(L)] = null;
   await placeGained(p, L); gainedCard(p, L);
   log(`${p.name} ได้ตำนาน ${L.name}!`, 'sys'); AUD.play('legendWin'); render(); await FX.legendWin(p, L);
@@ -3157,7 +3178,7 @@ async function discardFromHand(t, n) {
   for (let i = 0; i < n && t.hand.length; i++) {
     let c;
     if (t.isAI) c = t.hand.slice().sort((a, b) => aiVal(a) - aiVal(b))[0];
-    else c = await humanChoose('ทิ้งการ์ดจากมือ 1 ใบ', t.hand.map(x => ({ card: x, value: x })));
+    else c = await humanChoose(t, 'ทิ้งการ์ดจากมือ 1 ใบ', t.hand.map(x => ({ card: x, value: x })));
     t.hand.splice(t.hand.indexOf(c), 1); t.discard.push(c);
     log(`${t.name} ทิ้ง ${c.name}`); AUD.play('discard');
   }
@@ -3169,7 +3190,7 @@ const isJunk = p => x => x.id === 'bent' || x.id === 'fizzle' || (x.id === 'rune
 async function destroyFromHand(p, n) {
   for (let k = 0; k < n && p.hand.length; k++) {
     const c = p.isAI ? p.hand.find(isJunk(p)) || null
-      : await humanChoose(`ทำลายการ์ดในมือ (${k + 1}/${n})`, [...p.hand.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }],
+      : await humanChoose(p, `ทำลายการ์ดในมือ (${k + 1}/${n})`, [...p.hand.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }],
         'การ์ดที่ถูกทำลายจะออกจากเกมถาวร');
     if (!c) break;
     p.hand.splice(p.hand.indexOf(c), 1); G.destroyed.push(c);
@@ -3191,7 +3212,7 @@ async function destroyOwn(p, { discardOnly = false } = {}) {
   if (!pool.length) return null;
   let c;
   if (p.isAI) c = pool.find(x => x.id === 'bent') || pool.find(x => x.id === 'fizzle') || (allCards(p).length > 16 ? pool.find(x => x.id === 'rune') : null) || null;
-  else c = await humanChoose(`ทำลายการ์ด 1 ใบ (${discardOnly ? 'จากกองทิ้ง' : 'จากมือหรือกองทิ้ง'})`, [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }],
+  else c = await humanChoose(p, `ทำลายการ์ด 1 ใบ (${discardOnly ? 'จากกองทิ้ง' : 'จากมือหรือกองทิ้ง'})`, [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }],
     'การ์ดที่ถูกทำลายจะออกจากเกมถาวร · ทำลาย Fizzle / Limp Wand ช่วยให้เด็คดีขึ้น');
   if (!c) return null;
   const arr = p.hand.includes(c) ? p.hand : p.discard;
@@ -3205,7 +3226,7 @@ async function destroyOngoing(t) {
   if (!t.ongoing.length) return;
   let c;
   if (t.isAI) c = t.ongoing.slice().sort((a, b) => a.cost - b.cost)[0];
-  else c = await humanChoose('แผ่นดินไหว! ทำลายการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
+  else c = await humanChoose(t, 'แผ่นดินไหว! ทำลายการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
   t.ongoing.splice(t.ongoing.indexOf(c), 1); G.destroyed.push(c);
   log(`${t.name} เสีย ${c.name}`, 'dmg'); AUD.play('destroy');
 }
@@ -3215,7 +3236,7 @@ async function gainFromLineup(p, max) {
   if (!opts.length) { log('ไม่มีการ์ดใน Line-Up ที่รับได้'); return; }
   let pick;
   if (p.isAI) pick = opts.sort((a, b) => b.c.cost + b.c.vp - a.c.cost - a.c.vp)[0];
-  else pick = await humanChoose(`รับการ์ดราคาไม่เกิน ${max} ฟรี`, opts.map(o => ({ card: o.c, value: o })));
+  else pick = await humanChoose(p, `รับการ์ดราคาไม่เกิน ${max} ฟรี`, opts.map(o => ({ card: o.c, value: o })));
   G.lineup[pick.i] = null; G.gainSrc = 'lineup'; await placeGained(p, pick.c); G.gainSrc = null; gainedCard(p, pick.c);
   await cometStrike(p, pick.c);
   log(`${p.name} รับ ${pick.c.name} ฟรี`, 'good');
@@ -3317,7 +3338,7 @@ async function startTurn(p) {
   log(`เทิร์นของ ${p.name}`, 'turn');
   render();
   await refillLineup(); if (G.ending) return;
-  AUD.play(p.isAI ? 'turnAI' : 'turnMe'); await FX.turn(p);
+  await FX.turn(p);
   for (const c of p.ongoing.slice()) if (c.onStart) { G.curLabel = c.name; await c.onStart(p); }
   for (const k of p.tokens) if (k.start) await k.start(p);
   if (standHolder() === p && !p.tokens.some(k => k.id === 'trophyless')) {
@@ -3350,7 +3371,7 @@ async function endTurn(p) {
     await draw(p, handSize + 1);
     let c;
     if (p.isAI) c = p.hand.slice().sort((a, b) => aiVal(a) - aiVal(b))[0];
-    else c = await humanChoose('ถ้วยรางวัลแชมป์: ทิ้งการ์ด 1 ใบ', p.hand.map(x => ({ card: x, value: x })), `คุณจั่ว ${handSize + 1} ใบ ทิ้ง 1 เพื่อให้เหลือ ${handSize}`);
+    else c = await humanChoose(p, 'ถ้วยรางวัลแชมป์: ทิ้งการ์ด 1 ใบ', p.hand.map(x => ({ card: x, value: x })), `คุณจั่ว ${handSize + 1} ใบ ทิ้ง 1 เพื่อให้เหลือ ${handSize}`);
     if (c) { p.hand.splice(p.hand.indexOf(c), 1); p.discard.push(c); }
   } else await draw(p, handSize);
   trackMoves(); G.quietMoves = false; // remember the cleaned-up table, then report moves again
@@ -3427,7 +3448,15 @@ async function runGame() {
 
 function finish() {
   G.over = true;
-  const rows = G.players.map(p => {
+  const rows = finalRows();
+  log(`เกมจบ: ${G.ending}`, 'sys');
+  render();
+  NET.flush(); NET.send({ t: 'finish' }); // the final snapshot shows every card, so guests can score it
+  showFinal(rows);
+}
+// the score table: the host works it out in finish(); a guest from its last snapshot (all cards are visible once G.over)
+function finalRows() {
+  return G.players.map(p => {
     const cards = allCards(p);
     const vp = cards.reduce((s, c) => s + Math.max(0, vpOf(c, p)), 0);
     const bents = ownsViagrus(p) ? 0 : -limpVP(p) * cards.filter(c => c.id === 'bent').length; // Viagrus: counted +1 in vp instead
@@ -3435,17 +3464,21 @@ function finish() {
     const total = vp - bents + tokensVP(p);
     return { p, vp, bents, legends, tokens: p.tokens.length, tokenVP: tokensVP(p), total };
   }).sort((a, b) => (b.p === G.instantWinner) - (a.p === G.instantWinner) || b.total - a.total || b.legends - a.legends || a.tokens - b.tokens); // Ultimate Winner's Wand wins outright
-  log(`เกมจบ: ${G.ending}`, 'sys');
-  render();
-  const win = rows[0].p === G.players[0];
+}
+function showFinal(rows = finalRows()) {
+  const win = rows[0].p === meP();
   AUD.play(win ? 'victory' : 'defeat'); FX.victory(win, rows[0].p.name);
   const m = $('#modal'); m.hidden = false;
   $('#m-title').textContent = `${rows[0].p.name} ชนะ!`;
   $('#m-sub').innerHTML = `เกมจบเพราะ${G.ending}`;
   $('#m-opts').innerHTML = `<div class="tablewrap" style="width:100%"><table class="score"><tr><th>พ่อมด</th><th>VP การ์ด</th><th>Limp Wand</th><th>Dead Wizard Token</th><th>ตำนาน</th><th>รวม</th></tr>
     ${rows.map((r, i) => `<tr class="${i === 0 ? 'win' : ''}"><td>${r.p.name}</td><td>${r.vp}</td><td>-${r.bents}</td><td>${r.tokenVP}</td><td>${r.legends}</td><td>${r.total}</td></tr>`).join('')}</table></div>
-    <button class="btn" id="again">เล่นอีกครั้ง</button>`;
-  $('#m-opts').onclick = e => { if (e.target.id === 'again') { m.hidden = true; showSetup(); } };
+    ${NET.role === 'guest' ? '<div class="msub">รอเจ้าภาพเริ่มเกมใหม่ หรือ</div><button class="btn ghost" id="leave">ออกจากห้อง</button>'
+      : `<button class="btn" id="again">${NET.role === 'host' ? 'กลับไปที่ห้อง เล่นอีกรอบ' : 'เล่นอีกครั้ง'}</button>`}`;
+  $('#m-opts').onclick = e => {
+    if (e.target.id === 'again') { m.hidden = true; if (NET.role === 'host') NET.showLobby(); else showSetup(); }
+    if (e.target.id === 'leave') NET.leave();
+  };
 }
 
 /* ---------------- setup ---------------- */
@@ -3453,18 +3486,21 @@ function finish() {
 const PLAYER_COLORS = ['#f4f1ea', '#ff6b6b', '#7ee081', '#c792ea', '#ffcb47'];
 const pcName = p => `<span class="pname" style="color:${p.color || 'inherit'}">${p.name}</span>`;
 
-function newGame(name, nAI) {
+// name = seat 0; more = other human players' names (online room), seated after you; then nAI computer players
+function newGame(name, nAI, more = []) {
+  const humans = [name, ...more];
   ZOOMS.clear();
   uidc = 1;
   const traits = shuffle(TRAITS.slice()), fams = shuffle(FAMILIARS.slice());
   const aiNames = shuffle(['Morla the Moist', 'Quibb Tallhat', 'Snaggle Fenwick', 'Dame Gristle']);
   const players = [];
-  for (let i = 0; i <= nAI; i++) {
+  for (let i = 0; i < humans.length + nAI; i++) {
     const deck = [];
     for (let k = 0; k < 6; k++) deck.push(make('rune'));
     deck.push(make('wand'));
     for (let k = 0; k < 3; k++) deck.push(make('fizzle'));
-    players.push({ name: i === 0 ? name : aiNames[i - 1], color: PLAYER_COLORS[i % PLAYER_COLORS.length], isAI: i > 0, hp: 20, deck: shuffle(deck), hand: [], discard: [], ongoing: [],
+    const human = i < humans.length;
+    players.push({ name: human ? humans[i] : aiNames[i - humans.length], color: PLAYER_COLORS[i % PLAYER_COLORS.length], isAI: !human, hp: 20, deck: shuffle(deck), hand: [], discard: [], ongoing: [],
       tokens: [], trait: traits[i], famChoices: [make(fams[i * 2]), make(fams[i * 2 + 1])], familiar: null });
     players[i].famChoices.forEach(c => { c.owner = players[i]; }); // familiars remember their owner (Kraken Egg)
     if (players[i].trait.id === 'weirdWand') { const d = players[i].deck, r = d.findIndex(c => c.id === 'rune'); d[r] = make('weirdwand'); } // ability tile
@@ -3491,33 +3527,47 @@ function newGame(name, nAI) {
   G.cur = rnd(players.length);
 }
 
-async function startGame(name, nAI) {
-  newGame(name, nAI);
-  const me = G.players[0];
+// guests = online players [{ name, peer }] (host only); they take the seats after yours
+async function startGame(name, nAI, guests = []) {
+  newGame(name, nAI, guests.map(g => g.name));
+  ME = 0;
+  if (guests.length) { G.online = true; guests.forEach((g, k) => { G.players[k + 1].peer = g.peer; }); }
   for (const p of G.players) {
     if (p.isAI) p.familiar = p.famChoices[rnd(2)];
   }
   render();
-  me.familiar = await humanChoose('เลือกสัตว์รับใช้ของคุณ', me.famChoices.map(c => ({ card: c, value: c })),
-    `ความสามารถพ่อมดของคุณ: <b>${me.trait.name}</b> — ${me.trait.text}<br>สัตว์รับใช้วางข้างตัวคุณ มีแค่คุณที่ซื้อได้`);
+  // every human picks at the same time (online, each in their own browser)
+  await Promise.all(G.players.filter(p => !p.isAI).map(async p => {
+    p.familiar = await humanChoose(p, 'เลือกสัตว์รับใช้ของคุณ', p.famChoices.map(c => ({ card: c, value: c })),
+      `ความสามารถพ่อมดของคุณ: <b>${p.trait.name}</b> — ${p.trait.text}<br>สัตว์รับใช้วางข้างตัวคุณ มีแค่คุณที่ซื้อได้`);
+    if (p.isAI && !p.famChoices.includes(p.familiar)) p.familiar = p.famChoices[0]; // left during the pick
+  }));
   log(`เริ่มเกม! ${G.players[G.cur].name} เล่นก่อน`, 'sys');
   runGame();
 }
 
-function showSetup() {
+function showSetup(err = '') {
   const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
   $('#m-title').textContent = 'เข้าสู่สนามประลองเวท';
-  $('#m-sub').innerHTML = 'พ่อมดทุกคนเริ่มที่ 20 HP · ซื้อการ์ด สร้างเด็ค ระเบิดศัตรู ล้มตำนาน แล้วเก็บ VP ให้มากที่สุด';
+  $('#m-sub').innerHTML = (err ? `<span class="err">${escHTML(err)}</span><br>` : '') + 'พ่อมดทุกคนเริ่มที่ 20 HP · ซื้อการ์ด สร้างเด็ค ระเบิดศัตรู ล้มตำนาน แล้วเก็บ VP ให้มากที่สุด';
   $('#m-opts').innerHTML = `<div class="setup-grid" style="width:100%">
-    <label class="fld" for="in-name">ชื่อพ่อมดของคุณ<input id="in-name" value="Grand Wizard" maxlength="20"></label>
+    <label class="fld" for="in-name">ชื่อพ่อมดของคุณ<input id="in-name" value="${escHTML(NET.savedName() || 'Grand Wizard')}" maxlength="20"></label>
     <label class="fld" for="in-n">จำนวนคู่ต่อสู้ (AI)<select id="in-n"><option value="1">1 คน (2 ผู้เล่น)</option><option value="2">2 คน (3 ผู้เล่น)</option><option value="3" selected>3 คน (4 ผู้เล่น)</option><option value="4">4 คน (5 ผู้เล่น)</option></select></label>
     </div>
-    <button class="btn" id="go">เริ่มเกม</button> <button class="btn ghost" id="show-rules">อ่านกติกา</button>`;
+    <button class="btn" id="go">เล่นกับ AI</button> <button class="btn ghost" id="show-rules">อ่านกติกา</button>
+    <div class="online-box">
+      <div class="sect-label">เล่นออนไลน์กับเพื่อน (คนละเครื่อง)</div>
+      <div class="online-btns"><button class="btn" id="host">สร้างห้อง</button> <button class="btn ghost" id="join">เข้าห้องเพื่อน</button></div>
+      <div class="msub">คนสร้างห้องเป็นเจ้าภาพ เกมรันบนเครื่องเจ้าภาพ เพื่อนเข้าด้วยลิงก์หรือรหัสห้อง เติม AI ให้ครบโต๊ะได้</div>
+    </div>`;
   $('#m-opts').onclick = e => {
+    const n = ($('#in-name') && $('#in-name').value.trim()) || 'Grand Wizard';
     if (e.target.id === 'go') {
-      const n = $('#in-name').value.trim() || 'Grand Wizard', k = +$('#in-n').value;
-      m.hidden = true; $('#m-opts').onclick = null; startGame(n, k);
-    } else if (e.target.id === 'show-rules') showRules(true);
+      const k = +$('#in-n').value;
+      NET.saveName(n); m.hidden = true; $('#m-opts').onclick = null; startGame(n, k);
+    } else if (e.target.id === 'host') NET.createRoom(n);
+    else if (e.target.id === 'join') { NET.name = n; NET.showJoin(''); }
+    else if (e.target.id === 'show-rules') showRules(true);
   };
 }
 
@@ -3613,7 +3663,15 @@ function showRules(backToSetup) {
 
 /* ---------------- UI ---------------- */
 let modalStack = null;
-function humanChoose(title, options, sub = '') {
+// who = the player who decides. Online, the host sends the question to that player's browser and waits for the answer;
+// everyone else sees "รอ … ตัดสินใจ" while it is open.
+async function humanChoose(who, title, options, sub = '') {
+  if (!G || !G.online || !who) return localChoose(title, options, sub);
+  (G.waiting ||= []).push(who.name); render();
+  try { return who.peer ? await NET.askRemote(who, title, options, sub) : await localChoose(title, options, sub); }
+  finally { if (G && G.waiting) { G.waiting.splice(G.waiting.indexOf(who.name), 1); render(); } }
+}
+function localChoose(title, options, sub = '') {
   return new Promise(res => {
     const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
     $('#m-title').textContent = title; $('#m-sub').innerHTML = sub;
@@ -3633,7 +3691,8 @@ function humanChoose(title, options, sub = '') {
 const POP = { items: [], timer: null };
 function showEvent(card, label, kind = 'gain') {
   if (!G || !card || !G.turn) return;
-  (G.turn.events ||= []).push({ card, label, kind });
+  if (NET.role !== 'guest') (G.turn.events ||= []).push({ card, label, kind });
+  if (NET.role === 'host' && !NET.tracking) NET.fx('ev', [card, label, kind]); // trackMoves pop-ups are worked out by each guest itself
   if (AI_DELAY === 0) return; // test helpers / instant mode: record only
   POP.items.push({ card, label, kind }); if (POP.items.length > 4) POP.items.shift();
   const el = $('#pop');
@@ -3650,7 +3709,8 @@ function showEvent(card, label, kind = 'gain') {
 // Hidden moves (draws, hand↔deck), playing cards and end-of-turn cleanup (G.quietMoves) are not shown.
 function cardLocations() {
   const m = new Map();
-  const put = (list, p, z) => { for (const c of list || []) if (c && c.uid != null) m.set(c.uid, { c, p, z }); };
+  // seats are stored by index: online guests rebuild every object from each snapshot, so identities don't survive
+  const put = (list, p, z) => { const pi = p ? G.players.indexOf(p) : -1; for (const c of list || []) if (c && c.uid != null) m.set(c.uid, { c, p, pi, z }); };
   for (const p of G.players) {
     put(p.hand, p, 'hand'); put(p.deck, p, 'deck'); put(p.discard, p, 'discard'); put(p.ongoing, p, 'ongoing');
     if (p.familiar) put([p.familiar], p, 'fam');
@@ -3665,27 +3725,34 @@ function trackMoves() {
   const now = cardLocations(), before = G.prevLoc;
   G.prevLoc = now;
   if (!before || G.quietMoves) return;
+  NET.tracking = true; try { trackDiff(now, before); } finally { NET.tracking = false; }
+}
+function trackDiff(now, before) {
   const groups = new Map(); // same player + same kind of move → one event (e.g. a whole hand discarded)
   const add = (key, card, label, kind) => { const g = groups.get(key); if (g) g.n++; else groups.set(key, { card, label, kind, n: 1 }); };
-  const shown = (G.turn && G.turn.shown) || [], defended = (G.turn && G.turn.defUsed) || [];
+  const shownU = new Set(((G.turn && G.turn.shown) || []).map(c => c.uid)), defU = new Set(((G.turn && G.turn.defUsed) || []).map(c => c.uid));
   for (const [uid, loc] of now) {
-    const was = before.get(uid), c = loc.c, p = loc.p;
+    const was = before.get(uid), p = loc.p;
+    // a card that went into a zone hidden from this guest (a rival's hand or deck): show it as it was last seen
+    const c = loc.c.hidden ? (was && !was.c.hidden ? was.c : null) : loc.c;
+    if (!c) continue;
     if (c.type === 'chaos') continue;                                        // Chaos cards have their own showcase
-    if (was && was.p === p && was.z === loc.z) continue;                     // didn't move
+    if (was && was.pi === loc.pi && was.z === loc.z) continue;               // didn't move
     const bad = c.id === 'bent' ? 'bad' : 'gain';
     if (loc.z === 'destroyed') {
       if (!was) continue;
-      add(`x-${was.p ? was.p.name : ''}`, c, was.p ? `${was.p.name} ทำลาย` : 'ถูกทำลาย', 'destroy');
+      const wp = G.players[was.pi];
+      add(`x-${wp ? wp.name : ''}`, c, wp ? `${wp.name} ทำลาย` : 'ถูกทำลาย', 'destroy');
       continue;
     }
     if (!p) continue;                                                        // refills of the Line-Up / Legend row
-    if (!was || !was.p) { if (loc.z !== 'fam') add(`g-${p.name}-${c.uid}`, c, `${p.name} ได้รับ`, bad); continue; } // new or bought
-    if (was.p !== p) { add(`t-${p.name}-${c.uid}`, c, `${p.name} ได้รับจาก ${was.p.name}`, bad); continue; }       // passed between players
+    if (!was || was.pi < 0) { if (loc.z !== 'fam') add(`g-${p.name}-${c.uid}`, c, `${p.name} ได้รับ`, bad); continue; } // new or bought
+    if (was.pi !== loc.pi) { add(`t-${p.name}-${c.uid}`, c, `${p.name} ได้รับจาก ${G.players[was.pi].name}`, bad); continue; }       // passed between players
     const from = was.z, to = loc.z;
     if (to === 'played' || to === 'ongoing' && from === 'hand') continue;   // played: shown in the arena
     if (from === 'fam') { add(`g-${p.name}-${c.uid}`, c, `${p.name} ได้รับ`, 'gain'); continue; }                  // bought own familiar
-    if (to === 'discard' && shown.includes(c)) continue;                     // a played/stolen card going home
-    if (to === 'discard' && from === 'hand' && defended.includes(c)) continue; // already shown as a defence
+    if (to === 'discard' && shownU.has(c.uid)) continue;                     // a played/stolen card going home
+    if (to === 'discard' && from === 'hand' && defU.has(c.uid)) continue; // already shown as a defence
     if (to === 'discard' && from === 'hand') add(`d-${p.name}`, c, `${p.name} ทิ้ง`, 'discard');
     else if (to === 'discard' && from === 'deck') add(`dd-${p.name}`, c, `${p.name} ทิ้งจากเด็ค`, 'discard');
     else if (to === 'discard' && from === 'ongoing') add(`do-${p.name}-${c.uid}`, c, `${p.name} นำออกจากสนาม`, 'discard');
@@ -3757,7 +3824,7 @@ function seatHTML(p, dir) {
   return `
     <div class="rival ${cur() === p ? 'active' : ''} ${p.hitFlash ? 'hit' : ''}" data-pi="${i}" style="--pc:${p.color}">
       <div class="seatdir">${dir}</div>
-      <div class="rname"><b>${p.name}</b>${cur() === p ? '<span class="trait">กำลังร่ายเวท…</span>' : ''}</div>
+      <div class="rname"><b>${p.name}</b>${G.online ? `<span class="seattag">${p.away ? 'หลุด · AI เล่นแทน' : p.isAI ? 'AI' : 'ผู้เล่น'}</span>` : ''}${cur() === p ? '<span class="trait">กำลังร่ายเวท…</span>' : ''}</div>
       <div class="trait">${p.trait.name}: ${p.trait.text}</div>
       <div style="display:flex;align-items:center;gap:8px"><div class="hpbar" style="flex:1"><i style="width:${hpPct(p)}%"></i></div><span class="hpnum">${p.hp} HP</span></div>
       <div class="stats"><span>มือ <b>${p.hand.length}</b></span><span>เด็ค <b>${p.deck.length}</b></span><span>ทิ้ง <b>${p.discard.length}</b></span></div>
@@ -3775,11 +3842,11 @@ function render() {
   if (!G) return;
   trackMoves(); // show cards that moved since the last redraw
   document.documentElement.style.setProperty('--ph', -Math.round(performance.now() % 1600) + 'ms');
-  const me = G.players[0];
+  const me = meP();
   const myTurn = cur() === me && !G.over && !G.ending && G.endTurnResolve;
   const pw = G.turn ? G.turn.power : 0;
   // seating: clockwise from you → your left, across, your right
-  const others = G.players.slice(1);
+  const others = [...G.players.slice(ME + 1), ...G.players.slice(0, ME)];
   const seats = { left: [], top: [], right: [] };
   const n = others.length;
   const plan = n === 1 ? ['top'] : n === 2 ? ['left', 'right'] : n === 3 ? ['left', 'top', 'right'] : ['left', 'top', 'top', 'right'];
@@ -3807,11 +3874,15 @@ function render() {
     })].join('');
   shown.forEach(c => { if (c.uid > (G.animUid || 0)) G.animUid = c.uid; });
   const who = G.chaosShown ? 'การ์ดโกลาหลเปิดขึ้น!' : `${pcName(cur())} ${cur() === me ? '(คุณ)' : ''}`;
+  // online: whose decision the table is waiting for (a choice, or a human player's turn)
+  const waitNames = (G.waiting || []).filter(n => n !== me.name);
+  const waitHTML = !G.online || G.over ? '' : waitNames.length ? `<span class="waitpill">⏳ รอ ${waitNames.join(', ')} ตัดสินใจ…</span>`
+    : cur() !== me && !cur().isAI && G.endTurnResolve ? `<span class="waitpill">⏳ ${cur().name} กำลังเล่น…</span>` : '';
   // everything that happened to cards this turn: received, discarded, destroyed, revealed, defended, ✲
   const evs = (G.turn && G.turn.events || []).slice(-14);
   const eventsHTML = evs.map(ev => `<div class="ev ev-${ev.kind}"><span class="ev-cap">${ev.label}</span>${cardHTML(ev.card, { small: true })}</div>`).join('');
   const arena = `<div class="arena ${shown.length || evs.length ? 'busy' : ''}">
-      <div class="arena-title">สนามร่ายเวท · ${who} <span>· พลังเทิร์นนี้ <b class="arena-pw">${pw}</b></span></div>
+      <div class="arena-title">สนามร่ายเวท · ${who} <span>· พลังเทิร์นนี้ <b class="arena-pw">${pw}</b></span> ${waitHTML}</div>
       <div class="sect-label">การ์ดที่เล่น</div>
       <div class="cards">${arenaCards || '<div class="empty">ยังไม่มีการ์ดถูกเล่นในเทิร์นนี้</div>'}</div>
       ${evs.length ? `<div class="sect-label" style="margin-top:12px">เกิดอะไรขึ้นบ้าง</div><div class="cards events">${eventsHTML}</div>` : ''}
@@ -3844,7 +3915,7 @@ function render() {
       ${arena}
     </section>
     <section class="you ${cur() === me ? 'active' : ''} ${me.hitFlash ? 'hit' : ''}" style="--pc:${me.color}">
-      <div class="youbar" data-pi="0">
+      <div class="youbar" data-pi="${ME}">
         <div class="big hp"><span class="v">${me.hp}</span><span class="k">HP</span></div>
         <div class="big pw"><span class="v">${cur() === me ? pw : '–'}</span><span class="k">พลัง</span></div>
         <div style="min-width:0;flex:1">
@@ -3852,10 +3923,10 @@ function render() {
           <div class="trait">${me.trait.name}: ${me.trait.text}</div>
           <div class="chips" style="margin-top:4px">${chipsFor(me, true)}</div>
           <div class="pilebtns">
-            <button class="linkbtn" data-act="view" data-what="deck" data-p="0">ดูเด็ค (${me.deck.length})</button>
-            <button class="linkbtn" data-act="view" data-what="discard" data-p="0">ดูกองทิ้ง (${me.discard.length})</button>
-            <button class="linkbtn" data-act="view" data-what="all" data-p="0">การ์ดทั้งหมด (${allCards(me).length})</button>
-            <button class="linkbtn" data-act="view" data-what="tokens" data-p="0">Dead Wizard Token (${me.tokens.length})</button>
+            <button class="linkbtn" data-act="view" data-what="deck" data-p="${ME}">ดูเด็ค (${me.deck.length})</button>
+            <button class="linkbtn" data-act="view" data-what="discard" data-p="${ME}">ดูกองทิ้ง (${me.discard.length})</button>
+            <button class="linkbtn" data-act="view" data-what="all" data-p="${ME}">การ์ดทั้งหมด (${allCards(me).length})</button>
+            <button class="linkbtn" data-act="view" data-what="tokens" data-p="${ME}">Dead Wizard Token (${me.tokens.length})</button>
           </div>
         </div>
         <div class="actions">
@@ -3873,6 +3944,7 @@ function render() {
     </section>`;
   G.players.forEach(p => p.hitFlash = false);
   renderLog();
+  NET.dirty();
   if (!$('#viewer').hidden && viewerState && viewerState.what !== 'art') openViewer(viewerState.what, viewerState.p);
 }
 
@@ -3899,7 +3971,7 @@ function openViewer(what, pi) {
     sub = 'แสดงว่าในเด็คเหลือการ์ดอะไรบ้าง เรียงตามประเภท ไม่ใช่ลำดับที่จะจั่วจริง';
     body = cardsBlock(p.deck, { group: true, sort: true });
   } else if (what === 'discard') {
-    title = `กองทิ้งของ ${p === G.players[0] ? 'คุณ' : p.name} · ${p.discard.length} ใบ`;
+    title = `กองทิ้งของ ${p === meP() ? 'คุณ' : p.name} · ${p.discard.length} ใบ`;
     sub = 'ใบซ้ายสุดคือใบบนสุดของกอง (ทิ้งล่าสุด)';
     body = cardsBlock(p.discard.slice().reverse());
   } else if (what === 'all') {
@@ -3957,21 +4029,27 @@ document.addEventListener('click', async e => {
   if (act === 'art-clear') { delete ART[el.dataset.id]; saveArt(); openArtEditor(); return; }
   if (act === 'view') { if (G) openViewer(el.dataset.what, el.dataset.p != null ? +el.dataset.p : null); return; }
   if (act === 'vclose') { $('#viewer').hidden = true; viewerState = null; return; }
-  if (act === 'newgame') { location.reload(); return; }
-  if (!G || G.busy || G.over) return;
-  const me = G.players[0];
-  if (cur() !== me || !G.endTurnResolve) return;
+  if (act === 'newgame') { if (NET.role) NET.leave(); else location.reload(); return; }
+  if (!G || G.over || !G.players) return;
+  const a = { act, i: el.dataset.i, src: el.dataset.src, uid: el.dataset.uid, id: el.dataset.id };
+  if (NET.role === 'guest') { if (cur() === meP() && G.endTurnResolve) NET.send({ t: 'act', a }); return; } // the host runs the game
+  await doAction(meP(), a);
+});
+// a turn action by player p: a click here, or (online, on the host) a message from that player's browser
+async function doAction(p, a) {
+  if (!G || G.busy || G.over || cur() !== p || !G.endTurnResolve) return;
+  const act = a.act;
   G.busy = true;
   try {
-    if (act === 'play') { const c = me.hand[+el.dataset.i]; if (c) await playCard(me, c); }
-    else if (act === 'activate') { await activateCard(me, +el.dataset.uid); }
-    else if (act === 'trait') { await useTrait(me, el.dataset.id); }
-    else if (act === 'sacrifice') { await sacrificeCard(me, +el.dataset.uid); }
-    else if (act === 'playall') { while (me.hand.length && G.players[0] === me) await playCard(me, me.hand[0]); }
-    else if (act === 'buy') { await buy(me, el.dataset.src, +el.dataset.i); }
+    if (act === 'play') { const c = p.hand[+a.i]; if (c) await playCard(p, c); }
+    else if (act === 'activate') { await activateCard(p, +a.uid); }
+    else if (act === 'trait') { await useTrait(p, a.id); }
+    else if (act === 'sacrifice') { await sacrificeCard(p, +a.uid); }
+    else if (act === 'playall') { while (p.hand.length && cur() === p && !G.over) await playCard(p, p.hand[0]); }
+    else if (act === 'buy') { await buy(p, a.src, +a.i); }
     else if (act === 'end') { const r = G.endTurnResolve; G.endTurnResolve = null; G.busy = false; r(); return; }
   } finally { if (G) { G.busy = false; render(); } }
-});
+}
 // browsers only allow audio after a user gesture
 document.addEventListener('pointerdown', () => AUD.unlock());
 const audioLabel = (k, on) => `${k === 'sfx' ? 'เสียง' : 'เพลง'}: ${on ? 'เปิด' : 'ปิด'}`;
@@ -3986,7 +4064,7 @@ document.addEventListener('keydown', e => {
    1) In-game: "ภาพการ์ด" button → pick an image per card (resized, saved in this browser).
    2) Folder: put art/<card-id>.png or .jpg next to this HTML file (works when opened from disk). */
 const ART_KEY = 'spellbrawl-art';
-const ART_FOLDER = location.protocol === 'file:' || /^(localhost|127\.)/.test(location.hostname);
+const ART_FOLDER = /^(file|https?):$/.test(location.protocol); // next to the game: on disk or on the web (GitHub Pages)
 let ART = {}, artTarget = null;
 try { ART = JSON.parse(localStorage.getItem(ART_KEY) || '{}'); } catch (e) { ART = {}; }
 
@@ -4091,6 +4169,460 @@ document.addEventListener('input', e => {
 });
 buildArtCSS();
 
+/* ---------------- online play ----------------
+   One browser is the host: it creates a room, runs the whole game (rules, AI seats) and sends every other
+   player a snapshot of the table after each change. Guests only draw that snapshot, send their clicks
+   (play / buy / end turn …) back as actions, and answer the questions the host forwards to them (humanChoose).
+   Transport: PeerJS (WebRTC, free public broker, no sign-up), loaded only when someone goes online.
+   Testing: add ?net=bc to the URL and every tab in the same browser talks over a BroadcastChannel instead. */
+const PEERJS_URLS = ['https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', 'https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js'];
+const ROOM_PREFIX = 'spellbrawl-room-';
+const NOOP = () => {};
+const TOKEN_IDS = Object.fromEntries(TOKENS.map(k => [k.id, k]));
+const escHTML = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+
+// stand-in for PeerJS over a BroadcastChannel (?net=bc): same small API, same browser only
+class BCPeer {
+  constructor(id) {
+    this.id = id || 'bc-' + Math.random().toString(36).slice(2, 9); this.h = {}; this.conns = {};
+    this.bc = new BroadcastChannel('spellbrawl-net');
+    this.bc.onmessage = e => this.msg(e.data);
+    setTimeout(() => this.emit('open', this.id), 10);
+  }
+  on(e, f) { this.h[e] = f; return this; }
+  emit(e, ...a) { if (this.h[e]) this.h[e](...a); }
+  connect(to) {
+    const c = new BCConn(this, to, Math.random().toString(36).slice(2)); this.conns[c.cid] = c;
+    this.bc.postMessage({ k: 'hello', from: this.id, to, cid: c.cid });
+    return c;
+  }
+  msg(m) {
+    if (m.to !== this.id) return;
+    if (m.k === 'hello') {
+      const c = new BCConn(this, m.from, m.cid); this.conns[m.cid] = c;
+      this.emit('connection', c);
+      setTimeout(() => { c.emit('open'); this.bc.postMessage({ k: 'ok', from: this.id, to: m.from, cid: m.cid }); }, 10);
+      return;
+    }
+    const c = this.conns[m.cid]; if (!c) return;
+    if (m.k === 'ok') c.emit('open');
+    else if (m.k === 'd') c.emit('data', m.d);
+    else if (m.k === 'x') { delete this.conns[m.cid]; c.open = false; c.emit('close'); }
+  }
+  destroy() { for (const c of Object.values(this.conns)) c.close(); this.bc.close(); }
+}
+class BCConn {
+  constructor(p, peer, cid) { this.p = p; this.peer = peer; this.cid = cid; this.h = {}; this.open = false; }
+  on(e, f) { this.h[e] = f; return this; }
+  emit(e, ...a) { if (e === 'open') this.open = true; if (this.h[e]) this.h[e](...a); }
+  send(d) { if (this.open) this.p.bc.postMessage({ k: 'd', from: this.p.id, to: this.peer, cid: this.cid, d }); }
+  close() { if (!this.p.conns[this.cid]) return; this.p.bc.postMessage({ k: 'x', from: this.p.id, to: this.peer, cid: this.cid }); delete this.p.conns[this.cid]; this.open = false; this.emit('close'); }
+}
+
+const NET = {
+  role: null,        // null = offline · 'host' · 'guest'
+  phase: 'lobby',    // host: 'lobby' while players gather, 'game' once dealt
+  peer: null, code: '', name: '',
+  conns: new Map(),  // host: peer id → connection
+  guests: [],        // host lobby: [{ cid, name, peer }]
+  host: null,        // guest: connection to the host
+  lobbyNames: [],    // guest: names shown in the waiting room
+  asks: new Map(), askSeq: 0,
+  tracking: false, quiet: 0, timer: null,
+
+  isTest: () => new URLSearchParams(location.search).get('net') === 'bc',
+  cid() {
+    let id = null;
+    try { id = sessionStorage.getItem('spellbrawl-cid'); } catch (e) {}
+    if (!id) { id = Math.random().toString(36).slice(2, 12); try { sessionStorage.setItem('spellbrawl-cid', id); } catch (e) {} }
+    return id;
+  },
+  savedName() { try { return localStorage.getItem('spellbrawl-name') || ''; } catch (e) { return ''; } },
+  saveName(n) { try { localStorage.setItem('spellbrawl-name', n); } catch (e) {} },
+  roomLink(code) {
+    if (!/^https?:$/.test(location.protocol)) return '';
+    return location.origin + location.pathname + location.search + '#room=' + code;
+  },
+  loadPeer() {
+    if (NET.isTest() || window.Peer) return Promise.resolve();
+    const urls = PEERJS_URLS.slice();
+    return new Promise((res, rej) => {
+      const next = () => {
+        const u = urls.shift(); if (!u) return rej(new Error('peerjs'));
+        const sc = document.createElement('script'); sc.src = u; sc.async = true;
+        sc.onload = () => res(); sc.onerror = () => { sc.remove(); next(); };
+        document.head.appendChild(sc);
+      };
+      next();
+    });
+  },
+  newPeer(id) {
+    if (NET.isTest()) return new BCPeer(id);
+    return id ? new window.Peer(id, { debug: 1 }) : new window.Peer({ debug: 1 });
+  },
+  sendConn(conn, msg) { try { if (conn && conn.open) conn.send(JSON.stringify(msg)); } catch (e) { console.warn('send failed', e); } },
+  send(msg) { // host → every guest · guest → host
+    if (NET.role === 'host') for (const c of NET.conns.values()) NET.sendConn(c, msg);
+    else if (NET.role === 'guest') NET.sendConn(NET.host, msg);
+  },
+  sendTo(p, msg) { if (NET.role === 'host' && p && p.peer) NET.sendConn(NET.conns.get(p.peer), msg); },
+
+  /* ---- snapshots: the table as JSON. Cards and tokens go as their id plus whatever differs from the
+     definition; a guest rebuilds them from DEFS / TOKENS, so card functions (vpCalc …) work there too.
+     Shared objects (a player referenced from G.trophy …) stay shared through $i / $r ids.
+     Hidden from each guest until the game is over: rivals' hands and decks, the main deck, face-down
+     Legends and the Dead Wizard token pile (only their sizes and card uids are sent). */
+  pack(root, viewer) {
+    const ids = new Map(); let n = 0;
+    const PL = new Map((root.players || []).map((p, i) => [p, i]));
+    const hide = !root.over && viewer != null;
+    const pk = v => {
+      if (v === undefined) return null;
+      if (v === null) return null;
+      const t = typeof v;
+      if (t === 'function') return { $f: 1 };
+      if (t !== 'object') return t === 'number' && !isFinite(v) ? null : v;
+      if (v instanceof Map || v instanceof Set || v instanceof Node || v instanceof DOMRect) return null;
+      if (ids.has(v)) return { $r: ids.get(v) };
+      const id = n++; ids.set(v, id);
+      if (Array.isArray(v)) return { $a: id, v: v.map(pk) };
+      if (TRAITS.includes(v)) return { $i: id, $tr: v.id };
+      const o = { $i: id }; let base = null;
+      if (v.uid != null && v.id && DEFS[v.id]) { base = DEFS[v.id]; o.$c = v.id; }
+      else if (v.id && TOKEN_IDS[v.id] && v.name === TOKEN_IDS[v.id].name) { base = TOKEN_IDS[v.id]; o.$k = v.id; }
+      const pi = PL.get(v);
+      for (const k of Object.keys(v)) {
+        if (k === 'prevLoc') continue;
+        const x = v[k];
+        if (x === undefined) continue;
+        if (base && (typeof x === 'function' || x === base[k])) continue;
+        const secret = hide && Array.isArray(x) && (pi != null && pi !== viewer && (k === 'hand' || k === 'deck')
+          || v === root && (k === 'main' || k === 'legends' || k === 'tokens'));
+        // Legends and the Squid Idol are public once owned (chips on the seat), so they stay readable
+        o[k] = secret ? { $a: n++, v: x.map(c => c && (c.type === 'legend' || c.id === 'cthulhu') ? pk(c) : { $h: c && c.uid != null ? c.uid : null }) } : pk(x);
+      }
+      return o;
+    };
+    return pk(root);
+  },
+  unpack(data) {
+    const T = [];
+    const up = x => {
+      if (x === null || typeof x !== 'object') return x;
+      if ('$r' in x) return T[x.$r];
+      if ('$f' in x) return NOOP;
+      if ('$h' in x) return x.$h == null ? { hidden: 1 } : { uid: x.$h, id: 'hidden', name: '?', type: 'starter', cost: 0, vp: 0, text: '', hidden: 1 };
+      if ('$a' in x) { const a = []; T[x.$a] = a; for (const e of x.v) a.push(up(e)); return a; }
+      if ('$tr' in x) { const tr = TRAITS.find(t => t.id === x.$tr) || { id: x.$tr, name: x.$tr, text: '' }; T[x.$i] = tr; return tr; }
+      const o = x.$c && DEFS[x.$c] ? { ...DEFS[x.$c] } : x.$k && TOKEN_IDS[x.$k] ? { ...TOKEN_IDS[x.$k] } : {};
+      T[x.$i] = o;
+      for (const k in x) if (k[0] !== '$') o[k] = up(x[k]);
+      return o;
+    };
+    return up(data);
+  },
+  packArg(a) {
+    if (a && typeof a === 'object' && G && G.players && G.players.includes(a)) return { $p: G.players.indexOf(a) };
+    if (a instanceof DOMRect || a instanceof Node) return null;
+    if (a && typeof a === 'object') return { $o: NET.pack(a, null) };
+    return a === undefined ? null : a;
+  },
+  unpackArg(a) {
+    if (a && typeof a === 'object' && '$p' in a) return G.players[a.$p];
+    if (a && typeof a === 'object' && '$o' in a) return NET.unpack(a.$o);
+    return a;
+  },
+
+  /* ---- host side ---- */
+  dirty() { // the table changed: send fresh snapshots soon (many changes in a row become one message)
+    if (NET.role !== 'host' || !G || !G.online || NET.timer) return;
+    NET.timer = setTimeout(NET.flush, 40);
+  },
+  flush() {
+    clearTimeout(NET.timer); NET.timer = null;
+    if (NET.role !== 'host' || !G || !G.online) return;
+    G.players.forEach((p, i) => { if (p.peer) NET.sendTo(p, { t: 'state', s: NET.pack(G, i) }); });
+  },
+  fx(k, args) { // an animation / sound / pop-up: guests replay it right after the snapshot it belongs to
+    if (NET.role !== 'host' || !G || !G.online || NET.quiet) return;
+    NET.flush();
+    NET.send({ t: 'fx', k, a: args.map(NET.packArg) });
+  },
+  wrapFX() { // host: every FX call and sound is also sent to the guests (not the end-of-game ones: guests work those out)
+    for (const k of Object.keys(FX)) {
+      const f = FX[k]; if (typeof f !== 'function' || f.netWrapped) continue;
+      const w = function (...args) {
+        if (k !== 'victory') NET.fx(k, args);
+        NET.quiet++;
+        try { return f.apply(this, args); } finally { NET.quiet--; }
+      };
+      w.netWrapped = true; FX[k] = w;
+    }
+    const play = AUD.play;
+    if (!play.netWrapped) {
+      AUD.play = function (name, arg) {
+        if (!['victory', 'defeat', 'draw', 'turnMe', 'turnAI'].includes(name)) NET.fx('aud', [name, arg]);
+        return play.call(this, name, arg);
+      };
+      AUD.play.netWrapped = true;
+    }
+  },
+  async createRoom(name) {
+    NET.name = name; NET.saveName(name);
+    NET.role = 'host'; NET.phase = 'lobby'; NET.guests = [];
+    NET.status('กำลังสร้างห้อง…');
+    try { await NET.loadPeer(); } catch (e) { return NET.fail('โหลดระบบออนไลน์ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่'); }
+    const tryOpen = (left) => {
+      const code = Array.from({ length: 5 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[rnd(32)]).join('');
+      const peer = NET.newPeer(ROOM_PREFIX + code);
+      NET.peer = peer;
+      peer.on('open', () => { NET.code = code; NET.wrapFX(); NET.showLobby(); });
+      peer.on('connection', conn => NET.hostConn(conn));
+      peer.on('error', e => {
+        if (e.type === 'unavailable-id' && left > 0) { peer.destroy(); tryOpen(left - 1); return; }
+        if (NET.code) console.warn('peer error', e); else NET.fail('สร้างห้องไม่สำเร็จ (' + (e.type || e) + ') ลองใหม่อีกครั้ง');
+      });
+      peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} }); // lost the broker only: rooms already joined keep working
+    };
+    tryOpen(3);
+  },
+  hostConn(conn) {
+    conn.on('data', d => { try { NET.hostData(conn, typeof d === 'string' ? JSON.parse(d) : d); } catch (e) { console.warn(e); } });
+    conn.on('close', () => NET.guestLeft(conn));
+    conn.on('error', () => NET.guestLeft(conn));
+  },
+  hostData(conn, m) {
+    if (m.t === 'hello') {
+      const name = String(m.name || 'พ่อมด').trim().slice(0, 20) || 'พ่อมด';
+      if (NET.phase === 'game' && G && !G.over) {
+        // back after a dropped connection: same browser tab (cid) or the same name on a seat the AI is covering
+        const p = G.players.find(x => x.cid === m.cid && !x.peer) || G.players.find(x => x.away && x.name === name);
+        if (!p) { NET.sendConn(conn, { t: 'full', msg: 'เกมในห้องนี้เริ่มไปแล้ว รอให้จบรอบนี้แล้วค่อยเข้าใหม่' }); return; }
+        NET.conns.set(conn.peer, conn);
+        p.peer = conn.peer; p.cid = m.cid; p.isAI = false; p.away = false;
+        log(`${p.name} กลับเข้าเกม`, 'sys');
+        NET.sendConn(conn, { t: 'seat', seat: G.players.indexOf(p) });
+        render(); NET.flush();
+        return;
+      }
+      const taken = new Set([NET.name, ...NET.guests.filter(g => g.cid !== m.cid).map(g => g.name)]);
+      if (NET.guests.length >= 4 && !NET.guests.some(g => g.cid === m.cid)) { NET.sendConn(conn, { t: 'full', msg: 'ห้องเต็มแล้ว (สูงสุด 5 คน)' }); return; }
+      let nm = name; for (let k = 2; taken.has(nm); k++) nm = `${name} ${k}`;
+      NET.guests = NET.guests.filter(g => g.cid !== m.cid);
+      NET.guests.push({ cid: m.cid, name: nm, peer: conn.peer });
+      NET.conns.set(conn.peer, conn);
+      NET.lobbyChanged();
+      return;
+    }
+    if (!G || NET.phase !== 'game') return;
+    const p = G.players.find(x => x.peer === conn.peer);
+    if (!p) return;
+    if (m.t === 'act') doAction(p, m.a || {});
+    else if (m.t === 'ans') {
+      const q = NET.asks.get(m.id);
+      if (!q || q.who !== p) return;
+      NET.asks.delete(m.id);
+      const o = q.options[+m.i] || q.options[NET.defaultIndex(q.options)];
+      q.res(o.value);
+    }
+  },
+  guestLeft(conn) {
+    if (NET.role !== 'host' || !NET.conns.has(conn.peer) || NET.conns.get(conn.peer) !== conn) return;
+    NET.conns.delete(conn.peer);
+    if (NET.phase === 'lobby') { NET.guests = NET.guests.filter(g => g.peer !== conn.peer); NET.lobbyChanged(); return; }
+    const p = G && G.players.find(x => x.peer === conn.peer);
+    if (!p) return;
+    p.peer = null; p.isAI = true; p.away = true;
+    log(`${p.name} หลุดจากเกม · AI เล่นแทนจนกว่าจะกลับมา`, 'sys');
+    for (const [id, q] of NET.asks) if (q.who === p) { NET.asks.delete(id); q.res(q.options[NET.defaultIndex(q.options)].value); }
+    if (cur() === p && G.endTurnResolve && !G.busy) { const r = G.endTurnResolve; G.endTurnResolve = null; r(); }
+    render();
+  },
+  defaultIndex(options) { const i = options.findIndex(o => o.ghost); return i >= 0 ? i : 0; },
+  askRemote(who, title, options, sub) {
+    const id = ++NET.askSeq;
+    return new Promise(res => {
+      NET.asks.set(id, { who, options, res });
+      NET.flush();
+      NET.sendTo(who, { t: 'ask', id, title, sub, opts: options.map(o => ({ label: o.label, ghost: !!o.ghost, card: o.card ? NET.pack(o.card, null) : null })) });
+    });
+  },
+  lobbyChanged() { if (NET.phase === 'lobby') NET.showLobby(); },
+  showLobby() {
+    NET.phase = 'lobby';
+    if (G && G.online) { // back from a finished game: everyone still connected stays in the room
+      NET.guests = G.players.filter(p => p.peer && NET.conns.has(p.peer)).map(p => ({ cid: p.cid, name: p.name, peer: p.peer }));
+    }
+    NET.send({ t: 'lobby', names: [NET.name, ...NET.guests.map(g => g.name)], code: NET.code });
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    const link = NET.roomLink(NET.code);
+    const humans = 1 + NET.guests.length;
+    const prevAI = $('#lob-ai') ? +$('#lob-ai').value : (humans > 1 ? 0 : 1);
+    const maxAI = 5 - humans;
+    const aiSel = Math.min(prevAI, maxAI);
+    $('#m-title').textContent = 'ห้องออนไลน์';
+    $('#m-sub').innerHTML = link
+      ? 'ส่งลิงก์นี้ให้เพื่อน เปิดแล้วใส่ชื่อก็เข้าห้องได้เลย · คุณเป็นเจ้าภาพ ต้องเปิดหน้านี้ค้างไว้จนจบเกม'
+      : 'ให้เพื่อนเปิดเกมแล้วกด "เข้าห้องเพื่อน" ใส่รหัสนี้ · คุณเป็นเจ้าภาพ ต้องเปิดหน้านี้ค้างไว้จนจบเกม';
+    $('#m-opts').innerHTML = `<div class="lobby">
+      <div class="roomcode"><span class="k">รหัสห้อง</span><b id="lob-code">${NET.code}</b>
+        <button class="btn ghost" id="lob-copy">${link ? 'คัดลอกลิงก์' : 'คัดลอกรหัส'}</button></div>
+      ${link ? `<input class="roomlink" id="lob-link" readonly value="${escHTML(link)}">` : ''}
+      <div class="sect-label">ผู้เล่นในห้อง (${humans}/5)</div>
+      <ol class="lobby-list">
+        <li><b>${escHTML(NET.name)}</b> <span class="seattag">เจ้าภาพ (คุณ)</span></li>
+        ${NET.guests.map(g => `<li><b>${escHTML(g.name)}</b> <span class="seattag">เพื่อน</span></li>`).join('')}
+        ${humans < 2 ? '<li class="waiting">รอเพื่อนเข้าห้อง…</li>' : ''}
+      </ol>
+      <label class="fld" for="lob-ai">เติมผู้เล่น AI<select id="lob-ai">${Array.from({ length: maxAI + 1 }, (_, k) => `<option value="${k}" ${k === aiSel ? 'selected' : ''}>${k === 0 ? 'ไม่เติม' : k + ' ตัว'} (รวม ${humans + k} ผู้เล่น)</option>`).join('')}</select></label>
+      <div class="lobby-btns"><button class="btn" id="lob-start">เริ่มเกม</button> <button class="btn ghost" id="lob-close">ปิดห้อง</button></div>
+      <div class="msub" id="lob-msg"></div>
+    </div>`;
+    const check = () => { const ok = humans + +$('#lob-ai').value >= 2; $('#lob-start').disabled = !ok; $('#lob-msg').textContent = ok ? '' : 'ต้องมีอย่างน้อย 2 ผู้เล่น: รอเพื่อน หรือเติม AI'; };
+    $('#lob-ai').onchange = check; check();
+    $('#m-opts').onclick = e => {
+      if (e.target.id === 'lob-copy') {
+        const txt = link || NET.code;
+        (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { e.target.textContent = 'คัดลอกแล้ว ✓'; },
+          () => { const i = $('#lob-link'); if (i) { i.select(); document.execCommand('copy'); e.target.textContent = 'คัดลอกแล้ว ✓'; } });
+      } else if (e.target.id === 'lob-start' && !e.target.disabled) NET.startOnline(+$('#lob-ai').value);
+      else if (e.target.id === 'lob-close') NET.leave();
+    };
+  },
+  startOnline(nAI) {
+    NET.phase = 'game';
+    const guests = NET.guests.filter(g => NET.conns.has(g.peer));
+    $('#modal').hidden = true; $('#m-opts').onclick = null;
+    guests.forEach((g, k) => NET.sendConn(NET.conns.get(g.peer), { t: 'seat', seat: k + 1 }));
+    G = null;
+    startGame(NET.name, nAI, guests);
+    if (G) { guests.forEach((g, k) => { G.players[k + 1].cid = g.cid; }); if (!guests.length) G.online = false; }
+  },
+
+  /* ---- guest side ---- */
+  async join(code, name) {
+    code = String(code || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (!code) return NET.showJoin('', 'ใส่รหัสห้องก่อน');
+    NET.name = name; NET.saveName(name); NET.code = code;
+    NET.role = 'guest';
+    NET.status(`กำลังเข้าห้อง ${code}…`);
+    try { await NET.loadPeer(); } catch (e) { return NET.fail('โหลดระบบออนไลน์ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', code); }
+    const peer = NET.newPeer(); NET.peer = peer;
+    let opened = false;
+    const timer = setTimeout(() => { if (!opened) NET.fail('เชื่อมต่อห้องไม่สำเร็จ: เจ้าภาพอาจปิดห้องไปแล้ว หรือเครือข่ายบล็อกการเชื่อมต่อ', code); }, 20000);
+    peer.on('open', () => {
+      const conn = peer.connect(ROOM_PREFIX + code, { reliable: true });
+      NET.host = conn;
+      conn.on('open', () => { opened = true; clearTimeout(timer); NET.sendConn(conn, { t: 'hello', name, cid: NET.cid() }); NET.status('เชื่อมต่อแล้ว รอเจ้าภาพ…'); });
+      conn.on('data', d => { try { NET.guestData(typeof d === 'string' ? JSON.parse(d) : d); } catch (e) { console.warn(e); } });
+      conn.on('close', () => NET.hostLost());
+      conn.on('error', () => NET.hostLost());
+    });
+    peer.on('error', e => {
+      clearTimeout(timer);
+      if (e.type === 'peer-unavailable') NET.fail(`ไม่พบห้อง ${code} ตรวจรหัสอีกครั้ง หรือให้เจ้าภาพสร้างห้องใหม่`, code);
+      else if (!opened) NET.fail('เชื่อมต่อไม่สำเร็จ (' + (e.type || e) + ')', code);
+    });
+  },
+  guestData(m) {
+    if (m.t === 'lobby') { NET.lobbyNames = m.names; if (!G || !G.players || G.over) NET.showWaiting(); }
+    else if (m.t === 'full') { NET.left = true; NET.fail(m.msg, NET.code); NET.close(); }
+    else if (m.t === 'seat') { ME = m.seat; $('#modal').hidden = true; $('#m-opts').onclick = null; G = null; }
+    else if (m.t === 'state') {
+      const old = G; G = NET.unpack(m.s);
+      G.prevLoc = old && old.players && old.players.length === G.players.length ? old.prevLoc : null;
+      G.animUid = (old && old.animUid) || 0;
+      render();
+    }
+    else if (m.t === 'fx') NET.replay(m.k, m.a);
+    else if (m.t === 'ask') {
+      const opts = m.opts.map((o, i) => ({ label: o.label, ghost: o.ghost, card: o.card ? NET.unpack(o.card) : null, value: i }));
+      localChoose(m.title, opts, m.sub).then(i => NET.send({ t: 'ans', id: m.id, i }));
+    }
+    else if (m.t === 'finish') { if (G) showFinal(); }
+  },
+  replay(k, a) {
+    if (!G || !G.players) return;
+    let args; try { args = a.map(NET.unpackArg); } catch (e) { return; }
+    try {
+      if (k === 'aud') AUD.play(args[0], args[1] == null ? undefined : args[1]);
+      else if (k === 'ev') showEvent(...args);
+      else if (typeof FX[k] === 'function') { const r = FX[k](...args); if (r && r.catch) r.catch(NOOP); }
+    } catch (e) { console.warn('fx', k, e); }
+  },
+  showWaiting() {
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    $('#m-title').textContent = `ห้อง ${NET.code}`;
+    $('#m-sub').textContent = 'เข้าห้องแล้ว รอเจ้าภาพเริ่มเกม…';
+    $('#m-opts').innerHTML = `<div class="lobby"><div class="sect-label">ผู้เล่นในห้อง (${NET.lobbyNames.length}/5)</div>
+      <ol class="lobby-list">${NET.lobbyNames.map((n, i) => `<li><b>${escHTML(n)}</b> ${i === 0 ? '<span class="seattag">เจ้าภาพ</span>' : n === NET.name ? '<span class="seattag">คุณ</span>' : ''}</li>`).join('')}</ol>
+      <div class="lobby-btns"><button class="btn ghost" id="lob-leave">ออกจากห้อง</button></div></div>`;
+    $('#m-opts').onclick = e => { if (e.target.id === 'lob-leave') NET.leave(); };
+  },
+  hostLost() {
+    if (NET.role !== 'guest' || NET.left) return;
+    NET.left = true;
+    const code = NET.code;
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    $('#m-title').textContent = 'การเชื่อมต่อหลุด';
+    $('#m-sub').textContent = 'ติดต่อเจ้าภาพไม่ได้แล้ว (เจ้าภาพอาจปิดหน้าเกม หรือเน็ตหลุด) ถ้าห้องยังเปิดอยู่ กดเข้าใหม่ได้ ที่นั่งเดิมจะกลับมาเป็นของคุณ';
+    $('#m-opts').innerHTML = '<button class="btn" id="re-join">เข้าห้องอีกครั้ง</button> <button class="btn ghost" id="re-home">กลับหน้าแรก</button>';
+    $('#m-opts').onclick = e => {
+      if (e.target.id === 're-join') { NET.close(); NET.left = false; G = null; render(); NET.join(code, NET.name); }
+      if (e.target.id === 're-home') NET.leave();
+    };
+  },
+
+  /* ---- shared ---- */
+  status(msg) {
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    $('#m-title').textContent = 'ออนไลน์'; $('#m-sub').textContent = msg;
+    $('#m-opts').innerHTML = '<button class="btn ghost" id="st-cancel">ยกเลิก</button>';
+    $('#m-opts').onclick = e => { if (e.target.id === 'st-cancel') NET.leave(); };
+  },
+  fail(msg, code) {
+    NET.close();
+    if (code != null) return NET.showJoin(code, msg);
+    showSetup(msg);
+  },
+  close() {
+    NET.left = true;
+    try { if (NET.host) NET.host.close(); } catch (e) {}
+    for (const c of NET.conns.values()) try { c.close(); } catch (e) {}
+    try { if (NET.peer) NET.peer.destroy(); } catch (e) {}
+    NET.peer = null; NET.host = null; NET.conns.clear(); NET.guests = []; NET.asks.clear();
+    NET.role = null; NET.phase = 'lobby';
+  },
+  leave() { // back to the start screen, offline
+    NET.close();
+    history.replaceState(null, '', location.pathname + location.search);
+    location.reload();
+  },
+  showJoin(code = '', err = '') {
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    $('#m-title').textContent = 'เข้าห้องเพื่อน';
+    $('#m-sub').innerHTML = err ? `<span class="err">${escHTML(err)}</span>` : 'ใส่ชื่อของคุณ แล้วกดเข้าห้อง';
+    $('#m-opts').innerHTML = `<div class="setup-grid" style="width:100%">
+      <label class="fld" for="j-name">ชื่อพ่อมดของคุณ<input id="j-name" value="${escHTML(NET.name || NET.savedName() || 'Wizard')}" maxlength="20"></label>
+      <label class="fld" for="j-code">รหัสห้อง<input id="j-code" value="${escHTML(code)}" maxlength="8" style="text-transform:uppercase;letter-spacing:.2em" placeholder="เช่น K7QXP"></label>
+      </div>
+      <button class="btn" id="j-go">เข้าห้อง</button> <button class="btn ghost" id="j-back">กลับ</button>`;
+    $('#m-opts').onclick = e => {
+      if (e.target.id === 'j-go') { NET.left = false; NET.join($('#j-code').value, $('#j-name').value.trim() || 'Wizard'); }
+      if (e.target.id === 'j-back') NET.leave();
+    };
+    $('#m-opts').onkeydown = e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') $('#j-go').click(); };
+  },
+};
+// a sound only for player p (e.g. your own draw): played here if p is you, sent to p's browser if p is online
+function soundFor(p, name) {
+  if (!G || !p) return;
+  if (p === meP()) AUD.play(name);
+  else NET.sendTo(p, { t: 'fx', k: 'aud', a: [name, null] });
+}
+// the host's page closing ends the room for everyone
+addEventListener('pagehide', () => { if (NET.role) NET.close(); });
+
 /* ---------------- dev testing (run from the browser console; see CLAUDE.md) ----------------
    Both helpers switch animations, sound and AI pauses off while they run, then restore them. */
 async function withoutFX(fn) {
@@ -4148,5 +4680,7 @@ async function testCard(id, { hp = 15, oppHp = 15, players = 3, keepTraits = fal
   });
 }
 
-showSetup();
+// a room link (…#room=K7QXP) opens straight on the join screen
+const ROOM_IN_LINK = (location.hash.match(/room=([A-Za-z0-9]+)/) || [])[1];
+if (ROOM_IN_LINK) NET.showJoin(ROOM_IN_LINK.toUpperCase()); else showSetup();
 </script>

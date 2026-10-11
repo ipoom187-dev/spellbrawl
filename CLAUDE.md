@@ -94,6 +94,33 @@ Ignore stray lines like "ชุด 1" (left over from copy-paste). If the copies
 - Add the copy count from line 5 to `MAIN` (main-deck types only).
 - Mention balance concerns briefly (e.g. uncapped damage) but implement what the user asked.
 
+## Online play (added 2026-10-11)
+
+Friends play together on separate devices. One browser is the **host** ("สร้างห้อง"): it runs the whole game
+(rules, AI seats) exactly as offline. **Guests** join by link (`…#room=CODE`) or code ("เข้าห้องเพื่อน"); they only
+draw snapshots the host sends, send their clicks back, and answer questions forwarded to them. Code: the
+`/* ---------------- online play` section (`NET`), just above the dev-testing helpers.
+
+- Transport: PeerJS 1.5.4 (WebRTC + free public broker, no account), loaded from unpkg/jsdelivr only when going online.
+  Room peer id = `spellbrawl-room-<CODE>`. `?net=bc` swaps in a BroadcastChannel fake so several tabs of one
+  browser can be tested offline (Playwright).
+- `ME` = the seat this browser shows/controls (0 offline and for the host); always use `meP()` for "you", never
+  `G.players[0]`. `render()` seats the others clockwise from `ME`.
+- **Every `humanChoose` takes the deciding player first:** `humanChoose(who, title, options, sub)`. Online, the host
+  forwards it to `who`'s browser (`NET.askRemote`); offline it is the old modal (`localChoose`). New cards must pass
+  the right player (the one whose `isAI` is checked next to it: `p`, `t`, `killer` …), or the question pops up on
+  the wrong screen.
+- Turn actions go through `doAction(p, a)` (play / buy / activate / trait / sacrifice / playall / end) — the click
+  handler and guests' messages both use it.
+- Snapshots: `NET.pack(G, viewerSeat)` / `NET.unpack` (cards as id + fields that differ from `DEFS`; tokens from
+  `TOKENS`; traits by id). Rivals' hands/decks, the main deck, face-down Legends and the token pile are hidden
+  until `G.over`. New state on `G` is sent automatically; keep it plain data (no DOM nodes, Maps, class instances).
+- FX and sounds on the host are forwarded (`NET.wrapFX`) and replayed by guests; pop-ups from `trackMoves` are
+  worked out by each guest itself; direct `showEvent` calls are forwarded. A sound only for one player → `soundFor(p, name)`.
+- A guest who drops becomes AI (`p.away`) until they rejoin (same tab or same name). If the host closes the page the room ends.
+- After changing turn flow, choices or `G` structure, also run the multi-tab check: host + 2 guests with `?net=bc`
+  (`tools/online-test.js`, needs Node + Playwright), not only `simulate(3)`.
+
 ## Testing — keep it fast
 
 The user noticed card additions taking too long, so match the test to the change. Open `index.html` in the
@@ -121,6 +148,7 @@ Which to run:
 ## Repo
 
 - Launchers: `Spellbrawl.cmd` (Windows, CRLF) and `Spellbrawl.command` (macOS, executable bit).
+- Published on GitHub Pages from `main` (root): `index.html` + `art/` are served as-is; art now loads on http(s) too.
 - Art: `art/<id>.png|jpg` per card, `art/board.jpg` (table), `art/mat.jpg` (rug under your own seat panel `.you`; same dim slider as the board).
   AI art: `tools/gen-art.ps1` (Windows PowerShell, Google Gemini, key in the user's `GEMINI_API_KEY` env var — never ask for it in chat)
   builds each prompt from `tools/art-prompts.tsv` + `tools/art-style.txt`; `-Only a,b -Force` re-rolls cards, `-Prompt … -Name … -Aspect 16:9` makes a one-off image.
