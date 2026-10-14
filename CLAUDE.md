@@ -162,4 +162,13 @@ Which to run:
   Every `prompt` already ends with the full style text (the user copies prompts into other image tools by hand),
   so a new row = scene description + ". " + the text of `tools/art-style.txt`; `gen-art.ps1` no longer appends it.
   The browser pane opens the game as a `data:` snapshot, so `art/` images never load there; ask the user to check art in the real game.
+- **Card pictures the user sends** (an image attached in chat + the card name, e.g. "Weird Wand"): run
+  `powershell -ExecutionPolicy Bypass -File tools\add-art.ps1 -Image "<attached image path>" -Name "<card name>"` (or `-Id <id>`).
+  It centre-crops to square, saves `art/<id>.jpg` at 512×512 and removes older `art/<id>.*`. Chaos cards share
+  `art/chaos.jpg` (tall 9:16, not square: don't use add-art.ps1 for it). If the name matches no card, say so and ask
+  which card. Then show the saved picture, and tell the user it is not pushed yet. Don't commit/push until the user says "push".
+- The user's prompt page "Spellbrawl Art Prompts" (https://claude.ai/artifact/LhbyR22yfaufQNYcDQjnuB) shows each card's
+  picture from `art/<id>.jpg` files published with it; the page has `const IMGS = new Set([...])` listing the ids with art.
+  After adding pictures, read the artifact, add the ids to `IMGS`, and republish to the same url with
+  `files: {"art/<id>.jpg": "art/<id>.jpg"}` for each new or replaced picture.
 - The user works on both Windows and macOS; `git pull` before editing.
