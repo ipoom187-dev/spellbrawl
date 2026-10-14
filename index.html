@@ -2944,21 +2944,17 @@ const FX = (() => {
       sparks(innerWidth / 2, innerHeight * .42, '#f0c35a', 40, 260, 10); sparks(x, y, '#f0c35a', 20, 120, 8); shake(6); Embers.surge();
       return banner('ล้มตำนาน!', `${p.name} พิชิต ${L.name}`, 'gold', T(1600));
     },
-    // Chaos: the card is held big in the middle of a lightning storm long enough to read; click skips
+    // Chaos: the card is held big in the middle of a lightning storm until the player clicks it away
     async chaos(c) {
-      const hold = 3600;
       const sky = spawn('screen storm', 0, 0);
       sky.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, fill: 'forwards' });
       const stopStorm = RM.matches ? () => {} : storm();
-      AUD.play('rain', hold / 1000 + 1.2);
+      AUD.play('rain', 5);
       shake(12);
       const box = spawn('chaos-show', 0, 0);
-      box.innerHTML = `<div class="cs-title">โกลาหล!</div><div class="cs-card">${cardHTML(c)}</div><div class="cs-hint">คลิกที่ใดก็ได้เพื่อไปต่อ</div>`;
+      box.innerHTML = `<div class="cs-title">โกลาหล!</div><div class="cs-card">${cardHTML(c, { noZoom: true })}</div><div class="cs-hint">คลิกซ้ายที่ใดก็ได้เพื่อปิด</div>`;
       box.querySelector('.cs-card').style.setProperty('--k', Math.max(1.2, Math.min(2.4, innerHeight * .55 / 190, innerWidth * .8 / 132)).toFixed(2));
-      let skip;
-      const clicked = new Promise(r => { skip = r; });
-      box.addEventListener('pointerdown', () => skip());
-      await Promise.race([sleep(hold), clicked]);
+      await new Promise(r => box.addEventListener('pointerdown', e => { if (e.button === 0) r(); }));
       stopStorm();
       for (const el of [sky, box]) {
         el.style.pointerEvents = 'none';
@@ -3917,14 +3913,14 @@ function render() {
   const waitNames = (G.waiting || []).filter(n => n !== me.name);
   const waitHTML = !G.online || G.over ? '' : waitNames.length ? `<span class="waitpill">⏳ รอ ${waitNames.join(', ')} ตัดสินใจ…</span>`
     : cur() !== me && !cur().isAI && G.endTurnResolve ? `<span class="waitpill">⏳ ${cur().name} กำลังเล่น…</span>` : '';
-  // everything that happened to cards this turn: received, discarded, destroyed, revealed, defended, ✲
-  const evs = (G.turn && G.turn.events || []).slice(-14);
-  const eventsHTML = evs.map(ev => `<div class="ev ev-${ev.kind}"><span class="ev-cap">${ev.label}</span>${cardHTML(ev.card, { small: true })}</div>`).join('');
-  const arena = `<div class="arena ${shown.length || evs.length ? 'busy' : ''}">
+  // everything that happened to cards this turn (received, discarded, destroyed, revealed, defended, ✲) is behind a
+  // button; it opens in the viewer (openViewer 'events'), which keeps updating while it is open
+  const nEv = (G.turn && G.turn.events || []).length;
+  const arena = `<div class="arena ${shown.length || nEv ? 'busy' : ''}">
       <div class="arena-title">สนามร่ายเวท · ${who} <span>· พลังเทิร์นนี้ <b class="arena-pw">${pw}</b></span> ${waitHTML}</div>
-      <div class="sect-label">การ์ดที่เล่น</div>
+      <div class="sect-label">การ์ดที่เล่น
+        ${nEv ? `<button class="linkbtn ev-btn" data-act="view" data-what="events">เกิดอะไรขึ้นบ้าง (${nEv})</button>` : ''}</div>
       <div class="cards">${arenaCards || '<div class="empty">ยังไม่มีการ์ดถูกเล่นในเทิร์นนี้</div>'}</div>
-      ${evs.length ? `<div class="sect-label" style="margin-top:12px">เกิดอะไรขึ้นบ้าง</div><div class="cards events">${eventsHTML}</div>` : ''}
     </div>`;
 
   const hand = me.hand.length ? me.hand.map((c, i) => cardHTML(c, { play: myTurn, dim: (G.turn.defUsed || []).includes(c), attrs: `data-act="play" data-i="${i}"` })).join('') : '<div class="empty">มือว่าง</div>';
@@ -4034,6 +4030,12 @@ function openViewer(what, pi) {
     body = `<div class="vgroup"><h4>สัตว์รับใช้</h4>${p.familiar ? cardsBlock([p.familiar]) : '<div class="empty">ซื้อเข้าเด็คไปแล้ว</div>'}</div>
       <div class="vgroup"><h4>การ์ดต่อเนื่อง</h4>${cardsBlock(p.ongoing)}</div>
       <div class="vgroup"><h4>Dead Wizard Token</h4>${p.tokens.length ? `<div class="chips">${p.tokens.map(t => `<span class="chip skull">☠ ${t.name} (${tokenVP(t)} VP): ${t.text}</span>`).join('')}</div>` : '<div class="empty">ยังไม่เคยตาย</div>'}</div>`;
+  } else if (what === 'events') {
+    const evs = G.turn && G.turn.events || [];
+    title = `เกิดอะไรขึ้นบ้าง · เทิร์นของ ${cur().name}`;
+    sub = 'การ์ดที่ถูกได้รับ ทิ้ง ทำลาย เปิดดู ใช้ป้องกัน หรือเปิดใช้ ✲ ในเทิร์นนี้ เรียงจากเก่าไปใหม่';
+    body = evs.length ? `<div class="cards events">${evs.map(ev => `<div class="ev ev-${ev.kind}"><span class="ev-cap">${ev.label}</span>${cardHTML(ev.card, { small: true })}</div>`).join('')}</div>`
+      : '<div class="empty">ยังไม่มีอะไรเกิดขึ้นในเทิร์นนี้</div>';
   } else if (what === 'destroyed') {
     title = `การ์ดที่ถูกทำลาย · ${G.destroyed.length} ใบ`;
     body = cardsBlock(G.destroyed.slice().reverse(), { group: true });
