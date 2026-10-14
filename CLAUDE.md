@@ -89,6 +89,10 @@ Ignore stray lines like "ชุด 1" (left over from copy-paste). If the copies
 - Card pop-ups: `trackMoves()` (run by every `render()`) diffs where each card is and calls `showEvent(card, label, kind)` for public moves — received, passed between players, discarded, destroyed, taken from / put back from the discard — so new cards need nothing extra. Moves that are not a change of place (reveal, defend, ✲) call `showEvent` directly. Draws and hand↔deck stay hidden; `G.quietMoves` silences end-of-turn cleanup.
 - `G.curCard` is the card whose `play` is resolving right now (null otherwise), so `attack` can tell which card attacked (e.g. `isWand` for The Dirty Wand).
 - Ongoing card reacting to its owner playing another card → `onCardPlayed: async (p, card) => …` (runs after that card resolves; `G.turn.types[type]` already counts it). Example: `tentakill`.
+- Art: every Chaos card shares one picture, `art/chaos.jpg` (`artKey()`; one entry in the in-game art editor).
+  Chaos cards are full-art (picture fills the whole card, 1:2 tall), so `chaos.jpg` is NOT a row in
+  `tools/art-prompts.tsv` (that mode crops square); make it with the one-off mode: `-Prompt "…" -Name chaos -Aspect 9:16 -Width 640`.
+  `-Retrim` skips board.jpg, mat.jpg and chaos.jpg. New Chaos cards need no art or prompt of their own.
 - AI play order: `playFirst:1` casts a card before everything else (e.g. it counts cards still in hand), `playLate:1`
   after everything else (e.g. "if you control another creature" checked on play, like `orc`).
 - Add the copy count from line 5 to `MAIN` (main-deck types only).

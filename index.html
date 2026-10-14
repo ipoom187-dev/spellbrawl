@@ -153,6 +153,15 @@ header.top .sp{flex:1}
 .art-item .row{display:flex;gap:4px}
 .board-preview{width:100%;max-width:520px;aspect-ratio:16/9;border-radius:12px;border:6px solid var(--wood);display:grid;place-items:center;color:var(--mute);font-size:12px;
   background:radial-gradient(ellipse at 50% 40%, var(--felt1), var(--felt2))}
+/* Chaos cards: the shared art/chaos.jpg fills the whole card, text sits on a dark scrim over it */
+.card.t-chaos{position:relative;overflow:hidden;aspect-ratio:1/2;min-height:auto;background:#140c1c;color:#f3eaff;border-color:#7a4bb0}
+.card.t-chaos .c-art{position:absolute;inset:0;aspect-ratio:auto;height:100%;border:0;z-index:0}
+.card.t-chaos > :not(.c-art){position:relative;z-index:1}
+.card.t-chaos .c-head{background:linear-gradient(#000d,#0000)}
+.card.t-chaos .c-type{margin-top:auto;color:#d9c8ff;border:0;background:#0009}
+.card.t-chaos .c-text{flex:0 0 auto;background:#000b;color:#fff;text-shadow:0 1px 2px #000}
+.card.t-chaos .c-foot{background:#000b}
+.card.t-chaos.mini{aspect-ratio:auto}
 .card.buyable{cursor:pointer;box-shadow:0 0 0 2px var(--gold),0 0 18px #f0c35a55}
 .card.buyable:hover,.card.playable:hover{transform:translateY(-4px)}
 .card.playable{cursor:pointer}
@@ -1091,14 +1100,14 @@ def('grove', { name:'Fungal Grove', type:'location', cost:3, vp:1, ongoing:1, te
   play: async p => heal(p, 2), onStart: async p => heal(p, 2) });
 
 // chaos (resolve when revealed into Line-Up)
-def('storm', { name:'Brimstone Storm', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนรับ 2 ดาเมจ', chaos: async by => attack(null, { to:'all', dmg:2, chaos:true, by }) });
-def('toads', { name:'Plague of Toads', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนได้ Limp Wand', chaos: async by => attack(null, { to:'all', bent:1, chaos:true, by }) });
-def('leak', { name:'Mana Leak', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนทิ้งการ์ดในมือ 1 ใบ', chaos: async by => attack(null, { to:'all', discard:1, chaos:true, by }) });
-def('quake', { name:'Earthquake', type:'chaos', text:'พ่อมดทุกคนทำลายการ์ดต่อเนื่องของตัวเอง 1 ใบ (ป้องกันไม่ได้)',
+def('storm', { name:'Chaos 0', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนรับ 2 ดาเมจ', chaos: async by => attack(null, { to:'all', dmg:2, chaos:true, by }) });
+def('toads', { name:'Chaos 1', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนได้ Limp Wand', chaos: async by => attack(null, { to:'all', bent:1, chaos:true, by }) });
+def('leak', { name:'Chaos 2', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนทิ้งการ์ดในมือ 1 ใบ', chaos: async by => attack(null, { to:'all', discard:1, chaos:true, by }) });
+def('quake', { name:'Chaos 3', type:'chaos', text:'พ่อมดทุกคนทำลายการ์ดต่อเนื่องของตัวเอง 1 ใบ (ป้องกันไม่ได้)',
   chaos: async () => { for (const t of turnOrder()) await destroyOngoing(t); } });
-def('tithe', { name:'Soul Tithe', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดที่ HP มากที่สุดรับ 4 ดาเมจ', chaos: async by => attack(null, { to:'strongest', dmg:4, chaos:true, by }) });
-def('gift', { name:'Wild Gift', type:'chaos', text:'พ่อมดทุกคนฟื้น 3 HP', chaos: async () => { turnOrder().forEach(t => heal(t, 3)); } });
-def('chaosA', { name:'Fresh Start Fiasco', type:'chaos',
+def('tithe', { name:'Chaos 4', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดที่ HP มากที่สุดรับ 4 ดาเมจ', chaos: async by => attack(null, { to:'strongest', dmg:4, chaos:true, by }) });
+def('gift', { name:'Chaos 5', type:'chaos', text:'พ่อมดทุกคนฟื้น 3 HP', chaos: async () => { turnOrder().forEach(t => heal(t, 3)); } });
+def('chaosA', { name:'Chaos 6', type:'chaos',
   text:'พ่อมดแต่ละคนเลือก: ทิ้งการ์ดในมือทั้งหมดแล้วจั่ว 2 ใบ <i>หรือ</i> รับ Limp Wand 1 ใบ',
   chaos: async () => {
     const n = G.players.length;
@@ -1106,14 +1115,14 @@ def('chaosA', { name:'Fresh Start Fiasco', type:'chaos',
       const t = turnOrder()[k]; if (!t) break;
       const weak = t.hand.filter(c => aiVal(c) <= 0).length;
       const swap = t.isAI ? t.hand.length <= 2 || weak * 2 >= t.hand.length
-        : await humanChoose(t, 'Fresh Start Fiasco: เลือก 1 อย่าง', [{ label: `ทิ้งทั้งมือ (${t.hand.length} ใบ) แล้วจั่ว 2`, value: true }, { label: 'รับ Limp Wand 1 ใบ', value: false, ghost: true }],
+        : await humanChoose(t, 'Chaos 6: เลือก 1 อย่าง', [{ label: `ทิ้งทั้งมือ (${t.hand.length} ใบ) แล้วจั่ว 2`, value: true }, { label: 'รับ Limp Wand 1 ใบ', value: false, ghost: true }],
             `มือตอนนี้: ${t.hand.map(c => c.name).join(', ') || '—'}`);
       if (swap) { const m = t.hand.length; t.discard.push(...t.hand); t.hand = []; log(`${t.name} ทิ้งการ์ดในมือ ${m} ใบ แล้วจั่ว 2`); await draw(t, 2); }
       else gainBent(t);
     }
   } });
 
-/* ---- Tall Poppy Smash–Z helpers ---- */
+/* ---- Chaos 7–Z helpers ---- */
 // turn player first; a player who opted out of a Chaos card (The Astral Rune) is left out
 const turnOrder = () => G.players.map((_, k) => G.players[(G.cur + k) % G.players.length]).filter(t => t !== G.optOut);
 const handCost = p => p.hand.reduce((s, c) => s + (c.cost || 0), 0);
@@ -1137,10 +1146,10 @@ async function attackOnly(card, owner, self) {
   finally { G.attackOnly = null; }
 }
 
-def('chaosB', { name:'Tall Poppy Smash', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดที่ HP มากที่สุดรับ 6 ดาเมจ (ถ้าเสมอ โดนทุกคนที่เสมอ)',
+def('chaosB', { name:'Chaos 7', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดที่ HP มากที่สุดรับ 6 ดาเมจ (ถ้าเสมอ โดนทุกคนที่เสมอ)',
   chaos: async by => { const m = Math.max(...turnOrder().map(t => t.hp)); await attack(null, { to:'where', where: t => t.hp === m, dmg:6, chaos:true, by }); } });
 
-def('chaosC', { name:'Swap Meet Shuffle', type:'chaos', atk:1,
+def('chaosC', { name:'Chaos 8', type:'chaos', atk:1,
   text:'<b>โจมตี:</b> พ่อมดทุกคนเปิดการ์ดใบบนสุดของเด็ค คนที่เปิดได้ใบแพงที่สุดส่งใบนั้นไปกองทิ้งของคนที่เปิดได้ใบถูกที่สุด',
   chaos: async by => {
     const shown = [];
@@ -1151,19 +1160,19 @@ def('chaosC', { name:'Swap Meet Shuffle', type:'chaos', atk:1,
     const receivers = shown.filter(s => cost(s) === lo).map(s => s.t);
     for (const g of shown.filter(s => cost(s) === hi)) {
       const to = receivers.length === 1 ? receivers[0] : g.t.isAI ? receivers[rnd(receivers.length)]
-        : await humanChoose(t, `Swap Meet Shuffle: ส่ง ${g.c.name} ให้ใคร?`, receivers.map(r => ({ label: r.name, value: r })));
+        : await humanChoose(t, `Chaos 8: ส่ง ${g.c.name} ให้ใคร?`, receivers.map(r => ({ label: r.name, value: r })));
       g.t.deck.splice(g.t.deck.lastIndexOf(g.c), 1); to.discard.push(g.c);
       log(`${g.t.name} ส่ง ${g.c.name} ไปกองทิ้งของ ${to.name}`, 'sys');
     }
   } });
 
-def('chaosD', { name:'Blood Bank Clearance', type:'chaos',
+def('chaosD', { name:'Chaos 9', type:'chaos',
   text:'พ่อมดแต่ละคน จ่าย 4 HP เพื่อทำลายการ์ดในมือ 1 ใบได้ ทำซ้ำได้ไม่จำกัด (ต้องมีอย่างน้อย 4 HP · ถ้าตายก็หยุด)',
   chaos: async () => {
     for (const t of turnOrder()) {
       while (t.hp >= 4 && t.hand.length) {
         const c = t.isAI ? (t.hp > 12 ? t.hand.find(isJunk(t)) || null : null)
-          : await humanChoose(t, `Blood Bank Clearance: จ่าย 4 HP ทำลายการ์ดในมือ? (ตอนนี้ ${t.hp} HP)`, [...t.hand.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }],
+          : await humanChoose(t, `Chaos 9: จ่าย 4 HP ทำลายการ์ดในมือ? (ตอนนี้ ${t.hp} HP)`, [...t.hand.map(x => ({ card: x, value: x })), { label: 'พอแล้ว', value: null, ghost: true }],
               'ทำซ้ำได้ตราบที่มีอย่างน้อย 4 HP · ถ้า HP เหลือ 0 คุณจะตาย');
         if (!c) break;
         t.hand.splice(t.hand.indexOf(c), 1); G.destroyed.push(c); t.hp -= 4; t.hitFlash = true;
@@ -1173,7 +1182,7 @@ def('chaosD', { name:'Blood Bank Clearance', type:'chaos',
     }
   } });
 
-def('chaosE', { name:'Rich Kid Tax', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนรวมราคาการ์ดในมือ คนที่รวมได้สูงสุดได้ Limp Wand 2 ใบ',
+def('chaosE', { name:'Chaos 10', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนรวมราคาการ์ดในมือ คนที่รวมได้สูงสุดได้ Limp Wand 2 ใบ',
   chaos: async by => {
     const sums = [];
     await attack(null, { to:'all', chaos:true, by, dmgText:'รวมราคาการ์ดในมือ · สูงสุดได้ Limp Wand 2 ใบ', dmg: t => { sums.push({ t, s: handCost(t) }); return 0; } });
@@ -1182,7 +1191,7 @@ def('chaosE', { name:'Rich Kid Tax', type:'chaos', atk:1, text:'<b>โจมต�
     for (const x of sums.filter(x => x.s === m)) { log(`${x.t.name} รวมราคาในมือได้ ${m} (สูงสุด)`); gainBent(x.t); gainBent(x.t); }
   } });
 
-def('chaosF', { name:'Deck Roulette', type:'chaos', atk:1,
+def('chaosF', { name:'Chaos 11', type:'chaos', atk:1,
   text:'<b>โจมตี:</b> พ่อมดทุกคนเปิดการ์ด 2 ใบบนสุดของเด็ค ทำลาย 1 ใบ จั่วอีกใบ แล้วรับดาเมจเท่ากับราคาใบที่จั่ว',
   chaos: async by => {
     await attack(null, { to:'all', chaos:true, by, dmgText:'เปิด 2 ใบ ทำลาย 1 จั่ว 1 รับดาเมจเท่าราคาใบที่จั่ว', dmg: async t => {
@@ -1192,7 +1201,7 @@ def('chaosF', { name:'Deck Roulette', type:'chaos', atk:1,
       if (got.length === 2) {
         const junk = got.find(isJunk(t)), dear = got.slice().sort((a, b) => (b.cost || 0) - (a.cost || 0))[0];
         gone = t.isAI ? (junk || ((dear.cost || 0) >= t.hp ? dear : got.slice().sort((a, b) => aiVal(a) - aiVal(b))[0]))
-          : await humanChoose(t, 'Deck Roulette: เลือกใบที่จะทำลาย', got.map(x => ({ card: x, value: x })), 'อีกใบจะขึ้นมือ และคุณรับดาเมจเท่ากับราคาของใบนั้น');
+          : await humanChoose(t, 'Chaos 11: เลือกใบที่จะทำลาย', got.map(x => ({ card: x, value: x })), 'อีกใบจะขึ้นมือ และคุณรับดาเมจเท่ากับราคาของใบนั้น');
         G.destroyed.push(gone);
       }
       const keep = got.find(x => x !== gone);
@@ -1202,7 +1211,7 @@ def('chaosF', { name:'Deck Roulette', type:'chaos', atk:1,
     } });
   } });
 
-def('chaosG', { name:'Body Swap Mixup', type:'chaos', text:'พ่อมดที่ HP มากที่สุดกับน้อยที่สุดสลับ HP กัน (ไม่ใช่การโจมตี · ป้องกันไม่ได้)',
+def('chaosG', { name:'Chaos 12', type:'chaos', text:'พ่อมดที่ HP มากที่สุดกับน้อยที่สุดสลับ HP กัน (ไม่ใช่การโจมตี · ป้องกันไม่ได้)',
   chaos: async () => {
     const order = turnOrder(), hi = Math.max(...order.map(t => t.hp)), lo = Math.min(...order.map(t => t.hp));
     if (hi === lo) { log('ทุกคน HP เท่ากัน · ไม่มีใครสลับ'); return; }
@@ -1211,13 +1220,13 @@ def('chaosG', { name:'Body Swap Mixup', type:'chaos', text:'พ่อมดท�
     log(`${a.name} (${hi} HP) กับ ${b.name} (${lo} HP) สลับ HP กัน`, 'sys'); render();
   } });
 
-def('chaosH', { name:'The Great Reshuffle', type:'chaos', text:'พ่อมดทุกคนสับมือ เด็ค และกองทิ้งรวมกัน แล้วจั่ว 5 ใบ',
+def('chaosH', { name:'Chaos 13', type:'chaos', text:'พ่อมดทุกคนสับมือ เด็ค และกองทิ้งรวมกัน แล้วจั่ว 5 ใบ',
   chaos: async () => {
     for (const t of turnOrder()) { t.deck = shuffle([...t.deck, ...t.hand, ...t.discard]); t.hand = []; t.discard = []; await draw(t, 5); }
     log('ทุกคนสับมือ เด็ค และกองทิ้งรวมกัน แล้วจั่ว 5 ใบ', 'sys');
   } });
 
-def('chaosI', { name:'Random Ransack', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนทำลายการ์ดในมือแบบสุ่ม 1 ใบ แล้วได้ Wild Surge 1 ใบเข้ามือ',
+def('chaosI', { name:'Chaos 14', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนทำลายการ์ดในมือแบบสุ่ม 1 ใบ แล้วได้ Wild Surge 1 ใบเข้ามือ',
   chaos: async by => {
     await attack(null, { to:'all', chaos:true, by, dmgText:'ทำลายการ์ดในมือแบบสุ่ม 1 ใบ แล้วได้ Wild Surge', dmg: t => {
       if (t.hand.length) { const c = t.hand.splice(rnd(t.hand.length), 1)[0]; G.destroyed.push(c); log(`${t.name} เสีย ${c.name} (สุ่ม)`, 'dmg'); }
@@ -1226,14 +1235,14 @@ def('chaosI', { name:'Random Ransack', type:'chaos', atk:1, text:'<b>โจม�
     } });
   } });
 
-def('chaosJ', { name:'Free Sample Day', type:'chaos', text:'พ่อมดแต่ละคนเลือกรับการ์ดใบบนสุดของกองหลักได้ ใครรับ ต้องทำลายการ์ดใบบนสุดของเด็คตัวเอง',
+def('chaosJ', { name:'Chaos 15', type:'chaos', text:'พ่อมดแต่ละคนเลือกรับการ์ดใบบนสุดของกองหลักได้ ใครรับ ต้องทำลายการ์ดใบบนสุดของเด็คตัวเอง',
   chaos: async () => {
     for (const t of turnOrder()) {
       while (G.main.length && G.main[G.main.length - 1].type === 'chaos') { const x = G.main.pop(); G.destroyed.push(x); log(`${x.name} บนกองหลักถูกทำลาย`); }
       const top = G.main[G.main.length - 1];
       if (!top) return;
       const yes = t.isAI ? (top.cost || 0) >= 3
-        : await humanChoose(t, `Free Sample Day: รับ ${top.name} ไหม?`, [{ label: 'รับ (ทำลายการ์ดบนสุดของเด็คคุณ)', value: true }, { label: 'ไม่รับ', value: false, ghost: true }], cardHTML(top, { small: true }));
+        : await humanChoose(t, `Chaos 15: รับ ${top.name} ไหม?`, [{ label: 'รับ (ทำลายการ์ดบนสุดของเด็คคุณ)', value: true }, { label: 'ไม่รับ', value: false, ghost: true }], cardHTML(top, { small: true }));
       if (!yes) continue;
       const d = drawTop(t);
       if (d) { G.destroyed.push(d); log(`${t.name} ทำลาย ${d.name} จากบนสุดของเด็ค`); }
@@ -1242,38 +1251,38 @@ def('chaosJ', { name:'Free Sample Day', type:'chaos', text:'พ่อมดแ�
     }
   } });
 
-def('chaosK', { name:'Desperate Diet', type:'chaos', text:'พ่อมดแต่ละคนเลือกทำลายการ์ดที่แพงที่สุดในมือ เพื่อฟื้น 13 HP ได้',
+def('chaosK', { name:'Chaos 16', type:'chaos', text:'พ่อมดแต่ละคนเลือกทำลายการ์ดที่แพงที่สุดในมือ เพื่อฟื้น 13 HP ได้',
   chaos: async () => {
     for (const t of turnOrder()) {
       if (!t.hand.length) continue;
       const m = Math.max(...t.hand.map(c => c.cost || 0)), c = t.hand.find(x => (x.cost || 0) === m);
       const yes = t.isAI ? t.hp <= 12
-        : await humanChoose(t, `Desperate Diet: ทำลาย ${c.name} (ราคา ${m}) เพื่อฟื้น 13 HP?`, [{ label: 'ทำลายแล้วฟื้น 13 HP', value: true }, { label: 'ไม่ทำ', value: false, ghost: true }], `ตอนนี้คุณมี ${t.hp} HP`);
+        : await humanChoose(t, `Chaos 16: ทำลาย ${c.name} (ราคา ${m}) เพื่อฟื้น 13 HP?`, [{ label: 'ทำลายแล้วฟื้น 13 HP', value: true }, { label: 'ไม่ทำ', value: false, ghost: true }], `ตอนนี้คุณมี ${t.hp} HP`);
       if (!yes) continue;
       t.hand.splice(t.hand.indexOf(c), 1); G.destroyed.push(c); log(`${t.name} ทำลาย ${c.name}`); AUD.play('destroy');
       heal(t, 13);
     }
   } });
 
-def('chaosL', { name:'Echoes of Chaos', type:'chaos', text:'สุ่มเล่นการ์ดโกลาหล 2 ใบจากกองการ์ดที่ถูกทำลาย',
+def('chaosL', { name:'Chaos 17', type:'chaos', text:'สุ่มเล่นการ์ดโกลาหล 2 ใบจากกองการ์ดที่ถูกทำลาย',
   chaos: async by => {
     const pool = G.destroyed.filter(c => c.type === 'chaos' && c.id !== 'chaosL');
     if (!pool.length) { log('ยังไม่มีการ์ดโกลาหลในกองที่ถูกทำลาย'); return; }
     for (const c of shuffle(pool.slice()).slice(0, 2)) {
-      G.curLabel = c.name; log(`Echoes of Chaos ปลุก ${c.name} จากกองที่ถูกทำลาย!`, 'sys');
+      G.curLabel = c.name; log(`Chaos 17 ปลุก ${c.name} จากกองที่ถูกทำลาย!`, 'sys');
       G.chaosShown = c; render(); AUD.play('chaos'); await FX.chaos(c);
       await c.chaos(by); G.chaosShown = null;
     }
   } });
 
-def('chaosM', { name:'Recycling Drive', type:'chaos',
+def('chaosM', { name:'Chaos 18', type:'chaos',
   text:'พ่อมดแต่ละคนเลือกทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ ถ้าใบนั้นมี 1 VP ขึ้นไป ได้การ์ดจากบนสุดของกองหลักเท่ากับ VP นั้น (★? นับเป็น 3)',
   chaos: async () => {
     for (const t of turnOrder()) {
       const pool = [...t.hand, ...t.discard];
       if (!pool.length) continue;
       const c = t.isAI ? pool.find(isJunk(t)) || null
-        : await humanChoose(t, 'Recycling Drive: ทำลายการ์ด 1 ใบจากมือหรือกองทิ้ง?', [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }],
+        : await humanChoose(t, 'Chaos 18: ทำลายการ์ด 1 ใบจากมือหรือกองทิ้ง?', [...pool.map(x => ({ card: x, value: x })), { label: 'ไม่ทำลาย', value: null, ghost: true }],
             'ถ้าใบที่ทำลายมี VP 1 ขึ้นไป ได้การ์ดจากบนสุดของกองหลักเท่ากับ VP นั้น (การ์ด ★? นับเป็น 3)');
       if (!c) continue;
       const arr = t.hand.includes(c) ? t.hand : t.discard;
@@ -1283,7 +1292,7 @@ def('chaosM', { name:'Recycling Drive', type:'chaos',
     }
   } });
 
-def('chaosN', { name:'Rune Rewind', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนนำ Rune ทั้งหมดในกองทิ้งไปวางบนสุดของเด็ค',
+def('chaosN', { name:'Chaos 19', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนนำ Rune ทั้งหมดในกองทิ้งไปวางบนสุดของเด็ค',
   chaos: async by => {
     await attack(null, { to:'all', chaos:true, by, dmgText:'นำ Rune ทั้งหมดในกองทิ้งไปวางบนสุดของเด็ค', dmg: t => {
       const runes = t.discard.filter(c => c.id === 'rune');
@@ -1292,7 +1301,7 @@ def('chaosN', { name:'Rune Rewind', type:'chaos', atk:1, text:'<b>โจมต�
     } });
   } });
 
-def('chaosO', { name:'Backfire Day', type:'chaos', atk:1,
+def('chaosO', { name:'Chaos 20', type:'chaos', atk:1,
   text:'พ่อมดทุกคนเปิดการ์ดในมือ แล้วใช้<b>การโจมตี</b>ของทุกใบในมือใส่ตัวเอง (ป้องกันการโจมตีของตัวเองได้ · ผลอื่นของการ์ดไม่เกิด)',
   chaos: async () => {
     for (const t of turnOrder()) {
@@ -1303,17 +1312,17 @@ def('chaosO', { name:'Backfire Day', type:'chaos', atk:1,
     }
   } });
 
-def('chaosP', { name:'Giant Slayer Gale', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนที่มี 10 HP ขึ้นไปรับ 5 ดาเมจ',
+def('chaosP', { name:'Chaos 21', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนที่มี 10 HP ขึ้นไปรับ 5 ดาเมจ',
   chaos: async by => attack(null, { to:'where', where: t => t.hp >= 10, dmg:5, chaos:true, by }) });
 
-def('chaosQ', { name:'Market Riot', type:'chaos', atk:1,
+def('chaosQ', { name:'Chaos 22', type:'chaos', atk:1,
   text:'ทุกการ์ดใน Line-Up ใช้<b>การโจมตี</b>ของตัวเอง โดยผู้เล่นที่เป็นเทิร์นเลือกเป้าหมาย (ผลอื่นของการ์ดไม่เกิด)',
   chaos: async () => {
     const p = cur();
-    for (const c of G.lineup.filter(c => c && c.atk && c.play)) { log(`Market Riot: ${c.name} ใน Line-Up โจมตี (${p.name} เลือกเป้าหมาย)`, 'sys'); await attackOnly(c, p, null); }
+    for (const c of G.lineup.filter(c => c && c.atk && c.play)) { log(`Chaos 22: ${c.name} ใน Line-Up โจมตี (${p.name} เลือกเป้าหมาย)`, 'sys'); await attackOnly(c, p, null); }
   } });
 
-def('chaosR', { name:'Grave Swap Party', type:'chaos',
+def('chaosR', { name:'Chaos 23', type:'chaos',
   text:'พ่อมดทุกคนที่มี Dead Wizard Token วาง Token 1 อันรวมกองกลาง สับ แล้วแจกคืนคนละ 1 อันแบบสุ่ม และทำผลบน Token ที่ได้',
   chaos: async () => {
     const holders = turnOrder().filter(t => t.tokens.length);
@@ -1321,7 +1330,7 @@ def('chaosR', { name:'Grave Swap Party', type:'chaos',
     const pool = [];
     for (const t of holders) {
       const k = t.tokens.length === 1 ? t.tokens[0] : t.isAI ? (t.tokens.find(x => badToken(x)) || t.tokens[0])
-        : await humanChoose(t, 'Grave Swap Party: เลือก Token ที่จะวางรวมกองกลาง', t.tokens.map(x => ({ label: `☠ ${x.name}: ${x.text}`, value: x })));
+        : await humanChoose(t, 'Chaos 23: เลือก Token ที่จะวางรวมกองกลาง', t.tokens.map(x => ({ label: `☠ ${x.name}: ${x.text}`, value: x })));
       t.tokens.splice(t.tokens.indexOf(k), 1); pool.push(k);
     }
     shuffle(pool);
@@ -1333,7 +1342,7 @@ def('chaosR', { name:'Grave Swap Party', type:'chaos',
     render();
   } });
 
-def('chaosS', { name:'Spring Cleaning Gust', type:'chaos', atk:1,
+def('chaosS', { name:'Chaos 24', type:'chaos', atk:1,
   text:'<b>โจมตี:</b> ศัตรูทางขวาของผู้เล่นที่เป็นเทิร์น ทำลายการ์ดในมือได้ 1 ใบ และในกองทิ้งได้ 1 ใบ (ป้องกัน = ไม่รับผลดีนี้)',
   chaos: async () => {
     await attack(cur(), { to:'right', benign:true, dmgText:'ได้ทำลายการ์ดในมือ 1 ใบ และในกองทิ้ง 1 ใบ (เป็นผลดี)', dmg: async t => {
@@ -1343,12 +1352,12 @@ def('chaosS', { name:'Spring Cleaning Gust', type:'chaos', atk:1,
     } });
   } });
 
-def('chaosT', { name:'Lucky Draft', type:'chaos', atk:1, text:'<b>โจมตี:</b> ศัตรูทางซ้ายของผู้เล่นที่เป็นเทิร์นจั่ว 2 ใบ (ป้องกัน = ไม่รับผลดีนี้)',
+def('chaosT', { name:'Chaos 25', type:'chaos', atk:1, text:'<b>โจมตี:</b> ศัตรูทางซ้ายของผู้เล่นที่เป็นเทิร์นจั่ว 2 ใบ (ป้องกัน = ไม่รับผลดีนี้)',
   chaos: async () => {
     await attack(cur(), { to:'left', benign:true, dmgText:'จั่ว 2 ใบ (เป็นผลดี)', dmg: async t => { if (t === cur()) return 0; await draw(t, 2); log(`${t.name} จั่ว 2 ใบ`); return 0; } });
   } });
 
-def('chaosU', { name:'Falling Inventory', type:'chaos', atk:1,
+def('chaosU', { name:'Chaos 26', type:'chaos', atk:1,
   text:'<b>โจมตี:</b> พ่อมดทุกคนได้การ์ดใบบนสุดของกองหลัก แล้วรับดาเมจเท่ากับราคาของใบนั้น (ถ้าเป็นการ์ดโกลาหล ทำลายทิ้ง ไม่ได้การ์ด)',
   chaos: async by => {
     await attack(null, { to:'all', chaos:true, by, dmgText:'ได้การ์ดบนสุดของกองหลัก แล้วรับดาเมจเท่าราคา', dmg: async t => {
@@ -1360,28 +1369,28 @@ def('chaosU', { name:'Falling Inventory', type:'chaos', atk:1,
     } });
   } });
 
-def('chaosV', { name:'Kick Them While Down', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนที่มี 10 HP หรือน้อยกว่ารับ 3 ดาเมจ',
+def('chaosV', { name:'Chaos 27', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนที่มี 10 HP หรือน้อยกว่ารับ 3 ดาเมจ',
   chaos: async by => attack(null, { to:'where', where: t => t.hp <= 10, dmg:3, chaos:true, by }) });
 
-def('chaosW', { name:'Legendary Tantrum', type:'chaos', text:'ตำนานที่หงายอยู่ 1 ใบ (ผู้เล่นที่เป็นเทิร์นเลือก) ใช้ Group Attack',
+def('chaosW', { name:'Chaos 28', type:'chaos', text:'ตำนานที่หงายอยู่ 1 ใบ (ผู้เล่นที่เป็นเทิร์นเลือก) ใช้ Group Attack',
   chaos: async () => {
     const up = G.legendRow.filter(L => L && L.gattack);
     if (!up.length) { log('ตำนานที่หงายอยู่ไม่มี Group Attack'); return; }
     const p = cur();
     const L = up.length === 1 ? up[0] : p.isAI ? up[rnd(up.length)]
-      : await humanChoose(p, 'Legendary Tantrum: ตำนานใบไหนใช้ Group Attack?', up.map(x => ({ card: x, value: x })));
+      : await humanChoose(p, 'Chaos 28: ตำนานใบไหนใช้ Group Attack?', up.map(x => ({ card: x, value: x })));
     G.curLabel = L.name + ' (Group Attack)';
-    log(`Legendary Tantrum: ${L.name} ใช้ Group Attack: ${L.group}`, 'sys');
+    log(`Chaos 28: ${L.name} ใช้ Group Attack: ${L.group}`, 'sys');
     await L.gattack();
   } });
 
-def('chaosX', { name:'Pity Draw', type:'chaos', text:'พ่อมดทุกคนรวมราคาการ์ดในมือ คนที่รวมได้ต่ำสุดจั่ว 2 ใบ',
+def('chaosX', { name:'Chaos 29', type:'chaos', text:'พ่อมดทุกคนรวมราคาการ์ดในมือ คนที่รวมได้ต่ำสุดจั่ว 2 ใบ',
   chaos: async () => {
     const sums = turnOrder().map(t => ({ t, s: handCost(t) })), m = Math.min(...sums.map(x => x.s));
     for (const x of sums.filter(x => x.s === m)) { log(`${x.t.name} รวมราคาในมือได้ ${m} (ต่ำสุด) · จั่ว 2`); await draw(x.t, 2); }
   } });
 
-def('chaosY', { name:'Floppy Stick Storm', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนได้ Limp Wand 1 ใบ วางไว้บนสุดของเด็ค',
+def('chaosY', { name:'Chaos 30', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนได้ Limp Wand 1 ใบ วางไว้บนสุดของเด็ค',
   chaos: async by => {
     await attack(null, { to:'all', chaos:true, by, bentTop:true, dmgText:'ได้ Limp Wand วางบนสุดของเด็ค', dmg: t => {
       if (G.bent > 0) { G.bent--; t.deck.push(make('bent')); log(`${t.name} ได้ Limp Wand บนสุดของเด็ค`, 'dmg'); AUD.play('curse'); FX.curse(t); }
@@ -1389,13 +1398,13 @@ def('chaosY', { name:'Floppy Stick Storm', type:'chaos', atk:1, text:'<b>โจ�
     } });
   } });
 
-def('chaos2A', { name:'Price Tag Punishment', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนรับดาเมจเท่ากับราคาของการ์ดที่แพงที่สุดในมือตัวเอง',
+def('chaos2A', { name:'Chaos 31', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนรับดาเมจเท่ากับราคาของการ์ดที่แพงที่สุดในมือตัวเอง',
   chaos: async by => {
     await attack(null, { to:'all', chaos:true, by, dmgText:'ดาเมจเท่าราคาการ์ดที่แพงที่สุดในมือคุณ',
       dmg: t => t.hand.length ? Math.max(...t.hand.map(c => c.cost || 0)) : 0 });
   } });
 
-def('chaos2B', { name:'Roulette Pruning', type:'chaos',
+def('chaos2B', { name:'Chaos 32', type:'chaos',
   text:'พ่อมดแต่ละคนสุ่มเปิดการ์ดในมือ 1 ใบ แล้วเลือก: ทำลายใบนั้น <i>หรือ</i> จ่าย 2 HP สุ่มเปิดใบใหม่ (ทำซ้ำได้) · จะหยุดโดยไม่ทำลายก็ได้',
   chaos: async () => {
     for (const t of turnOrder()) {
@@ -1408,7 +1417,7 @@ def('chaos2B', { name:'Roulette Pruning', type:'chaos',
         const canPay = t.hp >= 2 && left.length > 1;
         let ch;
         if (t.isAI) ch = isJunk(t)(c) ? 'destroy' : (canPay && t.hp > 10 && t.hand.some(x => !seen.includes(x) && isJunk(t)(x)) ? 'pay' : 'stop');
-        else ch = await humanChoose(t, `Roulette Pruning: เปิดได้ ${c.name}`, [
+        else ch = await humanChoose(t, `Chaos 32: เปิดได้ ${c.name}`, [
             { label: 'ทำลายใบนี้', value: 'destroy' },
             ...(canPay ? [{ label: `จ่าย 2 HP สุ่มเปิดใบใหม่ (ตอนนี้ ${t.hp} HP)`, value: 'pay' }] : []),
             { label: 'หยุด ไม่ทำลาย', value: 'stop', ghost: true }], cardHTML(c, { small: true }));
@@ -1420,10 +1429,10 @@ def('chaos2B', { name:'Roulette Pruning', type:'chaos',
     }
   } });
 
-def('chaos2J', { name:'Big Bang Blast', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนรับ 5 ดาเมจ',
+def('chaos2J', { name:'Chaos 33', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนรับ 5 ดาเมจ',
   chaos: async by => attack(null, { to:'all', dmg:5, chaos:true, by }) });
 
-def('chaos2L', { name:'Mill Grinder', type:'chaos', text:'พ่อมดทุกคนทิ้งเด็คทั้งหมดลงกองทิ้ง แล้วต้องทำลายการ์ด 1 ใบในกองทิ้ง',
+def('chaos2L', { name:'Chaos 34', type:'chaos', text:'พ่อมดทุกคนทิ้งเด็คทั้งหมดลงกองทิ้ง แล้วต้องทำลายการ์ด 1 ใบในกองทิ้ง',
   chaos: async () => {
     for (const t of turnOrder()) {
       const n = t.deck.length;
@@ -1431,19 +1440,19 @@ def('chaos2L', { name:'Mill Grinder', type:'chaos', text:'พ่อมดทุ�
       log(`${t.name} ทิ้งเด็ค ${n} ใบลงกองทิ้ง`);
       if (!t.discard.length) continue;
       const c = t.isAI ? t.discard.slice().sort((a, b) => aiVal(a) - aiVal(b))[0]   // mandatory: AI drops its weakest card
-        : await humanChoose(t, 'Mill Grinder: ต้องทำลายการ์ด 1 ใบในกองทิ้ง', t.discard.map(x => ({ card: x, value: x })), 'บังคับทำลาย · การ์ดจะออกจากเกมถาวร');
+        : await humanChoose(t, 'Chaos 34: ต้องทำลายการ์ด 1 ใบในกองทิ้ง', t.discard.map(x => ({ card: x, value: x })), 'บังคับทำลาย · การ์ดจะออกจากเกมถาวร');
       t.discard.splice(t.discard.indexOf(c), 1); G.destroyed.push(c);
       log(`${t.name} ทำลาย ${c.name}`); AUD.play('destroy');
     }
     render();
   } });
 
-def('chaos2O', { name:'Pick Your Poison', type:'chaos', text:'พ่อมดทุกคนต้องเลือก: ทิ้งการ์ดในมือทั้งหมดแล้วจั่ว 5 ใบ <i>หรือ</i> เสีย 5 HP',
+def('chaos2O', { name:'Chaos 35', type:'chaos', text:'พ่อมดทุกคนต้องเลือก: ทิ้งการ์ดในมือทั้งหมดแล้วจั่ว 5 ใบ <i>หรือ</i> เสีย 5 HP',
   chaos: async () => {
     for (const t of turnOrder()) {
       // AI keeps a strong hand only when it can afford the HP
       const swap = t.isAI ? !(t.hp > 12 && handCost(t) >= 10)
-        : await humanChoose(t, 'Pick Your Poison: ต้องเลือก 1 อย่าง', [{ label: `ทิ้งทั้งมือ (${t.hand.length} ใบ) แล้วจั่ว 5`, value: true }, { label: `เสีย 5 HP (ตอนนี้ ${t.hp} HP)`, value: false }],
+        : await humanChoose(t, 'Chaos 35: ต้องเลือก 1 อย่าง', [{ label: `ทิ้งทั้งมือ (${t.hand.length} ใบ) แล้วจั่ว 5`, value: true }, { label: `เสีย 5 HP (ตอนนี้ ${t.hp} HP)`, value: false }],
             `มือตอนนี้: ${t.hand.map(c => c.name).join(', ') || '—'}`);
       if (swap) { const m = t.hand.length; t.discard.push(...t.hand); t.hand = []; log(`${t.name} ทิ้งการ์ดในมือ ${m} ใบ แล้วจั่ว 5`); await draw(t, 5); continue; }
       t.hp -= 5; t.hitFlash = true; log(`${t.name} เสีย 5 HP (${Math.max(t.hp, 0)} HP)`, 'dmg'); render();
@@ -1451,7 +1460,7 @@ def('chaos2O', { name:'Pick Your Poison', type:'chaos', text:'พ่อมดท
     }
   } });
 
-def('chaos2S', { name:'Double or Nothing Toss', type:'chaos', text:'พ่อมดทุกคนทิ้งการ์ด 2 ใบบนสุดของเด็ค แล้วเลือก: ทำลายทั้งสองใบ <i>หรือ</i> ไม่ทำลายเลย',
+def('chaos2S', { name:'Chaos 36', type:'chaos', text:'พ่อมดทุกคนทิ้งการ์ด 2 ใบบนสุดของเด็ค แล้วเลือก: ทำลายทั้งสองใบ <i>หรือ</i> ไม่ทำลายเลย',
   chaos: async () => {
     for (const t of turnOrder()) {
       const two = [drawTop(t), drawTop(t)].filter(Boolean);
@@ -1459,7 +1468,7 @@ def('chaos2S', { name:'Double or Nothing Toss', type:'chaos', text:'พ่อม
       t.discard.push(...two);
       log(`${t.name} ทิ้ง ${two.map(c => c.name).join(', ')} จากบนสุดของเด็ค`);
       const kill2 = t.isAI ? two.every(isJunk(t))
-        : await humanChoose(t, 'Double or Nothing Toss: ทำลายทั้งสองใบไหม?', [{ label: 'ทำลายทั้งหมด', value: true }, { label: 'ไม่ทำลาย (อยู่ในกองทิ้ง)', value: false, ghost: true }],
+        : await humanChoose(t, 'Chaos 36: ทำลายทั้งสองใบไหม?', [{ label: 'ทำลายทั้งหมด', value: true }, { label: 'ไม่ทำลาย (อยู่ในกองทิ้ง)', value: false, ghost: true }],
             `<div class="cards">${two.map(c => cardHTML(c, { small: true })).join('')}</div>`);
       if (!kill2) continue;
       for (const c of two) { t.discard.splice(t.discard.indexOf(c), 1); G.destroyed.push(c); }
@@ -1468,13 +1477,13 @@ def('chaos2S', { name:'Double or Nothing Toss', type:'chaos', text:'พ่อม
     render();
   } });
 
-def('chaos2T', { name:'Wizard Poker Night', type:'chaos',
+def('chaos2T', { name:'Chaos 37', type:'chaos',
   text:'เริ่มจากผู้เล่นที่เป็นเทิร์น ทุกคนเลือก “หมอบ” หรือ “แทง” · คนที่แทงเปิดมือ คนที่ราคารวมสูงสุดจั่ว 2 ใบ (เสมอได้หลายคน) คนที่แทงคนอื่นทิ้งการ์ดในมือทั้งหมด',
   chaos: async () => {
     const bettors = [];
     for (const t of turnOrder()) {
       const bet = t.isAI ? handCost(t) >= 7 + 2 * bettors.length   // AI gets choosier as more players bet
-        : await humanChoose(t, 'Wizard Poker Night: หมอบหรือแทง?', [{ label: 'แทง (bet)', value: true }, { label: 'หมอบ (fold)', value: false, ghost: true }],
+        : await humanChoose(t, 'Chaos 37: หมอบหรือแทง?', [{ label: 'แทง (bet)', value: true }, { label: 'หมอบ (fold)', value: false, ghost: true }],
             `มือคุณรวมราคาได้ ${handCost(t)} · ${bettors.length ? 'แทงไปแล้ว: ' + bettors.map(b => b.name).join(', ') : 'ยังไม่มีใครแทง'}`);
       log(`${t.name} ${bet ? 'แทง' : 'หมอบ'}`);
       if (bet) bettors.push(t);
@@ -1489,12 +1498,12 @@ def('chaos2T', { name:'Wizard Poker Night', type:'chaos',
     render();
   } });
 
-def('chaosZ', { name:'Eviction Notice', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนทิ้งการ์ดต่อเนื่อง 1 ใบของตัวเองลงกองทิ้ง',
+def('chaosZ', { name:'Chaos 38', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนทิ้งการ์ดต่อเนื่อง 1 ใบของตัวเองลงกองทิ้ง',
   chaos: async by => {
     await attack(null, { to:'all', chaos:true, by, dmgText:'ทิ้งการ์ดต่อเนื่อง 1 ใบ', dmg: async t => {
       if (!t.ongoing.length) return 0;
       const c = t.ongoing.length === 1 ? t.ongoing[0] : t.isAI ? t.ongoing.slice().sort((a, b) => a.cost - b.cost)[0]
-        : await humanChoose(t, 'Eviction Notice: ทิ้งการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
+        : await humanChoose(t, 'Chaos 38: ทิ้งการ์ดต่อเนื่อง 1 ใบ', t.ongoing.map(x => ({ card: x, value: x })));
       t.ongoing.splice(t.ongoing.indexOf(c), 1); t.discard.push(c); log(`${t.name} ทิ้ง ${c.name} ออกจากสนาม`, 'dmg');
       return 0;
     } });
@@ -2425,7 +2434,7 @@ function revealTop(p) {
   return c;
 }
 async function draw(p, n) {
-  if (G.attackOnly && G.attackOnly.owner === p) return; // Backfire Day/Q: only the attack part of a card resolves
+  if (G.attackOnly && G.attackOnly.owner === p) return; // Chaos 20/Q: only the attack part of a card resolves
   let k = 0;
   for (; k < n; k++) { const c = drawTop(p); if (!c) break; await toHand(p, c); }
   if (k) soundFor(p, 'draw');
@@ -2976,7 +2985,7 @@ async function pickTarget(p, list, spec) {
 async function attack(src, spec) {
   const pool = (src && !spec.includeSelf ? opps(src) : G.players.slice()).filter(t => t !== G.optOut); // includeSelf: the attacker may pick themself
   let targets = [];
-  if (G.attackOnly && G.attackOnly.self) { targets = [G.attackOnly.self]; src = null; } // Backfire Day: your own attacks hit you
+  if (G.attackOnly && G.attackOnly.self) { targets = [G.attackOnly.self]; src = null; } // Chaos 20: your own attacks hit you
   else switch (spec.to) {
     case 'choose': targets = [await pickTarget(src, spec.among ? pool.filter(spec.among) : pool, spec)]; break; // among: limit who can be picked
     case 'left': targets = [leftOf(src)]; break;
@@ -3062,7 +3071,7 @@ function describe(spec) {
 
 async function tryDefend(t, src, spec) {
   if (spec.chaos && t.tokens.some(k => k.id === 'nododge')) return null; // token: can't dodge Chaos attacks
-  if (t.isAI && spec.benign) return null; // an 'attack' that helps the target (Spring Cleaning Gust/T): the AI lets it through
+  if (t.isAI && spec.benign) return null; // an 'attack' that helps the target (Chaos 24/T): the AI lets it through
   if (G.turn.noDefense && G.turn.noDefense.includes(t)) return null; // The Bite of Sin: no defences this turn
   // each defence card works once per turn (G.turn is replaced at the start of every turn)
   const used = G.turn.defUsed ||= [];
@@ -4091,11 +4100,13 @@ function matCSS() {
   const dim = (ART.__dim != null ? ART.__dim : 45) / 100;
   return `.you{background-image:linear-gradient(rgba(10,6,14,${dim}),rgba(10,6,14,${dim})),url("${MAT_FILE}");background-size:cover;background-position:center}`;
 }
+// every Chaos card shares one picture: art/chaos.jpg (or the 'chaos' image uploaded in the art editor)
+const artKey = d => d.type === 'chaos' ? 'chaos' : d.id;
 function buildArtCSS() {
   const rules = [boardCSS(), matCSS(), ...Object.keys(DEFS).map(id => {
-    const layers = [];
-    if (ART[id]) layers.push(`url("${ART[id]}")`);
-    if (ART_FOLDER) layers.push(`url("art/${id}.png")`, `url("art/${id}.jpg")`);
+    const key = artKey(DEFS[id]), layers = [];
+    if (ART[key]) layers.push(`url("${ART[key]}")`);
+    if (ART_FOLDER) layers.push(`url("art/${key}.png")`, `url("art/${key}.jpg")`);
     if (!layers.length) return '';
     layers.push('linear-gradient(135deg,var(--band),#00000055)');
     return `.card .c-art.art-${id}{background-image:${layers.join(',')}}`;
@@ -4124,12 +4135,14 @@ function openArtEditor() {
         <input type="range" id="board-dim" min="0" max="85" step="5" value="${dim}"> <b id="board-dim-v" style="color:var(--ink)">${dim}%</b></label>
     </div></div>
     <div class="vgroup"><h4>ภาพการ์ด · ใส่แล้ว ${Object.keys(ART).filter(k => !k.startsWith('__')).length} ใบ</h4></div>
-    <div class="art-grid">${Object.values(DEFS).map(d => `
+    <div class="art-grid">${Object.values(DEFS).filter(d => d.type !== 'chaos' || d === Object.values(DEFS).find(x => x.type === 'chaos')).map(d => {
+      const key = artKey(d), many = key !== d.id;
+      return `
     <div class="art-item">${cardHTML(d, { small: true })}
-      <code style="font-size:11px;color:var(--mute)">${d.id}</code>
-      <div class="row"><button class="linkbtn" data-act="art-pick" data-id="${d.id}">เลือกภาพ</button>
-      ${ART[d.id] ? `<button class="linkbtn" data-act="art-clear" data-id="${d.id}">ลบ</button>` : ''}</div>
-    </div>`).join('')}</div>`;
+      <code style="font-size:11px;color:var(--mute)">${many ? `chaos · ใช้กับการ์ดโกลาหลทุกใบ (${Object.values(DEFS).filter(x => x.type === 'chaos').length})` : d.id}</code>
+      <div class="row"><button class="linkbtn" data-act="art-pick" data-id="${key}">เลือกภาพ</button>
+      ${ART[key] ? `<button class="linkbtn" data-act="art-clear" data-id="${key}">ลบ</button>` : ''}</div>
+    </div>`; }).join('')}</div>`;
   $('#viewer').hidden = false;
 }
 $('#art-file').addEventListener('change', e => {

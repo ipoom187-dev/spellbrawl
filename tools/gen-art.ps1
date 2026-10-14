@@ -118,7 +118,7 @@ if ($Prompt) {   # one-off image: keep its aspect ratio, just resize to -Width
 }
 
 if ($Retrim) {   # re-crop images already in art/ (no API calls)
-  $files = Get-ChildItem $art -Filter *.jpg | Where-Object { $_.Name -ne 'board.jpg' -and (-not $Only.Count -or $Only -contains $_.BaseName) }
+  $files = Get-ChildItem $art -Filter *.jpg | Where-Object { @('board.jpg', 'mat.jpg', 'chaos.jpg') -notcontains $_.Name -and (-not $Only.Count -or $Only -contains $_.BaseName) }
   foreach ($f in $files) { Save-Square ([IO.File]::ReadAllBytes($f.FullName)) $f.FullName; Write-Host "retrimmed $($f.BaseName)" }
   exit 0
 }
