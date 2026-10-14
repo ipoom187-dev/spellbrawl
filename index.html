@@ -156,8 +156,15 @@ header.top .sp{flex:1}
 /* Chaos cards: the shared art/chaos.jpg fills the whole card, text sits on a dark scrim over it */
 .card.t-chaos{position:relative;overflow:hidden;aspect-ratio:1/2;min-height:auto;background:#140c1c;color:#f3eaff;border-color:#7a4bb0}
 .card.t-chaos .c-art{position:absolute;inset:0;aspect-ratio:auto;height:100%;border:0;z-index:0}
-.card.t-chaos > :not(.c-art){position:relative;z-index:1}
-.card.t-chaos .c-head{background:linear-gradient(#000d,#0000)}
+.card.t-chaos > :not(.c-art):not(.zoom-btn){position:relative;z-index:1}
+.card.t-chaos .c-head{justify-content:center;padding:3px 26px 16px;background:linear-gradient(#000e 40%,#0000)}
+.card.t-chaos .c-cost{display:none}
+/* the face shows a glowing glitchy CHAOS logo; the numbered name stays for logs and tooltips */
+.card.t-chaos .c-name{font-size:27px;line-height:1.05;letter-spacing:.14em;text-transform:uppercase;transform:skewX(-8deg);
+  background:linear-gradient(180deg,#fff 0%,#ecd6ff 30%,#b46cff 58%,#4dffa0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(2px 0 0 #ff2bd680) drop-shadow(-2px 0 0 #2bffb480) drop-shadow(0 0 7px #b46cffcc)}
+.card.small.t-chaos .c-name{font-size:22px}
+.card.zoomed.t-chaos .c-name{font-size:52px}
 .card.t-chaos .c-type{margin-top:auto;color:#d9c8ff;border:0;background:#0009}
 .card.t-chaos .c-text{flex:0 0 auto;background:#000b;color:#fff;text-shadow:0 1px 2px #000}
 .card.t-chaos .c-foot{background:#000b}
@@ -3808,7 +3815,7 @@ function cardHTML(c, o = {}) {
   ZOOMS.set(zk, c);
   const zoomBtn = o.noZoom ? '' : `<button class="zoom-btn" data-zoom="${zk}" title="ดูการ์ดขยาย (หรือคลิกขวาที่การ์ด)" aria-label="ดู ${c.name} ขยาย">⤢</button>`;
   return `<div class="${cls.join(' ')}" ${o.attrs || ''} ${o.attrs ? 'tabindex="0"' : ''} title="${c.name}">${zoomBtn}
-    <div class="c-head"><span class="c-cost">${cost}</span><span class="c-name">${c.name}</span></div>
+    <div class="c-head"><span class="c-cost">${cost}</span><span class="c-name">${c.type === 'chaos' ? 'Chaos' : c.name}</span></div>
     <div class="c-art art-${c.id}"></div>
     <div class="c-type">${TYPE_TH[c.type]}</div>
     <div class="c-text">${c.text || ''}${extra}</div>
