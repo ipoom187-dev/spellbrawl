@@ -155,6 +155,11 @@ Which to run:
 - Published on GitHub Pages from `main` (root): `index.html` + `art/` are served as-is; art now loads on http(s) too.
 - Art: `art/<id>.png|jpg` per card, `art/board.jpg` (table), `art/mat.jpg` (rug under your own seat panel `.you`; same dim slider as the board).
   AI art: `tools/gen-art.ps1` (Windows PowerShell, Google Gemini, key in the user's `GEMINI_API_KEY` env var — never ask for it in chat)
-  builds each prompt from `tools/art-prompts.tsv` + `tools/art-style.txt`; `-Only a,b -Force` re-rolls cards, `-Prompt … -Name … -Aspect 16:9` makes a one-off image.
+  takes each prompt from `tools/art-prompts.tsv` (style included); `-Only a,b -Force` re-rolls cards, `-Prompt … -Name … -Aspect 16:9` makes a one-off image.
+  `art-prompts.tsv` columns: `category` (e.g. `คาถา · Spell`), `id`, `prompt`; rows are grouped by category in the order
+  Starter, Wild Surge, Spell, Creature, Treasure, Wizard, Location, Legend, Familiar — add a new card's row at the end of
+  its group. Chaos cards have no rows (they share `art/chaos.jpg`). The script only reads `id` and `prompt`.
+  Every `prompt` already ends with the full style text (the user copies prompts into other image tools by hand),
+  so a new row = scene description + ". " + the text of `tools/art-style.txt`; `gen-art.ps1` no longer appends it.
   The browser pane opens the game as a `data:` snapshot, so `art/` images never load there; ask the user to check art in the real game.
 - The user works on both Windows and macOS; `git pull` before editing.

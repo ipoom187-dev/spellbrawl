@@ -1,4 +1,4 @@
-# Generates card art with the Google Gemini API from tools/art-prompts.tsv + tools/art-style.txt
+# Generates card art with the Google Gemini API from tools/art-prompts.tsv (each prompt already includes the style)
 # and saves each image as art/<id>.jpg (512x512, centre-cropped). Cards that already have art are skipped.
 #
 # Needs the key in an environment variable (set it yourself, never commit it):  setx GEMINI_API_KEY "..."
@@ -127,7 +127,7 @@ $ok = 0; $failed = @()
 $i = 0
 foreach ($r in $rows) {
   $i++
-  $prompt = "$($r.prompt). $style"
+  $prompt = $r.prompt   # style is already part of every row; tools/art-style.txt is the template for new rows
   $out = Join-Path $art "$($r.id).jpg"
   for ($try = 1; $try -le 4; $try++) {
     try {
