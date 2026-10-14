@@ -135,7 +135,7 @@ header.top .sp{flex:1}
 .card .c-type{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px;color:#6d5c52;border-bottom:1px dashed #c9b894}
 .card .c-text{font-size:11.5px;line-height:1.35;padding:5px 6px;flex:1}
 .card .c-foot{display:flex;justify-content:space-between;align-items:center;padding:4px 6px;gap:4px}
-/* board market (Legends, Line-Up, Wild Surge…): name, cost, picture and type only; right-click / ⤢ shows the full card.
+/* board market (Legends, Line-Up, Wild Surge…): name, cost, picture and type only; right-click shows the full card.
    Cards in the casting arena keep their full text. */
 .boardc .card:not(.arena .card) .c-text,.boardc .card:not(.arena .card) .c-foot{display:none}
 .boardc .card:not(.arena .card){min-height:0}
@@ -217,12 +217,10 @@ header.top .sp{flex:1}
 .overlay.zoom-ov{z-index:80;cursor:zoom-out} /* two classes: must beat the later .overlay{z-index:50} (choice dialogs) */
 .zoom-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
 .zoom-hint{font-size:12px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px 12px}
-.zoom-btn{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;border:0;padding:0;background:#000a;color:#fff;
-  font-size:13px;line-height:1;cursor:zoom-in;opacity:.6;z-index:2;display:grid;place-items:center}
-.card:hover .zoom-btn,.zoom-btn:focus-visible{opacity:1}
-.zoom-btn:focus-visible{outline:2px solid var(--gold)}
-.card .c-head{padding-right:30px}
-.card.mini .zoom-btn{width:18px;height:18px;font-size:11px;top:3px;right:3px}
+/* any card that can be zoomed shows a magnifier cursor; right-click opens it large, a left-click on the big card closes it */
+.card[data-zoom],.card.buyable[data-zoom],.card.playable[data-zoom],.opts .opt-card .card[data-zoom]{cursor:zoom-in}
+/* card names: at most 2 lines; fitNames() shrinks the font of longer ones */
+.card .c-name{display:block;overflow:hidden;max-height:calc(2em * 1.05 + 1px);overflow-wrap:anywhere}
 .card.zoomed{width:min(340px,86vw);min-height:0;cursor:default;transform:none;box-shadow:0 24px 70px #000d}
 .card.zoomed .c-head{padding:10px 14px}
 .card.zoomed .c-name{font-size:30px}
@@ -3670,7 +3668,7 @@ const RULES_HTML = `<div class="rules rg">
 
 <h3>วิธีเล่นในเกมนี้</h3>
 <div class="rg-how">
-  <div><b>คลิกการ์ดในมือ</b>เพื่อเล่น</div><div><b>คลิกการ์ดกรอบทอง</b>บนกระดานเพื่อซื้อ</div><div><b>⤢ หรือคลิกขวา</b>เพื่อขยายการ์ด</div>
+  <div><b>คลิกการ์ดในมือ</b>เพื่อเล่น</div><div><b>คลิกการ์ดกรอบทอง</b>บนกระดานเพื่อซื้อ</div><div><b>คลิกขวาที่การ์ด</b>เพื่อขยาย · คลิกอีกครั้งเพื่อปิด</div>
   <div><b>จบเทิร์น</b>เมื่อเสร็จ</div><div><b>ดูเด็ค / กองทิ้ง</b>ที่ที่นั่งของคุณ</div><div><b>AI: ช้า</b>ถ้าอยากอ่านการ์ดคู่ต่อสู้ทัน</div>
 </div>
 </div>`;
@@ -3788,18 +3786,36 @@ function trackDiff(now, before) {
   }
 }
 
-// card zoom: cardHTML remembers each card it draws by key; the 🔍 button or a right-click shows it large
+// card zoom: cardHTML remembers each card it draws by key (data-zoom); a right-click shows it large, a click closes it
 const ZOOMS = new Map();
 function openZoom(k) {
   const c = ZOOMS.get(k); if (!c) return;
   const z = $('#zoom');
   z.innerHTML = `<div class="zoom-wrap">${cardHTML(c, { cls: 'zoomed', noZoom: true })}<div class="zoom-hint">คลิกที่ไหนก็ได้ หรือกด Esc เพื่อปิด</div></div>`;
   z.hidden = false;
+  fitNames(z);
 }
 const closeZoom = () => { $('#zoom').hidden = true; };
-// capture phase: the zoom button must not also play/buy the card or pick a dialog option underneath
-document.addEventListener('click', e => { const b = e.target.closest('.zoom-btn'); if (!b) return; e.preventDefault(); e.stopPropagation(); openZoom(b.dataset.zoom); }, true);
-document.addEventListener('contextmenu', e => { const b = e.target.closest('.card') && e.target.closest('.card').querySelector(':scope > .zoom-btn'); if (!b) return; e.preventDefault(); openZoom(b.dataset.zoom); });
+document.addEventListener('contextmenu', e => {
+  const card = e.target.closest('.card[data-zoom]'); if (!card || card.closest('#zoom')) return;
+  e.preventDefault(); openZoom(card.dataset.zoom);
+});
+
+// Card names may use at most 2 lines: a longer one gets a smaller font (down to 55% of its normal size).
+function fitNames(root = document) {
+  root.querySelectorAll('.card .c-name').forEach(el => {
+    el.style.fontSize = '';
+    const base = parseFloat(getComputedStyle(el).fontSize);
+    const fits = () => el.scrollHeight <= el.clientHeight + 1;
+    for (let s = base; !fits() && s > base * 0.55; s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
+  });
+}
+// cards are drawn by render(), dialogs, viewers and pop-ups: fit names whenever new cards appear (once per frame)
+let fitQueued = false;
+new MutationObserver(muts => {
+  if (fitQueued || !muts.some(m => m.addedNodes.length)) return;
+  fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitNames(); });
+}).observe(document.body, { childList: true, subtree: true });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#zoom').hidden) closeZoom(); });
 $('#zoom').addEventListener('click', closeZoom);
 function cardHTML(c, o = {}) {
@@ -3819,8 +3835,8 @@ function cardHTML(c, o = {}) {
   // every card gets a zoom button; the card object is kept so the zoom view can redraw it large
   const zk = String(c.uid != null ? c.uid : 'd-' + c.id);
   ZOOMS.set(zk, c);
-  const zoomBtn = o.noZoom ? '' : `<button class="zoom-btn" data-zoom="${zk}" title="ดูการ์ดขยาย (หรือคลิกขวาที่การ์ด)" aria-label="ดู ${c.name} ขยาย">⤢</button>`;
-  return `<div class="${cls.join(' ')}" ${o.attrs || ''} ${o.attrs ? 'tabindex="0"' : ''} title="${c.name}">${zoomBtn}
+  const zoomAttr = o.noZoom ? '' : `data-zoom="${zk}"`;
+  return `<div class="${cls.join(' ')}" ${o.attrs || ''} ${zoomAttr} ${o.attrs ? 'tabindex="0"' : ''} title="${c.name} · คลิกขวาเพื่อดูการ์ดขยาย">
     <div class="c-head"><span class="c-cost">${cost}</span><span class="c-name">${c.type === 'chaos' ? 'Chaos' : c.name}</span></div>
     <div class="c-art art-${c.id}"></div>
     <div class="c-type">${TYPE_TH[c.type]}</div>
