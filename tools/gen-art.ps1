@@ -12,7 +12,7 @@ param(
   [int]$Limit = 0,
   [switch]$Force,
   [switch]$Retrim,                              # only re-crop existing art/*.jpg, no generation
-  [string]$Model = 'gemini-2.5-flash-image',   # or e.g. imagen-4.0-generate-001
+  [string]$Model = 'gemini-3-pro-image',       # Nano Banana Pro; cheaper: gemini-3.1-flash-image, gemini-2.5-flash-image
   [int]$Size = 512,
   [string]$Prompt = '',                         # one-off image (board, rug...) instead of cards: full prompt, no style added
   [string]$Name = '',                           # saved as art/<Name>.jpg
