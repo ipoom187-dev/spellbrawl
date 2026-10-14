@@ -41,6 +41,7 @@ header.top .sp{flex:1}
   grid-template-areas:"top top top" "left board right" "you you you"}
 .seat-top{grid-area:top;display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
 .seat-top .rival{width:min(100%,380px)}
+.seat-top:empty{display:none}
 .seat-left{grid-area:left;display:flex;flex-direction:column;justify-content:center;gap:14px;min-width:0}
 .seat-right{grid-area:right;display:flex;flex-direction:column;justify-content:center;gap:14px;min-width:0}
 @media (max-width:1150px){
@@ -134,6 +135,11 @@ header.top .sp{flex:1}
 .card .c-type{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px;color:#6d5c52;border-bottom:1px dashed #c9b894}
 .card .c-text{font-size:11.5px;line-height:1.35;padding:5px 6px;flex:1}
 .card .c-foot{display:flex;justify-content:space-between;align-items:center;padding:4px 6px;gap:4px}
+/* board market (Legends, Line-Up, Wild Surge…): name, cost, picture and type only; right-click / ⤢ shows the full card.
+   Cards in the casting arena keep their full text. */
+.boardc .card:not(.arena .card) .c-text,.boardc .card:not(.arena .card) .c-foot{display:none}
+.boardc .card:not(.arena .card){min-height:0}
+.boardc .card:not(.arena .card) .c-type{border-bottom:0;padding:4px 6px 6px}
 .tag{font-size:9.5px;font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;margin-right:2px}
 .tag.act{background:var(--gold);color:#2a1d05}
 .act-wrap{display:flex;flex-direction:column;gap:6px;align-items:stretch}
@@ -3861,13 +3867,14 @@ function render() {
   const me = meP();
   const myTurn = cur() === me && !G.over && !G.ending && G.endTurnResolve;
   const pw = G.turn ? G.turn.power : 0;
-  // seating: clockwise from you → your left, across, your right
+  // seating: rivals only in the left and right columns. Clockwise from you: the first half sit up your left side
+  // (nearest you at the bottom), the rest come down your right side.
   const others = [...G.players.slice(ME + 1), ...G.players.slice(0, ME)];
   const seats = { left: [], top: [], right: [] };
-  const n = others.length;
-  const plan = n === 1 ? ['top'] : n === 2 ? ['left', 'right'] : n === 3 ? ['left', 'top', 'right'] : ['left', 'top', 'top', 'right'];
-  const dirName = { left: 'ฝั่งซ้ายของคุณ', top: 'ฝั่งตรงข้าม', right: 'ฝั่งขวาของคุณ' };
-  others.forEach((p, k) => seats[plan[k]].push(seatHTML(p, dirName[plan[k]])));
+  const nLeft = Math.ceil(others.length / 2);
+  const dirName = { left: 'ฝั่งซ้ายของคุณ', right: 'ฝั่งขวาของคุณ' };
+  others.forEach((p, k) => { const side = k < nLeft ? 'left' : 'right'; seats[side].push(seatHTML(p, dirName[side])); });
+  seats.left.reverse();
 
   const legendHTML = `<div class="cards">${G.legendRow.map((L, i) => L
     ? cardHTML(L, { cost: costFor(me, L), buy: myTurn && canOwn(me, L) && costFor(me, L) <= pw, attrs: `data-act="buy" data-src="legend" data-i="${i}"` })
