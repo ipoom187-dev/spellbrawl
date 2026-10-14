@@ -62,6 +62,19 @@ header.top .sp{flex:1}
   background:radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);transition:box-shadow .3s}
 .arena.busy{box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 22%, transparent)}
 .arena-pw{color:var(--gold);font-size:16px}
+/* casting arena keeps one fixed size: one row of cards that are all --arena-h tall (long ability text shrinks to fit,
+   see fitNames), with room for the ✲ button; when the row is full the cards overlap instead of wrapping */
+.arena{--arena-h:330px}
+.arena .cards.played{flex-wrap:nowrap;align-items:flex-start;height:calc(var(--arena-h) + 40px);gap:6px;padding-right:126px}
+.arena .cards.played>.slot{flex:0 1 132px;min-width:22px;position:relative}
+.arena .cards.played>.slot:hover{z-index:5}
+.arena .cards.played>.slot>.card,.arena .cards.played>.slot>.act-wrap{width:132px}
+.arena .cards.played .card{height:var(--arena-h);min-height:0;overflow:hidden}
+.arena .cards.played .card .c-text{overflow:hidden}
+.arena .cards.played>.empty{align-self:center}
+.arena>.sect-label{height:26px;display:flex;align-items:center;gap:10px;margin-bottom:6px} /* same height with or without the events button */
+.arena>.sect-label .ev-btn{padding-top:2px;padding-bottom:2px}
+.arena-title{min-height:30px}
 /* "what happened" strip: each affected card with a coloured caption */
 .cards.events{gap:12px}
 .ev{display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -3805,6 +3818,12 @@ function fitNames(root = document) {
     const fits = () => el.scrollHeight <= el.clientHeight + 1;
     for (let s = base; !fits() && s > base * 0.55; s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
   });
+  // casting-arena cards are all the same height: shrink the ability text of long cards until it fits
+  root.querySelectorAll('.arena .cards.played .card .c-text').forEach(el => {
+    el.style.fontSize = '';
+    const base = parseFloat(getComputedStyle(el).fontSize);
+    for (let s = base; el.scrollHeight > el.clientHeight + 1 && s > 7.5; s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
+  });
 }
 // cards are drawn by render(), dialogs, viewers and pop-ups: fit names whenever new cards appear (once per frame)
 let fitQueued = false;
@@ -3898,6 +3917,7 @@ function render() {
   const wildHTML = G.wild > 0 ? cardHTML(wildC, { cost: costFor(me, wildC), buy: myTurn && costFor(me, wildC) <= pw, attrs: 'data-act="buy" data-src="wild"' }) : '<div class="card back">หมด</div>';
 
   const shown = G.turn && G.turn.shown ? G.turn.shown : [];
+  // each played card sits in a .slot: one fixed-height row that overlaps cards when they no longer fit
   const arenaCards = [
     ...(G.chaosShown ? [cardHTML(G.chaosShown)] : []),
     ...shown.map(c => {
@@ -3906,7 +3926,7 @@ function render() {
       const ok = canUse(me, c);
       return `<div class="act-wrap">${html}<button class="btn act-btn" data-act="activate" data-uid="${c.uid}" ${ok ? '' : 'disabled'}
         title="${ok ? 'ใช้ความสามารถ ✲ ของการ์ดนี้ (1 ครั้ง)' : c.needText || 'ยังใช้ไม่ได้'}">✲ ใช้</button></div>`;
-    })].join('');
+    })].map(h => `<div class="slot">${h}</div>`).join('');
   shown.forEach(c => { if (c.uid > (G.animUid || 0)) G.animUid = c.uid; });
   const who = G.chaosShown ? 'การ์ดโกลาหลเปิดขึ้น!' : `${pcName(cur())} ${cur() === me ? '(คุณ)' : ''}`;
   // online: whose decision the table is waiting for (a choice, or a human player's turn)
@@ -3920,7 +3940,7 @@ function render() {
       <div class="arena-title">สนามร่ายเวท · ${who} <span>· พลังเทิร์นนี้ <b class="arena-pw">${pw}</b></span> ${waitHTML}</div>
       <div class="sect-label">การ์ดที่เล่น
         ${nEv ? `<button class="linkbtn ev-btn" data-act="view" data-what="events">เกิดอะไรขึ้นบ้าง (${nEv})</button>` : ''}</div>
-      <div class="cards">${arenaCards || '<div class="empty">ยังไม่มีการ์ดถูกเล่นในเทิร์นนี้</div>'}</div>
+      <div class="cards played">${arenaCards || '<div class="empty">ยังไม่มีการ์ดถูกเล่นในเทิร์นนี้</div>'}</div>
     </div>`;
 
   const hand = me.hand.length ? me.hand.map((c, i) => cardHTML(c, { play: myTurn, dim: (G.turn.defUsed || []).includes(c), attrs: `data-act="play" data-i="${i}"` })).join('') : '<div class="empty">มือว่าง</div>';
