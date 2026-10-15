@@ -109,6 +109,16 @@ header.top .sp{flex:1}
 @keyframes popin{from{transform:scale(.7) translateY(30px)}to{transform:none}} /* no opacity: visible even if animations are paused */
 @keyframes popout{to{transform:scale(.9);opacity:0}}
 @media (prefers-reduced-motion:reduce){#pop .pop-item,#pop.out .pop-item{animation:none}}
+/* revealed cards (showReveal): a captioned row per reveal, upper middle of the screen, above the move pop-ups */
+#rev{position:fixed;left:50%;top:9vh;transform:translateX(-50%);z-index:41;pointer-events:none;display:flex;flex-direction:column;gap:10px;align-items:center;max-width:96vw}
+#rev .rev-group{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 12px;border-radius:14px;
+  background:color-mix(in srgb,var(--bg) 82%,transparent);box-shadow:0 0 0 1px var(--def),0 16px 40px #000c;animation:popin .32s cubic-bezier(.2,1.3,.4,1)}
+#rev .ev-cap{background:var(--def);color:#06282a;border-color:var(--def);font-size:14px;max-width:none;padding:3px 12px}
+#rev .rev-cards{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:92vw}
+#rev .card{width:118px}
+#rev.out .rev-group{animation:popout .3s forwards}
+@media (max-width:760px){#rev .card{width:92px}#rev .card .c-text{font-size:9px}}
+@media (prefers-reduced-motion:reduce){#rev .rev-group,#rev.out .rev-group{animation:none}}
 .arena .card.fresh{animation:deal .55s cubic-bezier(.2,1.2,.4,1)}
 @keyframes deal{0%{transform:translateY(-50px) rotate(-8deg) scale(1.3);opacity:0;filter:brightness(2.4)}
   55%{transform:translateY(4px) rotate(1deg) scale(1.03);opacity:1;filter:brightness(1.4);box-shadow:0 0 0 3px var(--gold),0 0 44px var(--band)}
@@ -414,6 +424,7 @@ table.score tr.win td{color:var(--gold);font-weight:700}
 <div class="overlay zoom-ov" id="zoom" hidden></div>
 <!-- the latest cards hit by an effect, shown big for a moment in the middle of the screen -->
 <div id="pop" hidden aria-live="polite"></div>
+<div id="rev" hidden aria-live="polite"></div>
 <div id="tok-note" hidden role="dialog" aria-modal="true" aria-labelledby="tok-note-cap"></div>
 <div class="overlay" id="viewer" hidden style="z-index:45">
   <div class="dialog" style="max-width:1100px">
@@ -476,7 +487,7 @@ def('weirdwand', { name:'Weird Wand', type:'starter', power:1, atk:1,
   } });
 def('fizzle', { name:'Fizzle', type:'starter', text:'ฟู่… ไม่มีผลอะไรเลย' });
 def('bent', { name:'Limp Wand', type:'bent', vp:-1, text:'ไม่มีผล<br>-1 VP ตอนจบเกม' });
-def('wild', { name:'Wild Surge', type:'wild', cost:3, text:'เลือก 1: +2 พลัง <i>หรือ</i> เปิดการ์ดบนสุดในกองของศัตรู 1 คนแล้วใช้เป็นของคุณ',
+def('wild', { name:'Wild Surge', type:'wild', cost:2, text:'เลือก 1: +2 พลัง <i>หรือ</i> เปิดการ์ดบนสุดในกองของศัตรู 1 คนแล้วใช้เป็นของคุณ<br>ใช้แล้วกลับเข้ากอง Wild Surge (ไม่ลงกองทิ้ง)',
   play: async p => {
     const os = opps(p);
     let ch = p.isAI ? 'pw' : await humanChoose(p, 'Wild Surge', [{label:'+2 พลัง', value:'pw'}, {label:'ขโมยการ์ดบนสุดของศัตรู', value:'steal'}]);
@@ -691,7 +702,7 @@ def('stabbysteve', { name:'Pokey Pete', type:'creature', cost:4, vp:1, power:2, 
     await attack(p, { to:'choose', dmgText:'ดาเมจเท่ากับราคาการ์ดที่แพงที่สุดในมือคุณ',
       dmg: t => {
         if (!t.hand.length) { log(`${t.name} ไม่มีการ์ดในมือ`); return 0; }
-        log(`${t.name} เปิดมือ: ${t.hand.map(c => `${c.name} (${c.cost || 0})`).join(', ')}`);
+        log(`${t.name} เปิดมือ: ${t.hand.map(c => `${c.name} (${c.cost || 0})`).join(', ')}`); showReveal(t.hand, `${t.name} เปิดมือ`);
         return Math.max(...t.hand.map(c => c.cost || 0));
       } });
   } });
@@ -1347,7 +1358,7 @@ def('chaosO', { name:'Chaos 20', type:'chaos', atk:1,
     for (const t of turnOrder()) {
       const atks = t.hand.filter(c => c.atk && c.play);
       if (!atks.length) continue;
-      log(`${t.name} เปิดมือ: ${t.hand.map(c => c.name).join(', ')}`);
+      log(`${t.name} เปิดมือ: ${t.hand.map(c => c.name).join(', ')}`); showReveal(t.hand, `${t.name} เปิดมือ`);
       for (const c of atks) { log(`${t.name} โดน ${c.name} ของตัวเอง!`, 'dmg'); await attackOnly(c, t, t); }
     }
   } });
@@ -1453,7 +1464,7 @@ def('chaos2B', { name:'Chaos 32', type:'chaos',
         const left = t.hand.filter(c => !seen.includes(c));
         if (!left.length) break;
         const c = left[rnd(left.length)]; seen.push(c);
-        log(`${t.name} สุ่มเปิดได้ ${c.name}`);
+        log(`${t.name} สุ่มเปิดได้ ${c.name}`); showEvent(c, `${t.name} สุ่มเปิด`, 'reveal');
         const canPay = t.hp >= 2 && left.length > 1;
         let ch;
         if (t.isAI) ch = isJunk(t)(c) ? 'destroy' : (canPay && t.hp > 10 && t.hand.some(x => !seen.includes(x) && isJunk(t)(x)) ? 'pay' : 'stop');
@@ -1529,7 +1540,7 @@ def('chaos2T', { name:'Chaos 37', type:'chaos',
       if (bet) bettors.push(t);
     }
     if (!bettors.length) { log('ทุกคนหมอบ · ไม่มีอะไรเกิดขึ้น'); return; }
-    for (const t of bettors) log(`${t.name} เปิดมือ: ${t.hand.map(c => c.name).join(', ') || '—'} (รวม ${handCost(t)})`);
+    for (const t of bettors) { log(`${t.name} เปิดมือ: ${t.hand.map(c => c.name).join(', ') || '—'} (รวม ${handCost(t)})`); showReveal(t.hand, `${t.name} เปิดมือ (รวม ${handCost(t)})`); }
     const m = Math.max(...bettors.map(handCost));
     for (const t of bettors) {
       if (handCost(t) === m) { log(`${t.name} ชนะ! จั่ว 2`, 'good'); await draw(t, 2); }
@@ -1612,7 +1623,7 @@ def('lickity', { name:'Slurpo, Demon of the Deep', type:'legend', cost:9, vp:5,
     for (let i = 0; i < 5; i++) { const c = drawTop(t); if (!c) break; five.push(c); } // an empty deck reshuffles the discard first
     const gone = five.filter(c => (c.cost || 0) >= 1), keep = five.filter(c => !((c.cost || 0) >= 1));
     t.discard.push(...gone); t.deck.push(...keep);
-    if (five.length) log(`${t.name} เปิด 5 ใบ · ทิ้ง ${gone.length} ใบ วางคืน ${keep.length} ใบ`);
+    if (five.length) showReveal(five, `${t.name} เปิด 5 ใบ`); if (five.length) log(`${t.name} เปิด 5 ใบ · ทิ้ง ${gone.length} ใบ วางคืน ${keep.length} ใบ`);
     return 0;
   } }) });
 def('chafia', { name:'Champion Blaze and Hot Kitty', type:'legend', cost:10, vp:5, power:2, draws:1,
@@ -1681,7 +1692,7 @@ def('skullzor', { name:'Greatest Hits Encore!!!', type:'legend', cost:11, vp:6, 
   play: async p => recallType(p, 'spell', 'คาถา'),
   gattack: () => attack(null, { to:'all', dmgText:'3 ดาเมจต่อการ์ดในมือที่มี 1 VP ขึ้นไป', dmg: t => {
     const n = t.hand.filter(c => vpOf(c, t) >= 1).length;
-    log(`${t.name} เปิดมือ: มีการ์ด 1+ VP ${n} ใบ`);
+    log(`${t.name} เปิดมือ: มีการ์ด 1+ VP ${n} ใบ`); showReveal(t.hand, `${t.name} เปิดมือ`);
     return 3 * n;
   } }) });
 def('extinction', { name:'Professor Apocalypse', type:'legend', cost:12, vp:6, playLate:1,
@@ -1898,7 +1909,7 @@ def('blackbart', { name:'Captain Plunderbeard', type:'legend', alsoType:'wizard'
       const four = [];
       for (let i = 0; i < 4; i++) { const c = drawTop(t); if (!c) break; four.push(c); }
       if (!four.length) return 0;
-      log(`${p.name} เปิด 4 ใบบนสุดของ ${t.name}: ${four.map(c => c.name).join(', ')}`);
+      log(`${p.name} เปิด 4 ใบบนสุดของ ${t.name}: ${four.map(c => c.name).join(', ')}`); showReveal(four, `${p.name} เปิดเด็คของ ${t.name}`);
       const c = p.isAI ? four.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
         : await humanChoose(p, `Blackbart: เลือกการ์ดของ ${t.name} มาเล่น 1 ใบ`, four.map(x => ({ card: x, value: x })), 'อีก 3 ใบลงกองทิ้งของเจ้าของ');
       t.discard.push(...four.filter(x => x !== c));
@@ -2215,7 +2226,7 @@ fam('orangypsy', { name:'Tangerine Fortune Teller', atk:1, draws:1, def:1, defDi
     const picks = [];
     await attack(p, { to:'each', dmgText:'เปิดมือ · ผู้โจมตีเลือกเล่นคาถา 1 ใบของคุณ', dmg: async t => {
       const sp = t.hand.filter(c => isType(c, 'spell')); if (!sp.length) return 0;
-      log(`${t.name} เปิดมือ: ${t.hand.map(c => c.name).join(', ')}`);
+      log(`${t.name} เปิดมือ: ${t.hand.map(c => c.name).join(', ')}`); showReveal(t.hand, `${t.name} เปิดมือ`);
       const c = p.isAI ? sp.slice().sort((a, b) => aiVal(b) - aiVal(a))[0] : await humanChoose(p, `Tangerine Fortune Teller: เล่นคาถาของ ${t.name} ใบไหน?`, sp.map(x => ({ card: x, value: x })));
       t.hand.splice(t.hand.indexOf(c), 1); picks.push({ c, t }); return 0;
     } });
@@ -2360,7 +2371,7 @@ const TOKENS = [
     now: async t => {
       const c = drawTop(t); if (!c) return;
       const foes = opps(t); if (!foes.length) { t.deck.push(c); return; }
-      log(`${t.name} เปิด ${c.name}`);
+      log(`${t.name} เปิด ${c.name}`); showEvent(c, `${t.name} เปิด`, 'reveal');
       // AI: junk goes to the strongest rival, a good card to the weakest
       const e = t.isAI ? foes.slice().sort((a, b) => aiVal(c) <= 0 ? b.hp - a.hp : a.hp - b.hp)[0]
         : await humanChoose(t, `ส่ง ${c.name} เข้ามือใคร?`, foes.map(x => ({ label: `${x.name} · ${x.hp} HP`, value: x })), cardHTML(c, { small: true }));
@@ -2402,7 +2413,7 @@ const TOKENS = [
       if (!t.hand.length) return;
       const top = t.hand.slice().sort((a, b) => (b.cost || 0) - (a.cost || 0))[0];
       log(`${t.name} เปิดมือ: ${t.hand.map(c => c.name).join(', ')}`);
-      showEvent(top, `${t.name} เปิดมือ`, 'reveal');
+      showReveal(t.hand, `${t.name} เปิดมือ`);
       await loseHP(t, top.cost || 0);
     } },
   { id:'revealDestroy', name:'เปิดแล้วทำลาย', text:'เปิดการ์ดใบบนสุดของเด็ค แล้วเลือกทำลายได้',
@@ -3344,7 +3355,7 @@ async function playCard(p, card, { fromOther = null } = {}) {
   for (const o of p.ongoing.slice()) if (o.onCardPlayed && o !== card) await o.onCardPlayed(p, card);
   // wizard ability tiles that react to their owner's own plays
   if (p === cur()) for (const tr of traitsOf(p)) if (tr.onCardPlayed) await tr.onCardPlayed(p, card);
-  if (fromOther) fromOther.discard.push(card);
+  if (fromOther) { if (card.id === 'wild') G.wild++; else fromOther.discard.push(card); } // a played Wild Surge returns to its stack
   render();
 }
 
@@ -3426,7 +3437,9 @@ async function endTurn(p) {
   p.lastPlayed = G.turn.shown.slice();
   // Brats!: goes to the bottom of its player's deck instead of the discard pile
   const bottom = G.turn.played.filter(c => c.endBottom); p.deck.unshift(...bottom);
-  p.discard.push(...p.hand, ...G.turn.played.filter(c => !c.endBottom)); p.hand = []; G.turn.played = [];
+  // Wild Surge goes back to its own stack once it has been played (not to the discard pile)
+  const wilds = G.turn.played.filter(c => c.id === 'wild'); G.wild += wilds.length;
+  p.discard.push(...p.hand, ...G.turn.played.filter(c => !c.endBottom && c.id !== 'wild')); p.hand = []; G.turn.played = [];
   if (hasTrait(p, 'monk') && !G.turn.attacked) heal(p, 2);
   G.turn.power = 0;
   const handSize = 5 + p.ongoing.filter(c => c.id === 'palm').length // Hand of the Maker: +1 card
@@ -3663,7 +3676,7 @@ const RULES_HTML = `<div class="rules rg">
 </div>
 <div class="rg-board">
   <div><b>5</b>Line-Up</div><div><b>3</b>ตำนานหงาย<small>Wally อยู่ในนั้นเสมอ</small></div><div><b>5–8</b>ตำนานคว่ำ<small>ตามจำนวนผู้เล่น</small></div>
-  <div><b>16</b>Wild Surge<small>ราคา 3</small></div><div><b>16</b>Limp Wand</div><div><b>4</b>Token ต่อผู้เล่น</div>
+  <div><b>16</b>Wild Surge<small>ราคา 2</small></div><div><b>16</b>Limp Wand</div><div><b>4</b>Token ต่อผู้เล่น</div>
 </div>
 
 <h3>ลำดับเทิร์น</h3>
@@ -3703,7 +3716,7 @@ const RULES_HTML = `<div class="rules rg">
   <dt>ต่อเนื่อง</dt><dd>เล่นแล้ววางค้างไว้ ทำผลทุกต้นเทิร์นของคุณ</dd>
   <dt>ทำลาย</dt><dd>นำการ์ดออกจากเกมถาวร</dd>
   <dt>✲ เปิดใช้</dt><dd>กดใช้ได้ 1 ครั้งภายหลังในเทิร์นนั้น</dd>
-  <dt>Wild Surge</dt><dd>+2 พลัง หรือเปิดการ์ดบนสุดของศัตรูมาเล่นเป็นของคุณ</dd>
+  <dt>Wild Surge</dt><dd>+2 พลัง หรือเปิดการ์ดบนสุดของศัตรูมาเล่นเป็นของคุณ · ใช้แล้วกลับเข้ากอง Wild Surge</dd>
 </dl>
 
 <h3>เกมจบเมื่อ</h3>
@@ -3768,6 +3781,27 @@ function showEvent(card, label, kind = 'gain') {
   clearTimeout(POP.timer);
   POP.timer = setTimeout(() => { el.classList.add('out'); POP.timer = setTimeout(() => { el.hidden = true; POP.items = []; }, 300); },
     Math.max(1100, AI_DELAY * 2.4));
+}
+
+// Cards that an effect reveals to everyone (a whole hand, the top cards of a deck…): shown together in the upper
+// middle of every player's screen for a few seconds, under one caption, and kept in the turn's "what happened" list.
+// One revealed card on its own can use showEvent(c, label, 'reveal') instead.
+const REV = { groups: [], timer: null };
+function showReveal(cards, label) {
+  cards = (cards || []).filter(Boolean);
+  if (!G || !G.turn || !cards.length) return;
+  if (NET.role !== 'guest') for (const card of cards) (G.turn.events ||= []).push({ card, label, kind: 'reveal' });
+  if (NET.role === 'host') NET.fx('rev', [cards, label]);
+  if (AI_DELAY === 0) return; // test helpers / instant mode: record only
+  REV.groups.push({ cards, label }); if (REV.groups.length > 3) REV.groups.shift();
+  const el = $('#rev');
+  el.innerHTML = REV.groups.map(g => `<div class="rev-group"><span class="ev-cap">${g.label}</span>
+    <div class="rev-cards">${g.cards.map(c => cardHTML(c, { noZoom: true, small: true })).join('')}</div></div>`).join('');
+  el.classList.remove('out'); el.hidden = false;
+  clearTimeout(REV.timer);
+  const n = REV.groups.reduce((s, g) => s + g.cards.length, 0);
+  REV.timer = setTimeout(() => { el.classList.add('out'); REV.timer = setTimeout(() => { el.hidden = true; REV.groups = []; }, 300); },
+    Math.max(2600, 550 * n, AI_DELAY * 4));
 }
 
 // ---- card-move tracker ----
@@ -4652,6 +4686,7 @@ const NET = {
     try {
       if (k === 'aud') AUD.play(args[0], args[1] == null ? undefined : args[1]);
       else if (k === 'ev') showEvent(...args);
+      else if (k === 'rev') showReveal(...args);
       else if (k === 'tok') tokenNotice(...args);
       else if (typeof FX[k] === 'function') { const r = FX[k](...args); if (r && r.catch) r.catch(NOOP); }
     } catch (e) { console.warn('fx', k, e); }
