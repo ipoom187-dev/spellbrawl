@@ -82,7 +82,7 @@ Ignore stray lines like "ชุด 1" (left over from copy-paste). If the copies
   `aiSacrifice: p => bool` (when the AI should cash it in, checked at the start of its turn). The player gets a
   "ทำลายเพื่อใช้" button under it in their Ongoing row on their turn. Example: `wizardwaste`.
 - Ongoing card that defends from the table ("Ongoing - ป้องกัน: ทิ้งใบนี้ออกจากสนาม…") → `ongoing:1, defInPlay:1` (no `def`); it leaves play to the discard pile, then `onDefend` runs. AI uses it after hand defences. Example: `dragonballz`.
-- Defence that leaves the hand: `defDiscard:1` (to the discard) or `defTopdeck:1` (face up on top of the deck,
+- Defence that leaves the hand: `defDiscard:1` (to the discard) (add `defDraw:1` to also draw 1 card before `onDefend`, text "… จั่ว 1 ใบ") or `defTopdeck:1` (face up on top of the deck,
   drawn again next hand, e.g. `lamps`). Each defence card can be used once per turn either way.
 - Familiars: build with `fam(id, {...})` (cost 6 / 2 VP defaults); the shared defence is `...REFLECT` (+ `REFLECT_TXT`), `DODGE_DRAW(n)` for dodge-and-draw. Defence extras: `redirect` now bounces the whole effect (damage, Limp Wand, discard), `redirectTimes`, `defBottom`, `aiDefOk(t, src, spec)` (AI skips a costly defence), `onDefend(t, src, card, spec)`. Other hooks: `endBottom` (goes under the deck at end of turn), `allTypes` (counts as every type), `p.drawPenalty`, `G.turn.nextUnblockable`, `c.owner` on familiars. Move cards into a hand with `await toHand(p, c)` (Leviathan Seed check).
 - Where a bought/gained card lands is decided in `placeGained(p, c)` (async — always `await` it): Grab-O top-decks, Gift Shop lets a Legend go on top.

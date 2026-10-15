@@ -680,8 +680,8 @@ def('luckycharms', { name:"Leprechaun Leftovers", type:'creature', cost:4, vp:1,
     log(`${p.name} หยิบ ${c.name} จากกองทิ้งขึ้นมือ`, 'good');
     render();
   } });
-def('sk8ratz', { name:'Kickflip Vermin', type:'creature', cost:4, vp:1, power:2, def:1, defDiscard:1,
-  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี แล้วส่งการ์ด 1 ใบจากมือหรือกองทิ้งของคุณไปที่กองทิ้งของผู้โจมตีได้',
+def('sk8ratz', { name:'Kickflip Vermin', type:'creature', cost:4, vp:1, power:2, def:1, defDiscard:1, defDraw:1,
+  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี จั่ว 1 ใบ แล้วส่งการ์ด 1 ใบจากมือหรือกองทิ้งของคุณไปที่กองทิ้งของผู้โจมตีได้',
   onDefend: async (t, src, self) => {
     if (!src) return; // Chaos and Legend attacks have no attacker to send to
     const pool = [...t.hand, ...t.discard].filter(c => c !== self);
@@ -771,8 +771,8 @@ def('storkos', { name:'Ravenous Stork Gang', type:'creature', cost:3, vp:1, powe
   canActivate: p => (G.turn.types.creature || 0) > 1 || p.ongoing.some(c => c.type === 'creature'),
   needText: 'ต้องควบคุมสัตว์อสูรตัวอื่นก่อน',
   activate: async p => { await destroyOwn(p); } });
-def('ballz', { name:'Bouncy Boulder Bros', type:'creature', cost:4, vp:1, power:2, def:1, defDiscard:1,
-  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี แล้วนำสัตว์อสูรใบอื่น 1 ใบจากกองทิ้งขึ้นมือ',
+def('ballz', { name:'Bouncy Boulder Bros', type:'creature', cost:4, vp:1, power:2, def:1, defDiscard:1, defDraw:1,
+  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี จั่ว 1 ใบ แล้วนำสัตว์อสูรใบอื่น 1 ใบจากกองทิ้งขึ้นมือ',
   onDefend: async (t, src, self) => {
     const pool = t.discard.filter(c => c.type === 'creature' && c !== self);
     if (!pool.length) { log(`${t.name} ไม่มีสัตว์อสูรใบอื่นในกองทิ้ง`); return; }
@@ -923,8 +923,8 @@ def('fatcula', { name:'Chubbula Wagon', type:'treasure', cost:6, vp:2, power:3, 
 def('pole', { name:'Undead Disco Pole', type:'treasure', cost:6, vp:2,
   text:'+2 พลัง ต่อ Dead Wizard Token แต่ละอันที่คุณมี',
   play: async p => { const n = tokenCount(p); if (n) P(p, 2 * n); else log(`${p.name} ยังไม่มี Dead Wizard Token · ไม่ได้พลัง`); } });
-def('tongue', { name:'Cyber Tongue', type:'treasure', cost:2, vp:1, power:1, def:1, defDiscard:1,
-  text:'+1 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ (เลือกไม่ทำก็ได้)',
+def('tongue', { name:'Cyber Tongue', type:'treasure', cost:2, vp:1, power:1, def:1, defDiscard:1, defDraw:1,
+  text:'+1 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ (เลือกไม่ทำก็ได้)',
   onDefend: async t => { await destroyOwn(t); } });
 
 // wizards
@@ -932,8 +932,8 @@ def('glom', { name:'Apprentice Glom', type:'wizard', cost:2, vp:1, power:1, text
   play: async p => { if ((G.turn.types.wizard || 0) > 1) P(p, 1); } });
 def('labrador', { name:'Hocus-Poodle', type:'wizard', cost:2, vp:1, draws:1, text:'จั่ว 1 ใบ<br>ฟื้น 2 HP',
   play: async p => { await draw(p, 1); heal(p, 2); } });
-def('carlotta', { name:'Rent-a-Familiar Rhonda', type:'wizard', cost:3, vp:1, power:1, draws:1, def:1, defDiscard:1,
-  text:'+1 พลัง<br>คุณและศัตรูที่เลือกจั่วคนละ 1 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี',
+def('carlotta', { name:'Rent-a-Familiar Rhonda', type:'wizard', cost:3, vp:1, power:1, draws:1, def:1, defDiscard:1, defDraw:1,
+  text:'+1 พลัง<br>คุณและศัตรูที่เลือกจั่วคนละ 1 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ',
   play: async p => {
     const t = await pickTarget(p, opps(p), { label: 'Rent-a-Familiar Rhonda: เลือกศัตรูที่จะจั่ว 1 ใบด้วย' });
     await draw(p, 1); await draw(t, 1);
@@ -1058,8 +1058,8 @@ def('solzar', { name:'Starblaze the Supernova', type:'wizard', cost:7, vp:2, pow
 def('wyverns', { name:'Double Trouble Drakes!', type:'wizard', cost:3, vp:1, power:2, atk:1,
   text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:3 }); } });
-def('wormster', { name:'Wigglo the Worm Mage', type:'wizard', cost:3, vp:1, power:2, def:1, defDiscard:1,
-  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วทำลายการ์ดในมือ 1 ใบได้ (เลือกไม่ทำก็ได้)',
+def('wormster', { name:'Wigglo the Worm Mage', type:'wizard', cost:3, vp:1, power:2, def:1, defDiscard:1, defDraw:1,
+  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วทำลายการ์ดในมือ 1 ใบได้ (เลือกไม่ทำก็ได้)',
   onDefend: async t => { await destroyFromHand(t, 1); } });
 def('slippy', { name:'Banana Peel Pete', type:'wizard', cost:4, vp:1, power:2, atk:1,
   text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่นั่งทางซ้ายหรือขวาของคุณ (เลือก 1 คน) ได้ Limp Wand 1 ใบ',
@@ -2045,8 +2045,8 @@ fam('suitors', { name:'Spare Boyfriends', power:2, draws:1, def:1,
     const c = others[rnd(others.length)]; t.hand.splice(t.hand.indexOf(c), 1); t.discard.push(c); log(`${t.name} ทิ้ง ${c.name} (สุ่ม)`); } });
 fam('dogo', { name:'Doggo the Gloomy', power:3, ...DODGE_DRAW(1),
   text:'ขณะที่ใบนี้อยู่ในกองทิ้งของคุณ ทุกครั้งที่คุณได้ Dead Wizard Token ยกเลิกผลทันทีของ Token นั้น (ผลต่อเนื่องยังอยู่)<br>+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ' });
-fam('dukefreak', { name:'Baron Freakshow, Esquire', power:3, def:1, defDiscard:1,
-  text:'+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วดูการ์ดใบบนสุดของกองหลัก ถ้าไม่ใช่โกลาหล นำขึ้นมือได้',
+fam('dukefreak', { name:'Baron Freakshow, Esquire', power:3, def:1, defDiscard:1, defDraw:1,
+  text:'+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วดูการ์ดใบบนสุดของกองหลัก ถ้าไม่ใช่โกลาหล นำขึ้นมือได้',
   onDefend: async t => {
     const c = G.main[G.main.length - 1];
     if (!c || c.type === 'chaos') { if (c) log(`${t.name} เห็น ${c.name} บนกองหลัก · เป็นโกลาหล`); return; }
@@ -2103,8 +2103,8 @@ fam('palcenta', { name:'Snack-Sack! Your Lunch Buddy', def:1, defDiscard:1,
     else P(p, 3);
   },
   onDefend: async (t, src, self, spec) => { await draw(t, 1); if (spec && typeof spec.dmg === 'number' && spec.dmg) heal(t, spec.dmg); } });
-fam('pussy', { name:'Kitty the Henpecked', def:1, defDiscard:1,
-  text:'ศัตรูแต่ละคนเลือกส่งการ์ด 1 ใบเข้ามือคุณได้ (ไม่บังคับ) · +3 พลัง ต่อการ์ดที่ได้รับ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วทำลายการ์ดในมือหรือกองทิ้ง 2 ใบพอดี',
+fam('pussy', { name:'Kitty the Henpecked', def:1, defDiscard:1, defDraw:1,
+  text:'ศัตรูแต่ละคนเลือกส่งการ์ด 1 ใบเข้ามือคุณได้ (ไม่บังคับ) · +3 พลัง ต่อการ์ดที่ได้รับ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วทำลายการ์ดในมือหรือกองทิ้ง 2 ใบพอดี',
   play: async p => {
     let n = 0;
     for (const t of turnOrder().filter(x => x !== p)) {
@@ -2137,8 +2137,8 @@ fam('ramon', { name:'Mortimer Mold, the Bookmite', draws:1, def:1, defDiscard:1,
     log(`${t.name} แลก Token “${mine.name}” กับ “${theirs.name}” ของ ${src.name}`, 'sys');
     if (theirs.now) await theirs.now(t, null); if (mine.now) await mine.now(src, null);
   } });
-fam('spellboy', { name:'Spellkid', power:3, def:1, defDiscard:1,
-  text:'+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วนำการ์ดชื่อ “Wand” ทุกใบในกองทิ้งขึ้นมือได้',
+fam('spellboy', { name:'Spellkid', power:3, def:1, defDiscard:1, defDraw:1,
+  text:'+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วนำการ์ดชื่อ “Wand” ทุกใบในกองทิ้งขึ้นมือได้',
   onDefend: async t => {
     const w = t.discard.filter(isWand); if (!w.length) return;
     const yes = t.isAI ? w.filter(c => c.id !== 'bent').length > w.filter(c => c.id === 'bent').length
@@ -2168,8 +2168,8 @@ fam('scaredstiff', { name:'The Petrified Social Club', alsoType:'location', ongo
 fam('skeeve', { name:'The Sleazy Jester', power:3, atk:1, ...REFLECT,
   text:`+3 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกได้ Limp Wand 1 ใบ<br>${REFLECT_TXT}`,
   play: async p => { await attack(p, { to:'choose', bent:1 }); } });
-fam('turdlings', { name:'The Stinklings', power:1, def:1, defDiscard:1,
-  text:'+1 พลัง ทำลายการ์ดในมือที่ราคา 1 ขึ้นไปได้ 1 ใบ ถ้าทำ ได้การ์ด 1 ใบจาก Line-Up วางบนสุดของเด็ค<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วส่งการ์ด 1 ใบจากมือหรือกองทิ้งไปที่มือของผู้โจมตีได้',
+fam('turdlings', { name:'The Stinklings', power:1, def:1, defDiscard:1, defDraw:1,
+  text:'+1 พลัง ทำลายการ์ดในมือที่ราคา 1 ขึ้นไปได้ 1 ใบ ถ้าทำ ได้การ์ด 1 ใบจาก Line-Up วางบนสุดของเด็ค<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วส่งการ์ด 1 ใบจากมือหรือกองทิ้งไปที่มือของผู้โจมตีได้',
   play: async p => {
     const pool = p.hand.filter(c => (c.cost || 0) >= 1), line = G.lineup.map((c, i) => ({ c, i })).filter(o => o.c);
     if (!pool.length || !line.length) return;
@@ -2189,8 +2189,8 @@ fam('turdlings', { name:'The Stinklings', power:1, def:1, defDiscard:1,
     if (!c) return;
     const pile = t.hand.includes(c) ? t.hand : t.discard; pile.splice(pile.indexOf(c), 1); await toHand(src, c); log(`${t.name} ยัด ${c.name} ใส่มือ ${src.name}`);
   } });
-fam('tiny', { name:'Teeny, the Pocket Wizard', power:2, def:1, defDiscard:1,
-  text:'+2 พลัง นำคาถา 1 ใบจากกองทิ้งไปวางบนสุดของเด็คได้<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี ถ้าผู้โจมตี HP มากกว่าคุณ เขาลด HP ลงให้เท่ากับคุณ',
+fam('tiny', { name:'Teeny, the Pocket Wizard', power:2, def:1, defDiscard:1, defDraw:1,
+  text:'+2 พลัง นำคาถา 1 ใบจากกองทิ้งไปวางบนสุดของเด็คได้<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าผู้โจมตี HP มากกว่าคุณ เขาลด HP ลงให้เท่ากับคุณ',
   play: async p => {
     const sp = p.discard.filter(c => isType(c, 'spell')); if (!sp.length) return;
     const c = p.isAI ? sp.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
@@ -3170,6 +3170,7 @@ async function tryDefend(t, src, spec) {
   // defBottom: the card goes to the bottom of the deck (Brats!, Null)
   if (choice.defBottom) { t.hand.splice(t.hand.indexOf(choice), 1); t.deck.unshift(choice); log(`${choice.name} ไปอยู่ใต้เด็ค ${t.name}`); }
   G.redirectTimes = choice.redirectTimes || 1; // Null, Hungry God reflects twice
+  if (choice.defDraw) await draw(t, 1); // self-discarding defence that draws 1 before its own effect
   if (choice.onDefend) await choice.onDefend(t, src, choice, spec);
   return choice.redirect && src ? 'redirect' : 'avoid';
 }
@@ -3233,6 +3234,12 @@ async function kill(t, killer, { tokenPick = 0 } = {}) {
   (swap ? killer : t).tokens.push(tok);
   announceToken(swap ? killer : t, tok); // pop the token up mid-screen
   t.hp = swap ? 20 : tok.respawn || 20;
+  // a wizard who dies loses every Location they control: they go to that wizard's discard pile
+  const lost = t.ongoing.filter(c => isType(c, 'location'));
+  if (lost.length) {
+    t.ongoing = t.ongoing.filter(c => !lost.includes(c)); t.discard.push(...lost);
+    log(`${t.name} ตาย · ${lost.map(c => c.name).join(', ')} ลงกองทิ้ง`, 'dmg');
+  }
   log(swap ? `☠ ${t.name} ตาย! (โดย ${killer.name}) · ${killer.name} รับ Dead Wizard Token “${tok.name}” แทน · ${t.name} ฟื้นคืนชีพที่ ${t.hp} HP`
     : `☠ ${t.name} ตาย!${killer && killer !== t ? ` (โดย ${killer.name})` : ''} ได้รับ Dead Wizard Token “${tok.name}”: ${tok.text} · ฟื้นคืนชีพที่ ${t.hp} HP`, 'kill');
   AUD.play('kill'); render(); await FX.kill(t, swap ? { name: `${tok.name} (${killer.name} รับแทน)` } : tok);
@@ -3704,6 +3711,7 @@ const RULES_HTML = `<div class="rules rg">
   <div class="rg-step">รับ ☠ Token สุ่ม<small>หัก VP + ผลพิเศษ</small></div><i>→</i>
   <div class="rg-step good">ฟื้นที่ 20 HP<small>เล่นต่อ</small></div>
 </div>
+<div class="rg-note">ตายแล้ว <b>การ์ดสถานที่</b> ทุกใบที่วางอยู่ลงกองทิ้งของคุณ</div>
 <div class="rg-note">คนที่ฆ่าได้ถือ <b>ถ้วยรางวัลแชมป์</b>: จั่ว 6 ทิ้ง 1 ทุกจบเทิร์น จนกว่าจะมีคนอื่นฆ่าได้</div>
 
 <h3>ประเภทการ์ด</h3>
@@ -3970,7 +3978,8 @@ function render() {
   trackMoves(); // show cards that moved since the last redraw
   document.documentElement.style.setProperty('--ph', -Math.round(performance.now() % 1600) + 'ms');
   const me = meP();
-  const myTurn = cur() === me && !G.over && !G.ending && G.endTurnResolve;
+  // G.ending (e.g. the Dead Wizard Token pile ran out) ends the game after this turn: the player still finishes it
+  const myTurn = cur() === me && !G.over && G.endTurnResolve;
   const pw = G.turn ? G.turn.power : 0;
   // seating: rivals only in the left and right columns. Clockwise from you: the first half sit up your left side
   // (nearest you at the bottom), the rest come down your right side.
@@ -4184,6 +4193,8 @@ async function doAction(p, a) {
     else if (act === 'buy') { await buy(p, a.src, +a.i); }
     else if (act === 'end') { const r = G.endTurnResolve; G.endTurnResolve = null; G.busy = false; r(); return; }
   } finally { if (G) { G.busy = false; render(); } }
+  // an outright win (The Champion Wand of Victory) ends the turn and the game at once
+  if (G && G.instantWinner && G.endTurnResolve && !G.over) { const r = G.endTurnResolve; G.endTurnResolve = null; r(); }
 }
 // browsers only allow audio after a user gesture
 document.addEventListener('pointerdown', () => AUD.unlock());
