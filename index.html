@@ -493,7 +493,7 @@ def('purge', { name:'Purge Ritual', type:'spell', cost:3, vp:1, power:1, text:'+
 def('grabo', { name:'Grabby Hands of Gimme', type:'spell', cost:2, vp:1, power:1,
   text:'+1 พลัง<br>การ์ดใบถัดไปที่คุณซื้อหรือได้รับในเทิร์นนี้ วางบนสุดของเด็คแทนกองทิ้ง',
   play: async () => { G.turn.topdeck = (G.turn.topdeck || 0) + 1; } });
-def('dragonwhored', { name:'Dragon Hoard Snort', type:'spell', cost:3, vp:1, power:1,
+def('dragonwhored', { name:'Dragon Hoard Cleanout', type:'spell', cost:3, vp:1, power:1,
   text:'+1 พลัง<br>ทำลายการ์ด 1 ใบจากกองทิ้งได้ (เลือกไม่ทำก็ได้)',
   play: async p => { await destroyOwn(p, { discardOnly: true }); } });
 def('luckyday', { name:'Fortune Cookie Burp', type:'spell', cost:3, vp:1, draws:1, def:1, defDiscard:1,
@@ -531,7 +531,7 @@ async function cometStrike(p, c) {
     await attack(p, { to:'choose', dmg: c.cost });
   }
 }
-def('wizardbabies', { name:'Wizard Toddlers', type:'spell', cost:6, vp:2, power:3, atk:1,
+def('wizardbabies', { name:'Tattletale Toddlers', type:'spell', cost:6, vp:2, power:3, atk:1,
   text:'+3 พลัง<br><b>โจมตี:</b> ศัตรูแต่ละคนรับ 2 ดาเมจ ต่อการ์ดป้องกันแต่ละใบในกองทิ้งของคนนั้น',
   play: async p => {
     await attack(p, { to:'each', dmgText:'2 ดาเมจต่อการ์ดป้องกันในกองทิ้งของคุณ',
@@ -540,12 +540,12 @@ def('wizardbabies', { name:'Wizard Toddlers', type:'spell', cost:6, vp:2, power:
 def('annihilaggedon', { name:'Kaboomageddon!', type:'spell', cost:7, vp:2, power:3, atk:1,
   text:'+3 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 7 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:7 }); } });
-def('lowfive', { name:'Underhand Slap', type:'spell', cost:2, vp:4, draws:1,
+def('lowfive', { name:'Half-Hearted High Five', type:'spell', cost:2, vp:4, draws:1,
   text:'คุณและผู้เล่นอีก 1 คนที่คุณเลือก จั่วคนละ 1',
   play: async p => {
     await draw(p, 1);
     // the AI gifts the card to whoever is the least threat: lowest HP
-    const t = await pickTarget(p, opps(p), { label:'Underhand Slap: เลือกผู้เล่นที่จะจั่วด้วย 1 ใบ' });
+    const t = await pickTarget(p, opps(p), { label:'Half-Hearted High Five: เลือกผู้เล่นที่จะจั่วด้วย 1 ใบ' });
     log(`${p.name} ตบมือต่ำกับ ${t.name}`); await draw(t, 1);
   } });
 def('wizardwaste', { name:'Sorcerer Sewage', type:'spell', cost:3, vp:1, ongoing:1,
@@ -818,14 +818,14 @@ def('boner', { name:'Bone of Contention', type:'treasure', cost:3, vp:0, ongoing
 def('staph', { name:"Crusty Staff of Infection", type:'treasure', cost:4, vp:1, power:1, atk:1,
   text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 3 ดาเมจ และได้ Limp Wand 1 ใบ',
   play: async p => { await attack(p, { to:'choose', dmg:3, bent:1 }); } });
-def('sexcalibur', { name:'Flirtcalibur', type:'treasure', cost:4, vp:1, draws:1,
+def('sexcalibur', { name:'Booty Call Bell', type:'treasure', cost:4, vp:1, draws:1,
   text:'นำพ่อมด (Wizard) 1 ใบจากกองทิ้งขึ้นมือ (ถ้ามีต้องหยิบ)<br>ถ้าในกองทิ้งไม่มีพ่อมดเลย +2 พลัง',
   play: async p => {
     const wiz = p.discard.filter(c => isType(c, 'wizard'));
     if (!wiz.length) { P(p, 2); log(`ไม่มีพ่อมดในกองทิ้งของ ${p.name} · ได้ +2 พลังแทน`); return; }
     const c = wiz.length === 1 ? wiz[0]
       : p.isAI ? wiz.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-      : await humanChoose(p, 'Flirtcalibur: เลือกพ่อมดจากกองทิ้งขึ้นมือ', wiz.map(x => ({ card: x, value: x })));
+      : await humanChoose(p, 'Booty Call Bell: เลือกพ่อมดจากกองทิ้งขึ้นมือ', wiz.map(x => ({ card: x, value: x })));
     p.discard.splice(p.discard.indexOf(c), 1); p.hand.push(c);
     log(`${p.name} หยิบ ${c.name} จากกองทิ้งขึ้นมือ`, 'good');
   } });
@@ -853,17 +853,17 @@ def('battlesax', { name:'Battle Saxophone', type:'treasure', cost:5, vp:1, power
   play: async p => { await attack(p, { to:'lr', dmg:5 }); } });
 def('dragonballz', { name:"Dragon Eggz", type:'treasure', cost:5, vp:0, ongoing:1, defInPlay:1,
   vpCalc: p => allCards(p).filter(c => c.id === 'dragonballz').length >= 2 ? 5 : 0,
-  text:'ฟื้น 3 HP<br><b>ต่อเนื่อง · ป้องกัน:</b> นำใบนี้ออกจากสนามลงกองทิ้งเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ<br><b>จบเกม:</b> ถ้ามี Dragon\'s Ballz ครบ 2 ใบ ใบนี้มีค่า 5 VP (มีใบเดียว 0 VP)',
+  text:'ฟื้น 3 HP<br><b>ต่อเนื่อง · ป้องกัน:</b> นำใบนี้ออกจากสนามลงกองทิ้งเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ<br><b>จบเกม:</b> ถ้ามี Dragon Eggz ครบ 2 ใบ ใบนี้มีค่า 5 VP (มีใบเดียว 0 VP)',
   play: async p => heal(p, 3),
   onDefend: async t => draw(t, 1) });
-def('overkill', { name:'Barbecue of Doom', type:'treasure', cost:5, vp:1, power:2, atk:1,
+def('overkill', { name:'Legend Roast Barbecue', type:'treasure', cost:5, vp:1, power:2, atk:1,
   text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ ต่อตำนาน (Legend) แต่ละใบในกองทิ้งของคนนั้น<br>ถ้าไม่ทำดาเมจใครเลย ทำลายการ์ดในมือคุณ 1 ใบได้',
   play: async p => {
     let dealt = 0;
     await attack(p, { to:'each', dmgText:'4 ดาเมจ ต่อตำนานในกองทิ้งของคุณ',
       dmg: t => 4 * t.discard.filter(c => c.type === 'legend').length,
       onHit: (t, n) => { dealt += n; } });
-    if (!dealt) { log(`Barbecue of Doom ไม่โดนใครเลย`); await destroyFromHand(p, 1); }
+    if (!dealt) { log(`Legend Roast Barbecue ไม่โดนใครเลย`); await destroyFromHand(p, 1); }
   } });
 def('joyboy', { name:"Goody Bag of Giggles", type:'treasure', cost:6, vp:2, power:3,
   text:'+3 พลัง<br>เปิดการ์ดใบบนสุดของเด็คคุณ (วางคืนที่เดิม) แล้วฟื้น HP เท่ากับราคาของใบนั้น',
@@ -927,14 +927,14 @@ def('destiny', { name:"Child of Fate", type:'wizard', cost:3, vp:1, power:1, dra
     log(`${p.name} ทิ้งการ์ดในมือ ${n} ใบ แล้วจั่ว 4 ใบ`);
     await draw(p, 4);
   } });
-def('fishmonger', { name:'Barnacle the Fish Peddler', type:'wizard', cost:4, vp:1, draws:1,
+def('fishmonger', { name:'Barnacle, Angler of Spells', type:'wizard', cost:4, vp:1, draws:1,
   text:'นำคาถา (Spell) 1 ใบจากกองทิ้งขึ้นมือ (ถ้ามีต้องหยิบ)<br>ถ้าในกองทิ้งไม่มีคาถาเลย +2 พลัง',
   play: async p => {
     const spells = p.discard.filter(c => isType(c, 'spell'));
     if (!spells.length) { P(p, 2); log(`ไม่มีคาถาในกองทิ้งของ ${p.name} · ได้ +2 พลังแทน`); return; }
     const c = spells.length === 1 ? spells[0]
       : p.isAI ? spells.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
-      : await humanChoose(p, 'Barnacle the Fish Peddler: เลือกคาถาจากกองทิ้งขึ้นมือ', spells.map(x => ({ card: x, value: x })));
+      : await humanChoose(p, 'Barnacle, Angler of Spells: เลือกคาถาจากกองทิ้งขึ้นมือ', spells.map(x => ({ card: x, value: x })));
     p.discard.splice(p.discard.indexOf(c), 1); p.hand.push(c);
     log(`${p.name} หยิบ ${c.name} จากกองทิ้งขึ้นมือ`, 'good');
   } });
@@ -1656,11 +1656,11 @@ def('cosmicglyph', { name:'The Astral Rune', type:'legend', cost:10, vp:5,
     }
     return 0;
   } }) });
-def('darklord', { name:'Way Darker Overlord of Darkness', type:'legend', cost:11, vp:6, draws:1,
+def('darklord', { name:'Overlord of the Lost and Found', type:'legend', cost:11, vp:6, draws:1,
   text:'นำสมบัติ (Treasure) ทุกใบในกองทิ้งขึ้นมือ ถ้าไม่มีเลย +2 พลัง', group:'พ่อมดทุกคนรับ 7 ดาเมจ',
   play: async p => recallType(p, 'treasure', 'สมบัติ'),
   gattack: () => attack(null, { to:'all', dmg:7 }) });
-def('skullzor', { name:'Skullsplosion!!! (Epic Solo)', type:'legend', cost:11, vp:6, draws:1,
+def('skullzor', { name:'Greatest Hits Encore!!!', type:'legend', cost:11, vp:6, draws:1,
   text:'นำคาถา (Spell) ทุกใบในกองทิ้งขึ้นมือ ถ้าไม่มีเลย +2 พลัง', group:'พ่อมดทุกคนเปิดมือ และรับ 3 ดาเมจต่อการ์ดที่มี 1 VP ขึ้นไป',
   play: async p => recallType(p, 'spell', 'คาถา'),
   gattack: () => attack(null, { to:'all', dmgText:'3 ดาเมจต่อการ์ดในมือที่มี 1 VP ขึ้นไป', dmg: t => {
@@ -2007,7 +2007,7 @@ fam('candy', { name:'Sugar Rush Soldiers', power:3, atk:1, def:1, defDiscard:1,
     const yes = t.isAI || await humanChoose(t, 'Sugar Rush Soldiers: ตั้ง HP เป็น 20?', [{ label: 'ตั้งเป็น 20', value: true }, { label: 'ไม่', value: false, ghost: true }]);
     if (yes) { t.hp = 20; log(`${t.name} HP เป็น 20`, 'good'); render(); }
   } });
-fam('cosmo', { name:'Ticketmaster Comet', allTypes:1, draws:1, ...REFLECT,
+fam('cosmo', { name:'Comet of Every Kind', allTypes:1, draws:1, ...REFLECT,
   text:`นับเป็นการ์ดทุกประเภท (คาถา สัตว์อสูร สมบัติ พ่อมด สถานที่)<br>จั่ว 2 ใบ<br>${REFLECT_TXT}`,
   play: async p => draw(p, 2) });
 fam('suitors', { name:'Spare Boyfriends', power:2, draws:1, def:1,
@@ -2525,7 +2525,7 @@ async function placeGained(p, c) {
 const canOwn = (p, c) => !c.unique || !allCards(p).some(x => x.id === c.id);
 // wizard abilities: the player's own tile plus a temporary second one (Papa Skeleton)
 // a card's type, or its second type (Legend · Wizard, Legend · Location)
-const isType = (c, t) => c.type === t || c.alsoType === t || !!c.allTypes; // allTypes: Ticketmaster Comet
+const isType = (c, t) => c.type === t || c.alsoType === t || !!c.allTypes; // allTypes: Comet of Every Kind
 const hasTrait = (p, id) => p.trait.id === id || (p.trait2 && p.trait2.id === id);
 const traitsOf = p => [p.trait, p.trait2].filter(Boolean);
 function costFor(p, c) {
