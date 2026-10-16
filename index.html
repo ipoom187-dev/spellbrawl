@@ -33,6 +33,9 @@ button{font-family:inherit}
 .setmenu{display:flex;flex-direction:column;gap:6px;min-width:190px;padding:10px;border-radius:10px;background:var(--panel);
   border:1px solid var(--gold);box-shadow:0 12px 40px #000c}
 .setmenu .btn{text-align:left;width:100%}
+.setmenu .vol{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px;font-size:12px;color:var(--mute);padding:4px 2px 0}
+.setmenu .vol span{color:var(--gold);font-variant-numeric:tabular-nums}
+.setmenu .vol input{width:100%;accent-color:var(--gold)}
 .sm-title{font-family:var(--f-display);font-size:20px;color:var(--gold);line-height:1;margin-bottom:2px}
 .btn{background:var(--accent);color:#1a0f0a;border:0;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:14px}
 .btn:hover{filter:brightness(1.1)}
@@ -547,6 +550,8 @@ table.score tr.win td{color:var(--gold);font-weight:700}
       <button class="btn ghost" id="btn-sfx" data-act="sfx">เสียง: เปิด</button>
       <button class="btn ghost" id="btn-music" data-act="music">เพลง: เปิด</button>
       <button class="btn ghost" id="btn-fx" data-act="fxlite">เอฟเฟกต์: เต็ม</button>
+      <label class="vol" for="vol-sfx">ระดับเสียงประกอบ <span id="vol-sfx-v"></span><input type="range" id="vol-sfx" min="0" max="100" step="5"></label>
+      <label class="vol" for="vol-mus">ระดับเพลง <span id="vol-mus-v"></span><input type="range" id="vol-mus" min="0" max="100" step="5"></label>
       <button class="btn ghost" data-act="artedit">ภาพกระดาน/การ์ด</button>
       <button class="btn ghost" data-act="rules">กติกา</button>
       <button class="btn ghost" data-act="newgame">เกมใหม่</button>
@@ -2732,11 +2737,12 @@ const aiVal = c => (c.id === 'fizzle' || c.id === 'bent') ? -2 : c.id === 'rune'
    AUD.play(name) for SFX · background music is a procedural war-drum loop (Dm–Bb–F–C) */
 const AUD = (() => {
   const KEY = 'spellbrawl-audio', LEVEL = { sfx: 1, mus: .5 };
-  const st = { sfx: true, music: true };
+  const st = { sfx: true, music: true, vsfx: 1, vmus: 1 }; // vsfx / vmus: the settings sliders (0–1)
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
   let ctx = null, noiseBuf = null, timer = null, nextT = 0, step = 0;
   const bus = {}, wet = {};
   const N = m => 440 * Math.pow(2, (m - 69) / 12);
+  const lvl = b => LEVEL[b] * (b === 'sfx' ? st.vsfx : st.vmus); // base level × the player's slider
 
   function init() {
     if (ctx) return true;
@@ -2751,8 +2757,8 @@ const AUD = (() => {
     for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
     verb.buffer = ir; verb.connect(comp);
     for (const [b, on] of [['sfx', st.sfx], ['mus', st.music]]) {
-      bus[b] = ctx.createGain(); bus[b].gain.value = on ? LEVEL[b] : 0; bus[b].connect(comp);
-      wet[b] = ctx.createGain(); wet[b].gain.value = on ? LEVEL[b] * .5 : 0; wet[b].connect(verb);
+      bus[b] = ctx.createGain(); bus[b].gain.value = on ? lvl(b) : 0; bus[b].connect(comp);
+      wet[b] = ctx.createGain(); wet[b].gain.value = on ? lvl(b) * .5 : 0; wet[b].connect(verb);
     }
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const nd = noiseBuf.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -2813,9 +2819,43 @@ const AUD = (() => {
       noise({ t, a: .03, d: .3, v: .18, filter: 'bandpass', f0: 600, f1: 4000, q: 2, w: .3 });
     },
     impact: (t, n = 2) => impact(t, n),
+    // attack styles (FX.strike): each shot has its own sound
+    zap: t => {                                             // spell orb: sparkling rising chime + airy whoosh
+      [79, 84, 88, 91, 96].forEach((m, i) => tone('sine', N(m), { t: t + i * .045, d: .25, v: .05, w: .7 }));
+      noise({ t, a: .05, d: .35, v: .12, filter: 'bandpass', f0: 2000, f1: 7000, q: 3, w: .4 });
+    },
+    slash: t => [0, .07, .14].forEach((dt, i) => {          // creature claws: three quick swipes
+      noise({ t: t + dt, a: .004, d: .09, v: .35, filter: 'bandpass', f0: 4200 - i * 700, f1: 900, q: 2.5, w: .15 });
+      tone('sawtooth', 700 - i * 90, { t: t + dt, to: 180, d: .08, v: .05, filter: 'lowpass', f0: 2500, w: .1 });
+    }),
+    beam: t => {                                            // wizard beam: buzzing sizzle that snaps on and off
+      const o = tone('sawtooth', 320, { t, to: 900, a: .01, d: .38, v: .08, filter: 'lowpass', f0: 3000, f1: 1200, q: 4, w: .3 });
+      lfo(o.frequency, 34, 60, t, .45);
+      noise({ t, a: .01, d: .32, v: .14, filter: 'highpass', f0: 4500, w: .3 });
+    },
+    whoosh: t => noise({ t, a: .12, d: .35, v: .16, filter: 'bandpass', f0: 600, f1: 2600, q: 1.5, w: .3 }),
+    coin: t => {                                            // treasure landing: bright "ting-ting"
+      [[2637, 0], [3520, .06], [2637, .16]].forEach(([fq, dt]) => { tone('sine', fq, { t: t + dt, d: .5, v: .07, w: .6 }); tone('sine', fq * 2.76, { t: t + dt, d: .2, v: .02, w: .5 }); });
+    },
+    fall: t => {                                            // meteor coming down: falling whistle + roar
+      tone('sine', 1800, { t, to: 220, a: .05, d: .55, v: .05, w: .4 });
+      noise({ t, a: .2, d: .45, v: .2, filter: 'bandpass', f0: 3000, f1: 300, q: 1.2, w: .4 });
+    },
+    boom: t => { impact(t, 6); drum(t, .9); cymbal(t + .02, .12); },
+    wave: t => {                                            // shockwave: deep boom rolling outwards
+      tone('sine', 90, { t, to: 30, d: 1.1, v: .7, w: .5 });
+      noise({ t, a: .02, d: .9, v: .35, filter: 'lowpass', f0: 1400, f1: 80, w: .7 });
+      noise({ t: t + .05, a: .2, d: .6, v: .12, filter: 'bandpass', f0: 400, f1: 2400, q: .8, w: .5 });
+    },
+    shatter: t => {                                         // a death: the panel's glass breaking
+      noise({ t, a: .002, d: .35, v: .4, filter: 'highpass', f0: 3000, w: .4 });
+      for (let i = 0; i < 9; i++) tone('sine', 2200 + Math.random() * 4200, { t: t + Math.random() * .3, a: .002, d: .18 + Math.random() * .2, v: .045, w: .6 });
+    },
+    coindrop: t => { tone('sine', 1760, { t, d: .6, v: .07, w: .7 }); tone('sine', 1760 * 2.4, { t, d: .25, v: .03, w: .6 }); tone('sine', 2350, { t: t + .09, d: .7, v: .06, w: .7 }); },
     shield: t => {
       [1, 2.76, 5.4].forEach((m, i) => tone('sine', 620 * m, { t, d: .9 - i * .2, v: .09 / (i + 1), w: .6 }));
       noise({ t, d: .08, v: .15, filter: 'highpass', f0: 5000, w: .3 });
+      [1, 1.42, 2.13].forEach(m => tone('square', 340 * m, { t, a: .002, d: .16, v: .035, filter: 'bandpass', f0: 1800, q: 3, w: .4 })); // metal clank
     },
     reflect: t => { S.shield(t); tone('sawtooth', 1200, { t: t + .05, to: 140, d: .35, v: .08, filter: 'lowpass', f0: 4000, f1: 600, w: .4 }); },
     heal: t => [72, 76, 79, 84, 88].forEach((m, i) => tone('sine', N(m), { t: t + i * .055, d: .6, v: .06, w: .7 })),
@@ -2891,21 +2931,32 @@ const AUD = (() => {
     }, 80);
   }
   function stopMusic() { clearInterval(timer); timer = null; }
+  function raw(name, arg) {
+    if (!ctx || !st.sfx || ctx.state !== 'running') return;
+    try { S[name](ctx.currentTime + .02, arg); } catch (e) { console.warn('sfx', name, e); }
+  }
 
   return {
     st,
     unlock() { if (!init()) return; if (ctx.state === 'suspended') ctx.resume(); if (st.music) startMusic(); },
-    play(name, arg) {
-      if (!ctx || !st.sfx || ctx.state !== 'running') return;
-      try { S[name](ctx.currentTime + .02, arg); } catch (e) { console.warn('sfx', name, e); }
+    play: raw,
+    // sounds started inside an FX: played here only. NET.wrapFX replaces play() to forward it to guests; local() is
+    // never wrapped, because every guest replays the FX and makes that sound itself
+    local: raw,
+    // settings sliders: k 'vsfx' | 'vmus', v 0–1
+    setVol(k, v) {
+      st[k] = Math.max(0, Math.min(1, v));
+      try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {}
+      const b = k === 'vsfx' ? 'sfx' : 'mus', on = b === 'sfx' ? st.sfx : st.music;
+      if (ctx && on) { bus[b].gain.setTargetAtTime(lvl(b), ctx.currentTime, .05); wet[b].gain.setTargetAtTime(lvl(b) * .5, ctx.currentTime, .05); }
     },
     toggle(k) {
       const b = k === 'sfx' ? 'sfx' : 'mus';
       st[k] = !st[k];
       try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {}
       if (ctx) {
-        bus[b].gain.setTargetAtTime(st[k] ? LEVEL[b] : 0, ctx.currentTime, .08);
-        wet[b].gain.setTargetAtTime(st[k] ? LEVEL[b] * .5 : 0, ctx.currentTime, .08);
+        bus[b].gain.setTargetAtTime(st[k] ? lvl(b) : 0, ctx.currentTime, .08);
+        wet[b].gain.setTargetAtTime(st[k] ? lvl(b) * .5 : 0, ctx.currentTime, .08);
         if (b === 'mus') { if (st[k]) startMusic(); else stopMusic(); }
       }
       return st[k];
@@ -3089,6 +3140,7 @@ const FX = (() => {
   const arcPt = (a, b, lift) => { const cx = (a.x + b.x) / 2, cy = Math.min(a.y, b.y) - lift; return u => ({ x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * cx + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * cy + u * u * b.y }); };
   async function orbShot(a, b, t, color) {               // spell: sparkling magic orb on an arc with a glitter trail
     const pt = arcPt(a, b, Math.min(180, Math.hypot(b.x - a.x, b.y - a.y) * .35)), dur = T(440), orb = spawn('orb magic', 0, 0);
+    AUD.local('zap');
     orb.style.setProperty('--c', color);
     fire(orb, Array.from({ length: 11 }, (_, i) => { const p = pt(i / 10); return { transform: `translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${.5 + i / 12}) rotate(${i * 40}deg)` }; }), { duration: dur, easing: 'ease-in' });
     for (let k = 1; k < 9; k++) setTimeout(() => { const p = pt(Math.pow(k / 9, 1.5)); sparks(p.x, p.y, k % 2 ? '#fff' : color, 2, 18, 5); }, dur * k / 9);
@@ -3098,7 +3150,7 @@ const FX = (() => {
     const el = seat(t), r = el ? el.getBoundingClientRect() : { left: b.x - 80, top: b.y - 40, width: 160, height: 80 };
     const lunge = spawn('orb', 0, 0); lunge.style.setProperty('--c', '#ff6a3d');
     fire(lunge, [{ transform: `translate(${a.x}px,${a.y}px) translate(-50%,-50%) scale(.6)` }, { transform: `translate(${b.x}px,${b.y}px) translate(-50%,-50%) scale(1.2)` }], { duration: T(260), easing: 'cubic-bezier(.5,0,.9,.4)' });
-    await sleep(T(240));
+    await sleep(T(240)); AUD.local('slash');
     for (let i = 0; i < 3; i++) {
       const c = spawn('claw', r.left + r.width * (.3 + i * .18), r.top + r.height / 2);
       c.style.height = Math.max(60, r.height * 1.2) + 'px';
@@ -3109,23 +3161,24 @@ const FX = (() => {
   }
   async function beam(a, b, t, color) {                  // wizard: a straight beam that snaps across, then fades
     const len = Math.hypot(b.x - a.x, b.y - a.y), ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI, el = spawn('beam', a.x, a.y);
-    el.style.width = len + 'px'; el.style.setProperty('--c', color);
+    el.style.width = len + 'px'; el.style.setProperty('--c', color); AUD.local('beam');
     fire(el, [{ transform: `translateY(-50%) rotate(${ang}deg) scaleX(0)`, opacity: 1 }, { transform: `translateY(-50%) rotate(${ang}deg) scaleX(1)`, opacity: 1, offset: .35 },
       { transform: `translateY(-50%) rotate(${ang}deg) scaleX(1) scaleY(.2)`, opacity: 0 }], { duration: T(520), easing: 'ease-out' });
     await sleep(T(190)); sparks(b.x, b.y, color, 18, 80, 8); sparks(b.x, b.y, '#fff', 6, 40, 5); await sleep(T(150));
   }
   async function spin(a, b, t, color) {                  // treasure: a gold trinket tumbling through the air
     const pt = arcPt(a, b, Math.min(220, Math.hypot(b.x - a.x, b.y - a.y) * .45)), dur = T(520), el = spawn('trinket', 0, 0, '✦');
+    AUD.local('whoosh');
     fire(el, Array.from({ length: 11 }, (_, i) => { const p = pt(i / 10); return { transform: `translate(${p.x}px,${p.y}px) translate(-50%,-50%) rotate(${i * 72}deg) scale(${.7 + i / 20})` }; }), { duration: dur, easing: 'ease-in-out' });
-    await sleep(dur); sparks(b.x, b.y, '#f0c35a', 16, 70, 8); sparks(b.x, b.y, color, 8, 50, 7);
+    await sleep(dur); AUD.local('coin'); sparks(b.x, b.y, '#f0c35a', 16, 70, 8); sparks(b.x, b.y, color, 8, 50, 7);
   }
   async function meteor(a, b, t, color) {                // legend: a meteor drops from the top of the screen with a fire trail
     const sx = b.x + (b.x < innerWidth / 2 ? -220 : 220), sy = -60, dur = T(560), el = spawn('meteor', 0, 0);
-    const ang = Math.atan2(b.y - sy, b.x - sx) * 180 / Math.PI;
+    const ang = Math.atan2(b.y - sy, b.x - sx) * 180 / Math.PI; AUD.local('fall');
     fire(el, [{ transform: `translate(${sx}px,${sy}px) translate(-50%,-50%) rotate(${ang}deg) scale(.6)` }, { transform: `translate(${b.x}px,${b.y}px) translate(-50%,-50%) rotate(${ang}deg) scale(1.2)` }], { duration: dur, easing: 'cubic-bezier(.6,0,1,.7)' });
     for (let k = 1; k < 8; k++) setTimeout(() => sparks(sx + (b.x - sx) * k / 8, sy + (b.y - sy) * k / 8, k % 2 ? '#ffb454' : '#ff3355', 3, 22, 8), dur * k / 8);
     await sleep(dur);
-    const boom = spawn('ring boom', b.x, b.y);
+    const boom = spawn('ring boom', b.x, b.y); AUD.local('boom');
     fire(boom, [{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.6)', opacity: 0 }], { duration: T(500), easing: 'ease-out' });
     sparks(b.x, b.y, '#ff6a3d', 26, 130, 11); sparks(b.x, b.y, '#ffd27a', 12, 80, 7); shake(10);
   }
@@ -3133,7 +3186,7 @@ const FX = (() => {
     const reach = Math.max(...targets.map(t => { const p = at(t); return Math.hypot(p.x - from.x, p.y - from.y); }), 120);
     const dur = T(620), w = spawn('wave', from.x, from.y); w.style.setProperty('--c', color);
     fire(w, [{ width: '20px', height: '20px', opacity: 1 }, { width: reach * 2.3 + 'px', height: reach * 2.3 + 'px', opacity: 0 }], { duration: dur, easing: 'cubic-bezier(.2,.6,.4,1)' });
-    sparks(from.x, from.y, color, 14, 60, 8); shake(6);
+    sparks(from.x, from.y, color, 14, 60, 8); shake(6); AUD.local('wave');
     await Promise.all(targets.map(t => { const p = at(t), d = Math.hypot(p.x - from.x, p.y - from.y);
       return sleep(dur * Math.min(.85, d / (reach * 1.15))).then(() => sparks(p.x, p.y, color, 14, 70, 9)); }));
   }
@@ -3158,7 +3211,7 @@ const FX = (() => {
     // at the attacking card in the arena when it's there. Light effects / reduced motion: the plain orb.
     async strike(src, targets, kind, color, card, wave) {
       if (!targets.length) return;
-      if (fxLite() || RM.matches) return Promise.all(targets.map(t => FX.bolt(src, t, color)));
+      if (fxLite() || RM.matches) { AUD.local('cast'); return Promise.all(targets.map(t => FX.bolt(src, t, color))); }
       const cardEl = card && document.querySelector(`.arena .card[data-zoom="${card.uid}"]`);
       const from = cardEl ? (r => clampPt(r.left + r.width / 2, r.top + r.height * .35))(cardEl.getBoundingClientRect()) : at(src);
       if (wave) return shockwave(from, targets, kind === 'legend' || kind === 'chaos' ? '#ff3355' : color);
@@ -3225,6 +3278,7 @@ const FX = (() => {
       sparks(x, y, '#ff3b4f', 30, 200, 11); sparks(x, y, '#efe6d6', 14, 140, 6);
       if (!fxLite() && !RM.matches) {
         screen('desat', [{ opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .55 }, { opacity: 0 }], T(1300));
+        AUD.local('shatter');
         if (el) {
           const r = el.getBoundingClientRect(), c = spawn('crack', r.left, r.top);
           c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
@@ -3242,7 +3296,7 @@ const FX = (() => {
           { transform: `translate(${cx}px,${cy - 40}px) translate(-50%,-50%) scale(1.6) rotate(-20deg)`, opacity: 1, offset: .35 },
           { transform: `translate(${(cx + x) / 2}px,${Math.min(cy, y) - 90}px) translate(-50%,-50%) scale(1.1) rotate(200deg)`, opacity: 1, offset: .7 },
           { transform: `translate(${x}px,${y}px) translate(-50%,-50%) scale(.5) rotate(360deg)`, opacity: .9 }], { duration: T(1400), easing: 'ease-in-out' });
-        setTimeout(() => sparks(x, y, '#e9c46a', 14, 70, 7), T(1350));
+        setTimeout(() => { sparks(x, y, '#e9c46a', 14, 70, 7); AUD.local('coindrop'); }, T(1350));
       }
       const by = killer && killer !== t ? `โดย ${killer.name} · ` : '';
       return banner(`☠ ${t.name} ตาย!`, `${by}Dead Wizard Token: ${tok.name}`, 'kill', T(1500));
@@ -3349,7 +3403,6 @@ async function attack(src, spec) {
   }
   const color = !spec.dmg ? (spec.bent ? '#b07cff' : '#59c2c7') : spec.chaos ? '#c27dff' : src ? '#ff7a3d' : '#ff3355';
   if (src && G.curCard) await FX.windup(G.curCard);
-  AUD.play('cast');
   // what the shot looks like follows what attacked (see FX.strike); hitting everyone (or 3+) is one shockwave
   const atkCard = src ? G.curCard : null;
   const kind = !src ? (spec.chaos ? 'chaos' : 'legend')
@@ -4565,6 +4618,14 @@ const audioLabel = (k, on) => `${k === 'sfx' ? 'เสียง' : 'เพลง
 $('#btn-sfx').textContent = audioLabel('sfx', AUD.st.sfx);
 $('#btn-music').textContent = audioLabel('music', AUD.st.music);
 $('#btn-fx').textContent = fxLite() ? 'เอฟเฟกต์: น้อย' : 'เอฟเฟกต์: เต็ม';
+// volume sliders (settings menu): sound effects and music separately, remembered with the on/off switches
+for (const [id, k] of [['vol-sfx', 'vsfx'], ['vol-mus', 'vmus']]) {
+  const inp = $('#' + id), out = $('#' + id + '-v');
+  const show = () => { out.textContent = inp.value + '%'; };
+  inp.value = Math.round((AUD.st[k] ?? 1) * 100); show();
+  inp.addEventListener('input', () => { AUD.setVol(k, inp.value / 100); show(); });
+  if (k === 'vsfx') inp.addEventListener('change', () => AUD.play('buy')); // a sample at the new level
+}
 document.addEventListener('keydown', e => {
   AUD.unlock();
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card[data-act]')) { e.preventDefault(); e.target.click(); }
