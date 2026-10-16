@@ -74,11 +74,25 @@ button{font-family:inherit}
 .arena{border:1px solid color-mix(in srgb, var(--gold) 28%, transparent);border-radius:14px;padding:10px 12px;
   background:radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);transition:box-shadow .3s}
 .arena.busy{box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 22%, transparent)}
-.arena-pw{color:var(--gold);font-size:16px}
+.goldbox{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;align-items:center;column-gap:10px;padding:8px 12px;
+  border-radius:12px;border:2px solid var(--gold);background:radial-gradient(ellipse at 30% 30%, #f0c35a33, #1a1220 75%);
+  box-shadow:0 0 22px #f0c35a55, 0 0 0 1px #000 inset}
+.goldbox .coin{grid-row:1/3;width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #fff6c8, #f0c35a 45%, #a8741c 100%);box-shadow:0 0 0 2px #7a520f inset,0 2px 6px #000a}
+.goldbox .arena-pw{font-family:var(--f-display);font-weight:400;font-size:44px;line-height:.9;color:var(--gold);text-shadow:0 0 14px #f0c35a99,0 2px 0 #000;
+  font-variant-numeric:tabular-nums}
+.goldbox small{font-size:11px;letter-spacing:.06em;color:#f3e2b5}
+.goldbox.bump{animation:goldbump .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes goldbump{0%{transform:scale(1)}40%{transform:scale(1.14);box-shadow:0 0 40px #f0c35acc}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.goldbox.bump{animation:none}}
 /* casting arena keeps one fixed size: one row of cards that are all --arena-h tall (long ability text shrinks to fit,
    see fitNames); the ✲ button sits over the bottom of its card; when the row is full the cards overlap instead of wrapping */
 .arena{--arena-h:var(--card-h)}
-.arena .cards.played{flex-wrap:nowrap;align-items:flex-start;height:var(--arena-h);gap:6px;padding-right:126px}
+.arena{display:flex;align-items:center;gap:14px}
+.arena .cards.played{flex:1;min-width:0;flex-wrap:nowrap;align-items:flex-start;height:var(--arena-h);gap:6px}
+.arena-actions{flex:none;display:flex;flex-direction:column;gap:8px;align-items:stretch;width:150px}
+.arena-actions .btn{white-space:normal}
+.arena-actions .end-btn{padding:14px 10px;font-size:17px}
 .arena .act-wrap{position:relative}
 .arena .act-wrap .act-btn{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:2;white-space:nowrap}
 .arena .cards.played>.slot{flex:0 1 var(--card-w);min-width:22px;position:relative}
@@ -265,7 +279,6 @@ button{font-family:inherit}
 .big .v{font-family:var(--f-display);font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
 .big .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
 .big.hp .v{color:var(--hp)} .big.pw .v{color:var(--gold)}
-.youbar .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 .you{grid-area:you}
 .zones{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px}
 @media (max-width:640px){.zones{grid-template-columns:minmax(0,1fr)}}
@@ -499,11 +512,11 @@ function make(id) { return { ...DEFS[id], uid: uidc++ }; }
 const P = (p, n) => { if (G.attackOnly && G.attackOnly.owner === p) return; G.turn.power += n; };
 
 // starters
-def('rune', { name:'Rune', type:'starter', power:1, text:'+1 พลัง' });
-def('wand', { name:'Wand', type:'starter', power:1, atk:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 1 ดาเมจ ถ้าฆ่าได้ จั่ว 2 ใบ',
+def('rune', { name:'Rune', type:'starter', power:1, text:'+1 ทอง' });
+def('wand', { name:'Wand', type:'starter', power:1, atk:1, text:'+1 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 1 ดาเมจ ถ้าฆ่าได้ จั่ว 2 ใบ',
   play: async p => { await attack(p, { to:'choose', dmg:1, onKill: async () => draw(p, 2) }); } });
 def('weirdwand', { name:'Weird Wand', type:'starter', power:1, atk:1,
-  text:'+1 พลัง<br><b>โจมตี:</b> ผู้เล่นที่เลือกรับ 1 ดาเมจ ถ้าเขาตายจาก Weird Wand นำการ์ดจากกองทิ้งของคุณใส่มือเขาได้สูงสุด 2 ใบ',
+  text:'+1 ทอง<br><b>โจมตี:</b> ผู้เล่นที่เลือกรับ 1 ดาเมจ ถ้าเขาตายจาก Weird Wand นำการ์ดจากกองทิ้งของคุณใส่มือเขาได้สูงสุด 2 ใบ',
   play: async p => {
     await attack(p, { to:'choose', dmg:1, onKill: async t => {
       for (let k = 0; k < 2 && p.discard.length; k++) {
@@ -518,10 +531,10 @@ def('weirdwand', { name:'Weird Wand', type:'starter', power:1, atk:1,
   } });
 def('fizzle', { name:'Fizzle', type:'starter', text:'ฟู่… ไม่มีผลอะไรเลย' });
 def('bent', { name:'Limp Wand', type:'bent', vp:-1, text:'ไม่มีผล<br>-1 VP ตอนจบเกม' });
-def('wild', { name:'Wild Surge', type:'wild', cost:2, text:'เลือก 1: +2 พลัง <i>หรือ</i> เปิดการ์ดบนสุดในกองของศัตรู 1 คนแล้วใช้เป็นของคุณ<br>ใช้แล้วกลับเข้ากอง Wild Surge (ไม่ลงกองทิ้ง)',
+def('wild', { name:'Wild Surge', type:'wild', cost:2, text:'เลือก 1: +2 ทอง <i>หรือ</i> เปิดการ์ดบนสุดในกองของศัตรู 1 คนแล้วใช้เป็นของคุณ<br>ใช้แล้วกลับเข้ากอง Wild Surge (ไม่ลงกองทิ้ง)',
   play: async p => {
     const os = opps(p);
-    let ch = p.isAI ? 'pw' : await humanChoose(p, 'Wild Surge', [{label:'+2 พลัง', value:'pw'}, {label:'ขโมยการ์ดบนสุดของศัตรู', value:'steal'}]);
+    let ch = p.isAI ? 'pw' : await humanChoose(p, 'Wild Surge', [{label:'+2 ทอง', value:'pw'}, {label:'ขโมยการ์ดบนสุดของศัตรู', value:'steal'}]);
     if (ch === 'pw') { P(p, 2); return; }
     const t = await pickTarget(p, os, { dmg:0, label:'เลือกศัตรูที่จะขโมยการ์ดบนสุด' });
     const c = drawTop(t);
@@ -535,31 +548,31 @@ def('fireball', { name:'Hiccup Fireball', type:'spell', cost:3, vp:1, atk:1, tex
   play: async p => { await attack(p, { to:'left', dmg:3 }); } });
 def('lightning', { name:'Snot Lightning', type:'spell', cost:5, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:3 }); } });
-def('meteor', { name:'Meteor Belch', type:'spell', cost:6, vp:2, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 7 ดาเมจ ถ้าฆ่าได้ +2 พลัง',
+def('meteor', { name:'Meteor Belch', type:'spell', cost:6, vp:2, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 7 ดาเมจ ถ้าฆ่าได้ +2 ทอง',
   play: async p => { await attack(p, { to:'choose', dmg:7, onKill: async () => P(p, 2) }); } });
 def('rot', { name:'Hex of Rot', type:'spell', cost:3, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูที่แข็งแกร่งที่สุด (HP มากสุด) รับ 1 ดาเมจ และได้ Limp Wand',
   play: async p => { await attack(p, { to:'strongest', dmg:1, bent:1 }); } });
-def('leech', { name:'Mind Leech', type:'spell', cost:4, vp:1, atk:1, power:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนทิ้งการ์ดในมือ 1 ใบ',
+def('leech', { name:'Mind Leech', type:'spell', cost:4, vp:1, atk:1, power:1, text:'+1 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนทิ้งการ์ดในมือ 1 ใบ',
   play: async p => { await attack(p, { to:'each', discard:1 }); } });
-def('torrent', { name:'Arcane Torrent', type:'spell', cost:2, power:2, text:'+2 พลัง' });
+def('torrent', { name:'Arcane Torrent', type:'spell', cost:2, power:2, text:'+2 ทอง' });
 def('chain', { name:'Chain Zap', type:'spell', cost:4, vp:1, atk:1, text:'<b>โจมตี:</b> คนทางซ้ายและทางขวารับคนละ 3 ดาเมจ',
   play: async p => { await attack(p, { to:'lr', dmg:3 }); } });
 def('siphon', { name:'Soul Siphon', type:'spell', cost:5, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูที่อ่อนแอที่สุด (HP น้อยสุด) รับ 3 ดาเมจ<br>คุณฟื้น 3 HP',
   play: async p => { await attack(p, { to:'weakest', dmg:3 }); heal(p, 3); } });
-def('purge', { name:'Purge Ritual', type:'spell', cost:3, vp:1, power:1, text:'+1 พลัง<br>ทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ (เลือกไม่ทำก็ได้)',
+def('purge', { name:'Purge Ritual', type:'spell', cost:3, vp:1, power:1, text:'+1 ทอง<br>ทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ (เลือกไม่ทำก็ได้)',
   play: async p => { await destroyOwn(p); } });
 def('grabo', { name:'Grabby Hands of Gimme', type:'spell', cost:2, vp:1, power:1,
-  text:'+1 พลัง<br>การ์ดใบถัดไปที่คุณซื้อหรือได้รับในเทิร์นนี้ วางบนสุดของเด็คแทนกองทิ้ง',
+  text:'+1 ทอง<br>การ์ดใบถัดไปที่คุณซื้อหรือได้รับในเทิร์นนี้ วางบนสุดของเด็คแทนกองทิ้ง',
   play: async () => { G.turn.topdeck = (G.turn.topdeck || 0) + 1; } });
 def('dragonwhored', { name:'Dragon Hoard Cleanout', type:'spell', cost:3, vp:1, power:1,
-  text:'+1 พลัง<br>ทำลายการ์ด 1 ใบจากกองทิ้งได้ (เลือกไม่ทำก็ได้)',
+  text:'+1 ทอง<br>ทำลายการ์ด 1 ใบจากกองทิ้งได้ (เลือกไม่ทำก็ได้)',
   play: async p => { await destroyOwn(p, { discardOnly: true }); } });
 def('luckyday', { name:'Fortune Cookie Burp', type:'spell', cost:3, vp:1, draws:1, def:1, defDiscard:1,
   text:'จั่ว 1<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี แล้วจั่ว 1 และฟื้น 3 HP',
   play: async p => draw(p, 1),
   onDefend: async t => { await draw(t, 1); heal(t, 3); } });
 def('sinfection', { name:'Wickedpox', type:'spell', cost:4, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 5 ดาเมจ',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 5 ดาเมจ',
   play: async p => { await attack(p, { to:'choose', dmg:5 }); } });
 def('megafisting', { name:'Mega Knuckle Sandwich!', type:'spell', cost:4, vp:1, atk:1, draws:1,
   text:'จั่ว 1<br><b>โจมตี:</b> คนทางซ้ายหรือทางขวา (เลือก 1 คน) รับ 6 ดาเมจ',
@@ -568,15 +581,15 @@ def('megafisting', { name:'Mega Knuckle Sandwich!', type:'spell', cost:4, vp:1, 
     await attack(p, { to:'choose', among: t => t === leftOf(p) || t === rightOf(p), dmg:6, label:'เลือกคนทางซ้ายหรือทางขวา' });
   } });
 def('mistme', { name:'Mist You, Pal', type:'spell', cost:4, vp:1, power:2, def:1, defDiscard:1,
-  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี แล้วจั่ว 1 และผู้โจมตีรับ 2 ดาเมจ',
+  text:'+2 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี แล้วจั่ว 1 และผู้โจมตีรับ 2 ดาเมจ',
   onDefend: async (t, src) => { await draw(t, 1); if (src) await damage(src, 2, t); } });
 def('goregasm', { name:'Gore Galore', type:'spell', cost:5, vp:1, draws:1,
-  text:'ถ้าคุณมี Dead Wizard Token 3 อันขึ้นไป จั่ว 3<br>ไม่อย่างนั้น +2 พลัง',
+  text:'ถ้าคุณมี Dead Wizard Token 3 อันขึ้นไป จั่ว 3<br>ไม่อย่างนั้น +2 ทอง',
   play: async p => {
     if (tokenCount(p) >= 3) await draw(p, 3);
     else { P(p, 2); AUD.play('power'); }
   } });
-def('stoverheated', { name:'Stove-Top Meltdown', type:'spell', cost:5, vp:2, power:3, text:'+3 พลัง' });
+def('stoverheated', { name:'Stove-Top Meltdown', type:'spell', cost:5, vp:2, power:3, text:'+3 ทอง' });
 def('vomitcomet', { name:'Puke Meteor', type:'spell', cost:6, vp:1, atk:1, draws:1,
   text:'จั่ว 1<br>ทุกครั้งที่คุณซื้อหรือได้รับการ์ดในเทิร์นนี้ <b>โจมตี:</b> ศัตรูที่เลือกรับดาเมจเท่ากับราคาของการ์ดใบนั้น',
   play: async p => { await draw(p, 1); G.turn.comet = (G.turn.comet || 0) + 1; } });
@@ -590,13 +603,13 @@ async function cometStrike(p, c) {
   }
 }
 def('wizardbabies', { name:'Tattletale Toddlers', type:'spell', cost:6, vp:2, power:3, atk:1,
-  text:'+3 พลัง<br><b>โจมตี:</b> ศัตรูแต่ละคนรับ 2 ดาเมจ ต่อการ์ดป้องกันแต่ละใบในกองทิ้งของคนนั้น',
+  text:'+3 ทอง<br><b>โจมตี:</b> ศัตรูแต่ละคนรับ 2 ดาเมจ ต่อการ์ดป้องกันแต่ละใบในกองทิ้งของคนนั้น',
   play: async p => {
     await attack(p, { to:'each', dmgText:'2 ดาเมจต่อการ์ดป้องกันในกองทิ้งของคุณ',
       dmg: t => 2 * t.discard.filter(c => c.def).length });
   } });
 def('annihilaggedon', { name:'Kaboomageddon!', type:'spell', cost:7, vp:2, power:3, atk:1,
-  text:'+3 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 7 ดาเมจ',
+  text:'+3 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 7 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:7 }); } });
 def('lowfive', { name:'Half-Hearted High Five', type:'spell', cost:2, vp:1, draws:1,
   text:'คุณและผู้เล่นอีก 1 คนที่คุณเลือก จั่วคนละ 1',
@@ -612,10 +625,10 @@ def('wizardwaste', { name:'Sorcerer Sewage', type:'spell', cost:3, vp:1, ongoing
   aiSacrifice: p => p.hand.filter(isJunk(p)).length >= 2,
   sacrifice: async p => { await destroyFromHand(p, 2); } });
 def('wolfcookie', { name:'Werewolf Biscuit Binge', type:'spell', cost:3, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ผู้เล่นที่เลือกรับ 4 ดาเมจ แล้วทิ้งการ์ดในมือ 1 ใบ (เลือกตัวเองได้)',
+  text:'+2 ทอง<br><b>โจมตี:</b> ผู้เล่นที่เลือกรับ 4 ดาเมจ แล้วทิ้งการ์ดในมือ 1 ใบ (เลือกตัวเองได้)',
   play: async p => { await attack(p, { to:'choose', includeSelf:1, dmg:4, discard:1 }); } });
 def('hocus', { name:'Laser Pointer Hex', type:'spell', cost:4, vp:1, power:1, atk:1,
-  text:'+1 พลัง<br>เปิดการ์ดใบบนสุดของเด็คคุณ แล้วเลือก: ทำลายใบนั้น <i>หรือ</i> <b>โจมตี:</b> ศัตรูที่เลือกรับดาเมจเท่ากับราคาของใบนั้น (การ์ดยังอยู่บนเด็ค)',
+  text:'+1 ทอง<br>เปิดการ์ดใบบนสุดของเด็คคุณ แล้วเลือก: ทำลายใบนั้น <i>หรือ</i> <b>โจมตี:</b> ศัตรูที่เลือกรับดาเมจเท่ากับราคาของใบนั้น (การ์ดยังอยู่บนเด็ค)',
   play: async p => {
     const c = revealTop(p);
     if (!c) { log(`${p.name} ไม่มีการ์ดในเด็คให้เปิด`); return; }
@@ -629,59 +642,59 @@ def('hocus', { name:'Laser Pointer Hex', type:'spell', cost:4, vp:1, power:1, at
     else log(`${c.name} ราคา 0 · ไฟไม่ติด`);
   } });
 def('poopal', { name:'Turd Buddy Payback', type:'spell', cost:4, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 6 ดาเมจ<br>ถ้าเขาป้องกันได้ คุณจั่ว 1',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 6 ดาเมจ<br>ถ้าเขาป้องกันได้ คุณจั่ว 1',
   play: async p => { await attack(p, { to:'choose', dmg:6, onDodge: () => draw(p, 1) }); } });
 def('summontrash', { name:'Conjure Garbage', type:'spell', cost:4, vp:1, atk:1,
   text:'ทำลายการ์ด 1 ใบจากกองทิ้งได้ (เลือกไม่ทำก็ได้)<br><b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ',
   play: async p => { await destroyOwn(p, { discardOnly: true }); await attack(p, { to:'each', dmg:4 }); } });
-def('brainystorm', { name:'Thinkstorm', type:'spell', cost:5, vp:1, power:1, draws:1, text:'+1 พลัง<br>จั่ว 2 ใบ', play: async p => draw(p, 2) });
+def('brainystorm', { name:'Thinkstorm', type:'spell', cost:5, vp:1, power:1, draws:1, text:'+1 ทอง<br>จั่ว 2 ใบ', play: async p => draw(p, 2) });
 def('dontgive', { name:"Zero Bothers Given", type:'spell', cost:5, vp:1,
-  text:'เปิดการ์ดใบบนสุดของเด็คคุณ แล้วเลือก: ทำลายใบนั้น <i>หรือ</i> +พลังเท่ากับราคาของใบนั้น (การ์ดยังอยู่บนเด็ค)',
+  text:'เปิดการ์ดใบบนสุดของเด็คคุณ แล้วเลือก: ทำลายใบนั้น <i>หรือ</i> +ทองเท่ากับราคาของใบนั้น (การ์ดยังอยู่บนเด็ค)',
   play: async p => {
     const c = revealTop(p);
     if (!c) { log(`${p.name} ไม่มีการ์ดในเด็คให้เปิด`); return; }
     const n = c.cost || 0;
     const melt = p.isAI ? isJunk(p)(c)
       : await humanChoose(p, "Zero Bothers Given: การ์ดบนสุดของเด็คคุณ",
-        [{ label: `ทำลาย ${c.name}`, value: true }, { label: `+${n} พลัง (การ์ดอยู่บนเด็คต่อ)`, value: false }],
+        [{ label: `ทำลาย ${c.name}`, value: true }, { label: `+${n} ทอง (การ์ดอยู่บนเด็คต่อ)`, value: false }],
         cardHTML(c, { small: true }));
     if (melt) { p.deck.splice(p.deck.lastIndexOf(c), 1); G.destroyed.push(c); log(`${p.name} ไม่แคร์ ทำลาย ${c.name}`); AUD.play('destroy'); render(); }
-    else if (n) { P(p, n); AUD.play('power'); log(`${p.name} +${n} พลังจาก ${c.name}`, 'good'); }
+    else if (n) { P(p, n); AUD.play('power'); log(`${p.name} +${n} ทองจาก ${c.name}`, 'good'); }
   } });
 def('lamps', { name:'Genie Lamp Wishlist', type:'spell', cost:6, vp:1, power:3, def:1, defTopdeck:1,
-  text:'+3 พลัง<br><b>ป้องกัน:</b> วางใบนี้หงายไว้บนสุดของเด็คเพื่อไม่โดนโจมตี (จั่วกลับมาในมือถัดไป)' });
+  text:'+3 ทอง<br><b>ป้องกัน:</b> วางใบนี้หงายไว้บนสุดของเด็คเพื่อไม่โดนโจมตี (จั่วกลับมาในมือถัดไป)' });
 def('winmore', { name:'Winning Harder... Harder', type:'spell', cost:6, vp:2, power:3, atk:1,
-  text:'+3 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับดาเมจเท่ากับราคาของการ์ดที่แพงที่สุดที่คุณควบคุม (การ์ดที่เล่นในเทิร์นนี้ รวมใบนี้ และการ์ดต่อเนื่อง)',
+  text:'+3 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับดาเมจเท่ากับราคาของการ์ดที่แพงที่สุดที่คุณควบคุม (การ์ดที่เล่นในเทิร์นนี้ รวมใบนี้ และการ์ดต่อเนื่อง)',
   play: async p => {
     const dmg = Math.max(...[...G.turn.played, ...p.ongoing].map(c => c.cost || 0));
     await attack(p, { to:'choose', dmg });
   } });
 def('friendality', { name:'Frenemy Finisher', type:'spell', cost:7, vp:2, power:4,
-  text:'+4 พลัง<br>ครั้งถัดไปที่คุณฆ่าศัตรูในเทิร์นนี้: เลือกให้เขาไม่ต้องรับ Dead Wizard Token ได้ ถ้าเลือก คุณรับ Token นั้นแทน และได้ตำนาน 1 ใบ',
+  text:'+4 ทอง<br>ครั้งถัดไปที่คุณฆ่าศัตรูในเทิร์นนี้: เลือกให้เขาไม่ต้องรับ Dead Wizard Token ได้ ถ้าเลือก คุณรับ Token นั้นแทน และได้ตำนาน 1 ใบ',
   play: async () => { G.turn.friendality = (G.turn.friendality || 0) + 1; } });
 def('scry', { name:'Scry Burst', type:'spell', cost:4, vp:1, text:'จั่ว 2 ใบ', draws:1, play: async p => draw(p, 2) });
-def('doom', { name:'Doom Rain', type:'spell', cost:7, vp:3, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 5 ดาเมจ<br>+1 พลังต่อการฆ่าแต่ละครั้ง',
+def('doom', { name:'Doom Rain', type:'spell', cost:7, vp:3, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 5 ดาเมจ<br>+1 ทองต่อการฆ่าแต่ละครั้ง',
   play: async p => { const k = await attack(p, { to:'each', dmg:5 }); P(p, k); } });
-def('vortex', { name:'Vortex Burp', type:'spell', cost:5, vp:2, atk:1, power:2, text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 2 ดาเมจ และได้ Limp Wand',
+def('vortex', { name:'Vortex Burp', type:'spell', cost:5, vp:2, atk:1, power:2, text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 2 ดาเมจ และได้ Limp Wand',
   play: async p => { await attack(p, { to:'choose', dmg:2, bent:1 }); } });
-def('ward', { name:'Ward Bubble', type:'spell', cost:2, power:1, def:1, text:'+1 พลัง<br><b>ป้องกัน:</b> เปิดจากมือเพื่อไม่โดนการโจมตี' });
+def('ward', { name:'Ward Bubble', type:'spell', cost:2, power:1, def:1, text:'+1 ทอง<br><b>ป้องกัน:</b> เปิดจากมือเพื่อไม่โดนการโจมตี' });
 
 // creatures
-def('goblin', { name:'Pustule Goblin', type:'creature', cost:2, vp:1, atk:1, power:1, text:'+1 พลัง<br><b>โจมตี:</b> คนทางซ้ายรับ 1 ดาเมจ',
+def('goblin', { name:'Pustule Goblin', type:'creature', cost:2, vp:1, atk:1, power:1, text:'+1 ทอง<br><b>โจมตี:</b> คนทางซ้ายรับ 1 ดาเมจ',
   play: async p => { await attack(p, { to:'left', dmg:1 }); } });
-def('toad', { name:'Gloom Toad', type:'creature', cost:3, vp:1, power:2, def:1, text:'+2 พลัง<br><b>ป้องกัน:</b> เปิดจากมือเพื่อไม่โดนการโจมตี' });
-def('hound', { name:'Bone Hound', type:'creature', cost:4, vp:1, atk:1, power:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 2 ดาเมจ ถ้าฆ่าได้ จั่ว 1',
+def('toad', { name:'Gloom Toad', type:'creature', cost:3, vp:1, power:2, def:1, text:'+2 ทอง<br><b>ป้องกัน:</b> เปิดจากมือเพื่อไม่โดนการโจมตี' });
+def('hound', { name:'Bone Hound', type:'creature', cost:4, vp:1, atk:1, power:1, text:'+1 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 2 ดาเมจ ถ้าฆ่าได้ จั่ว 1',
   play: async p => { await attack(p, { to:'choose', dmg:2, onKill: async () => draw(p, 1) }); } });
-def('troll', { name:'Swamp Troll', type:'creature', cost:5, vp:2, ongoing:1, power:1, text:'+1 พลัง<br><b>ต่อเนื่อง:</b> ต้นเทิร์นของคุณ +1 พลัง',
+def('troll', { name:'Swamp Troll', type:'creature', cost:5, vp:2, ongoing:1, power:1, text:'+1 ทอง<br><b>ต่อเนื่อง:</b> ต้นเทิร์นของคุณ +1 ทอง',
   onStart: async p => P(p, 1) });
-def('bat', { name:'Shadow Bat', type:'creature', cost:3, vp:1, power:1, def:1, defDiscard:1, draws:1, text:'+1 พลัง จั่ว 1<br><b>ป้องกัน:</b> ทิ้งจากมือเพื่อไม่โดนโจมตี แล้วจั่ว 1',
+def('bat', { name:'Shadow Bat', type:'creature', cost:3, vp:1, power:1, def:1, defDiscard:1, draws:1, text:'+1 ทอง จั่ว 1<br><b>ป้องกัน:</b> ทิ้งจากมือเพื่อไม่โดนโจมตี แล้วจั่ว 1',
   play: async p => draw(p, 1), onDefend: async t => draw(t, 1) });
-def('dragon', { name:'Mire Dragon', type:'creature', cost:7, vp:3, atk:1, power:2, text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ',
+def('dragon', { name:'Mire Dragon', type:'creature', cost:7, vp:3, atk:1, power:2, text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:2 }); } });
-def('mimic', { name:'Mimic Chest', type:'creature', cost:4, vp:1, text:'+1 พลัง ต่อสัตว์อสูรแต่ละตัวที่คุณเล่นเทิร์นนี้ (รวมตัวนี้)',
+def('mimic', { name:'Mimic Chest', type:'creature', cost:4, vp:1, text:'+1 ทอง ต่อสัตว์อสูรแต่ละตัวที่คุณเล่นเทิร์นนี้ (รวมตัวนี้)',
   play: async p => P(p, G.turn.types.creature || 1) });
-def('boogie', { name:'Disco Paladin', type:'creature', cost:2, vp:1, power:2, text:'+2 พลัง' });
-def('aciddragon', { name:'Heartburn Wyrm', type:'creature', cost:3, vp:1, power:1, text:'+1 พลัง<br>ดูการ์ดใบบนสุดของเด็คคุณ แล้วเลือกทำลายหรือวางไว้ที่เดิม',
+def('boogie', { name:'Disco Paladin', type:'creature', cost:2, vp:1, power:2, text:'+2 ทอง' });
+def('aciddragon', { name:'Heartburn Wyrm', type:'creature', cost:3, vp:1, power:1, text:'+1 ทอง<br>ดูการ์ดใบบนสุดของเด็คคุณ แล้วเลือกทำลายหรือวางไว้ที่เดิม',
   play: async p => {
     const c = drawTop(p);
     if (!c) { log(`${p.name} ไม่มีการ์ดในเด็คให้ดู`); return; }
@@ -695,15 +708,15 @@ def('aciddragon', { name:'Heartburn Wyrm', type:'creature', cost:3, vp:1, power:
     render();
   } });
 def('fatality', { name:'Finish-Him Brawler', type:'creature', cost:3, vp:1, power:1, atk:1,
-  text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูที่ HP น้อยที่สุดรับ 4 ดาเมจ ถ้าตาย เปิด Dead Wizard Token 2 อัน คุณเลือกให้เขา 1 อัน อีกอันสับกลับเข้ากอง',
+  text:'+1 ทอง<br><b>โจมตี:</b> ศัตรูที่ HP น้อยที่สุดรับ 4 ดาเมจ ถ้าตาย เปิด Dead Wizard Token 2 อัน คุณเลือกให้เขา 1 อัน อีกอันสับกลับเข้ากอง',
   play: async p => { await attack(p, { to:'weakest', dmg:4, tokenPick:2 }); } });
-def('notlive', { name:'Zombie Cheer Squad', type:'creature', cost:3, vp:1, power:1, text:'+1 พลัง<br>+1 พลัง ต่อ Dead Wizard Token แต่ละอันที่คุณมี',
+def('notlive', { name:'Zombie Cheer Squad', type:'creature', cost:3, vp:1, power:1, text:'+1 ทอง<br>+1 ทอง ต่อ Dead Wizard Token แต่ละอันที่คุณมี',
   play: async p => { if (tokenCount(p)) P(p, tokenCount(p)); } });
 def('luckycharms', { name:"Leprechaun Leftovers", type:'creature', cost:4, vp:1, draws:1,
-  text:'นำสมบัติ (Treasure) 1 ใบจากกองทิ้งของคุณขึ้นมือ<br>ถ้าไม่มี +2 พลัง',
+  text:'นำสมบัติ (Treasure) 1 ใบจากกองทิ้งของคุณขึ้นมือ<br>ถ้าไม่มี +2 ทอง',
   play: async p => {
     const pool = p.discard.filter(c => c.type === 'treasure');
-    if (!pool.length) { log(`${p.name} ไม่มีสมบัติในกองทิ้ง · +2 พลังแทน`); P(p, 2); AUD.play('power'); return; }
+    if (!pool.length) { log(`${p.name} ไม่มีสมบัติในกองทิ้ง · +2 ทองแทน`); P(p, 2); AUD.play('power'); return; }
     const c = pool.length === 1 ? pool[0]
       : p.isAI ? pool.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
       : await humanChoose(p, "Leprechaun Leftovers: เลือกสมบัติจากกองทิ้งขึ้นมือ", pool.map(x => ({ card: x, value: x })));
@@ -712,7 +725,7 @@ def('luckycharms', { name:"Leprechaun Leftovers", type:'creature', cost:4, vp:1,
     render();
   } });
 def('sk8ratz', { name:'Kickflip Vermin', type:'creature', cost:4, vp:1, power:2, def:1, defDiscard:1, defDraw:1,
-  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี จั่ว 1 ใบ แล้วส่งการ์ด 1 ใบจากมือหรือกองทิ้งของคุณไปที่กองทิ้งของผู้โจมตีได้',
+  text:'+2 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี จั่ว 1 ใบ แล้วส่งการ์ด 1 ใบจากมือหรือกองทิ้งของคุณไปที่กองทิ้งของผู้โจมตีได้',
   onDefend: async (t, src, self) => {
     if (!src) return; // Chaos and Legend attacks have no attacker to send to
     const pool = [...t.hand, ...t.discard].filter(c => c !== self);
@@ -728,7 +741,7 @@ def('sk8ratz', { name:'Kickflip Vermin', type:'creature', cost:4, vp:1, power:2,
     AUD.play('curse'); render();
   } });
 def('stabbysteve', { name:'Pokey Pete', type:'creature', cost:4, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกเปิดการ์ดในมือ แล้วรับดาเมจเท่ากับราคาของใบที่แพงที่สุด',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกเปิดการ์ดในมือ แล้วรับดาเมจเท่ากับราคาของใบที่แพงที่สุด',
   play: async p => {
     await attack(p, { to:'choose', dmgText:'ดาเมจเท่ากับราคาการ์ดที่แพงที่สุดในมือคุณ',
       dmg: t => {
@@ -739,7 +752,7 @@ def('stabbysteve', { name:'Pokey Pete', type:'creature', cost:4, vp:1, power:2, 
   } });
 // playFirst: the AI must cast it before playing its Limp Wands out of hand, or they stop counting
 def('harpies', { name:'Gremlin Shriekers', type:'creature', cost:5, vp:1, power:2, atk:1, playFirst:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ ต่อ Limp Wand แต่ละใบในมือและในกองทิ้งของคุณ<br>ถ้าไม่ทำดาเมจเลย จั่ว 1',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ ต่อ Limp Wand แต่ละใบในมือและในกองทิ้งของคุณ<br>ถ้าไม่ทำดาเมจเลย จั่ว 1',
   play: async p => {
     const n = [...p.hand, ...p.discard].filter(c => c.id === 'bent').length;
     let dealt = 0;
@@ -747,18 +760,18 @@ def('harpies', { name:'Gremlin Shriekers', type:'creature', cost:5, vp:1, power:
     else log(`${p.name} ไม่มี Limp Wand ให้ฮาร์ปี้คาบไปปา`);
     if (!dealt) { log('ไม่โดนใครเลย · จั่ว 1 แทน'); await draw(p, 1); }
   } });
-def('twins', { name:'The Conjoined Cousins', type:'creature', cost:5, vp:1, power:1, draws:1, text:'+1 พลัง<br>จั่ว 2 ใบ', play: async p => draw(p, 2) });
+def('twins', { name:'The Conjoined Cousins', type:'creature', cost:5, vp:1, power:1, draws:1, text:'+1 ทอง<br>จั่ว 2 ใบ', play: async p => draw(p, 2) });
 // ongoing things a player controls: Ongoing cards in play, the Champion trophy, and Ongoing Dead Wizard tokens
 const ongoingCount = p => p.ongoing.length + (G.trophy === p ? 1 : 0) + (standHolder() === p ? 1 : 0) + p.tokens.filter(k => k.text.startsWith('ต่อเนื่อง')).length;
 def('what', { name:'The Huh?!', type:'creature', cost:5, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ ต่อสิ่งต่อเนื่องแต่ละอันที่คุณมี (การ์ดต่อเนื่อง ถ้วยแชมป์ และ Dead Wizard Token แบบต่อเนื่อง)',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ ต่อสิ่งต่อเนื่องแต่ละอันที่คุณมี (การ์ดต่อเนื่อง ถ้วยแชมป์ และ Dead Wizard Token แบบต่อเนื่อง)',
   play: async p => {
     const n = ongoingCount(p);
     if (!n) { log(`${p.name} ไม่มีสิ่งต่อเนื่อง · The Huh?! งงอยู่กับที่`); return; }
     await attack(p, { to:'each', dmg: n * 3 });
   } });
 def('bfg', { name:'Big Grumpy Golem', type:'creature', cost:6, vp:2, power:2, def:1, defDiscard:1,
-  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี แล้วจั่ว 1 และทำลายการ์ด 1 ใบในมือได้',
+  text:'+2 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี แล้วจั่ว 1 และทำลายการ์ด 1 ใบในมือได้',
   onDefend: async t => {
     await draw(t, 1);
     if (!t.hand.length) return;
@@ -771,7 +784,7 @@ def('bfg', { name:'Big Grumpy Golem', type:'creature', cost:6, vp:2, power:2, de
     log(`${t.name} ระเบิด ${c.name} ทิ้งด้วย Big Grumpy Golem`); AUD.play('destroy'); render();
   } });
 def('fruity', { name:'Tutti-Frutti Treant', type:'creature', cost:6, vp:2, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนได้ Limp Wand คนละ 1 ใบ<br>คุณฟื้น 4 HP ต่อศัตรูแต่ละคนที่ป้องกันได้',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนได้ Limp Wand คนละ 1 ใบ<br>คุณฟื้น 4 HP ต่อศัตรูแต่ละคนที่ป้องกันได้',
   play: async p => { await attack(p, { to:'each', bent:1, onDodge: () => heal(p, 4) }); } });
 // Squid Idol: held by whoever most recently came to own a Squidzilla the Elder (bought, gained free or sent one)
 // and still owns one; nobody holds it otherwise
@@ -798,12 +811,12 @@ def('cthulhu', { name:'Squidzilla the Elder', type:'creature', cost:7, vp:3, atk
       } });
   } });
 def('storkos', { name:'Ravenous Stork Gang', type:'creature', cost:3, vp:1, power:2,
-  text:'+2 พลัง<br><b>✲ เปิดใช้:</b> ถ้าคุณควบคุมสัตว์อสูรตัวอื่น (เล่นในเทิร์นนี้ หรือสัตว์อสูรต่อเนื่อง) ทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้',
+  text:'+2 ทอง<br><b>✲ เปิดใช้:</b> ถ้าคุณควบคุมสัตว์อสูรตัวอื่น (เล่นในเทิร์นนี้ หรือสัตว์อสูรต่อเนื่อง) ทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้',
   canActivate: p => (G.turn.types.creature || 0) > 1 || p.ongoing.some(c => c.type === 'creature'),
   needText: 'ต้องควบคุมสัตว์อสูรตัวอื่นก่อน',
   activate: async p => { await destroyOwn(p); } });
 def('ballz', { name:'Bouncy Boulder Bros', type:'creature', cost:4, vp:1, power:2, def:1, defDiscard:1, defDraw:1,
-  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี จั่ว 1 ใบ แล้วนำสัตว์อสูรใบอื่น 1 ใบจากกองทิ้งขึ้นมือ',
+  text:'+2 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนโจมตี จั่ว 1 ใบ แล้วนำสัตว์อสูรใบอื่น 1 ใบจากกองทิ้งขึ้นมือ',
   onDefend: async (t, src, self) => {
     const pool = t.discard.filter(c => c.type === 'creature' && c !== self);
     if (!pool.length) { log(`${t.name} ไม่มีสัตว์อสูรใบอื่นในกองทิ้ง`); return; }
@@ -815,34 +828,34 @@ def('ballz', { name:'Bouncy Boulder Bros', type:'creature', cost:4, vp:1, power:
   } });
 // no ✲, so the condition is checked when it is played; playLate makes the AI cast its other creatures first
 def('orc', { name:'Stock-Art Orc', type:'creature', cost:4, vp:1, power:2, playLate:1,
-  text:'+2 พลัง<br>ถ้าคุณควบคุมสัตว์อสูรตัวอื่น (เล่นก่อนหน้าในเทิร์นนี้ หรือสัตว์อสูรต่อเนื่อง) +2 พลัง',
+  text:'+2 ทอง<br>ถ้าคุณควบคุมสัตว์อสูรตัวอื่น (เล่นก่อนหน้าในเทิร์นนี้ หรือสัตว์อสูรต่อเนื่อง) +2 ทอง',
   play: async p => {
-    if ((G.turn.types.creature || 0) > 1 || p.ongoing.some(c => c.type === 'creature')) { P(p, 2); log('Orc ได้เพื่อน · +2 พลัง'); }
+    if ((G.turn.types.creature || 0) > 1 || p.ongoing.some(c => c.type === 'creature')) { P(p, 2); log('Orc ได้เพื่อน · +2 ทอง'); }
   } });
 def('sinquisition', { name:'The Sinspection Squad', type:'creature', cost:4, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>✲ เปิดใช้:</b> <b>โจมตี:</b> ถ้าคุณควบคุมสัตว์อสูรตัวอื่น (เล่นในเทิร์นนี้ หรือสัตว์อสูรต่อเนื่อง) ศัตรูที่เลือกรับ 7 ดาเมจ',
+  text:'+2 ทอง<br><b>✲ เปิดใช้:</b> <b>โจมตี:</b> ถ้าคุณควบคุมสัตว์อสูรตัวอื่น (เล่นในเทิร์นนี้ หรือสัตว์อสูรต่อเนื่อง) ศัตรูที่เลือกรับ 7 ดาเมจ',
   canActivate: p => (G.turn.types.creature || 0) > 1 || p.ongoing.some(c => c.type === 'creature'),
   needText: 'ต้องควบคุมสัตว์อสูรตัวอื่นก่อน',
   activate: async p => { await attack(p, { to:'choose', dmg:7 }); } });
 def('mib', { name:'Mystery Man in a Crate', type:'creature', cost:5, vp:0, power:2, unique:1,
-  text:'+2 พลัง<br><b>จบเกม:</b> การ์ดนี้มีค่า 1 VP ต่อสัตว์อสูรแต่ละใบในเด็คของคุณ (นับตัวเองด้วย)',
+  text:'+2 ทอง<br><b>จบเกม:</b> การ์ดนี้มีค่า 1 VP ต่อสัตว์อสูรแต่ละใบในเด็คของคุณ (นับตัวเองด้วย)',
   vpCalc: p => allCards(p).filter(c => c.type === 'creature').length });
 def('blobies', { name:'Mega Gloopies', type:'creature', cost:5, vp:1, ongoing:1, power:1,
-  text:'<b>ต่อเนื่อง:</b> +1 พลัง ทุกเทิร์น (เทิร์นที่ลงการ์ด และต้นเทิร์นต่อๆ ไปของคุณ)',
+  text:'<b>ต่อเนื่อง:</b> +1 ทอง ทุกเทิร์น (เทิร์นที่ลงการ์ด และต้นเทิร์นต่อๆ ไปของคุณ)',
   onStart: async p => P(p, 1) });
 def('satan', { name:'Totally Rad Demon Lord', type:'creature', cost:5, vp:1, atk:1, draws:1,
   text:'จั่ว 1<br><b>โจมตี:</b> คนทางซ้ายและทางขวารับคนละ 4 ดาเมจ',
   play: async p => { await draw(p, 1); await attack(p, { to:'lr', dmg:4 }); } });
-def('beerholder', { name:'Hold-My-Mead Ogre', type:'creature', cost:6, vp:2, power:4, text:'+4 พลัง' });
+def('beerholder', { name:'Hold-My-Mead Ogre', type:'creature', cost:6, vp:2, power:4, text:'+4 ทอง' });
 // creatures p controls right now: played this turn (including the one being resolved) + creature Ongoing cards
 const creaturesControlled = p => [...G.turn.played, ...p.ongoing].filter(c => c.type === 'creature').length;
 def('shagoth', { name:'Meatheap the Shambler', type:'creature', cost:6, vp:2, power:3, atk:1,
-  text:'+3 พลัง<br><b>✲ เปิดใช้:</b> <b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ ต่อสัตว์อสูรแต่ละใบที่คุณควบคุม (เล่นในเทิร์นนี้ รวมใบนี้ และสัตว์อสูรต่อเนื่อง)',
+  text:'+3 ทอง<br><b>✲ เปิดใช้:</b> <b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ ต่อสัตว์อสูรแต่ละใบที่คุณควบคุม (เล่นในเทิร์นนี้ รวมใบนี้ และสัตว์อสูรต่อเนื่อง)',
   activate: async p => { await attack(p, { to:'each', dmg: 3 * creaturesControlled(p) }); } });
 def('sexsquatch', { name:'Bigfoot Casanova', type:'creature', cost:7, vp:2,
-  text:'<b>✲ เปิดใช้:</b> +3 พลัง ต่อสัตว์อสูรแต่ละใบที่คุณควบคุม (เล่นในเทิร์นนี้ รวมใบนี้ และสัตว์อสูรต่อเนื่อง)',
-  activate: async p => { const n = creaturesControlled(p); P(p, 3 * n); log(`Bigfoot Casanova +${3 * n} พลัง (สัตว์อสูร ${n} ใบ)`, 'good'); } });
-def('kobang', { name:'โก๋แบง', type:'creature', cost:6, vp:1, atk:1, power:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูแบบสุ่ม 1 คน รับ 2 ดาเมจ ต่อสัตว์อสูรแต่ละใบในกองทิ้งของคุณ',
+  text:'<b>✲ เปิดใช้:</b> +3 ทอง ต่อสัตว์อสูรแต่ละใบที่คุณควบคุม (เล่นในเทิร์นนี้ รวมใบนี้ และสัตว์อสูรต่อเนื่อง)',
+  activate: async p => { const n = creaturesControlled(p); P(p, 3 * n); log(`Bigfoot Casanova +${3 * n} ทอง (สัตว์อสูร ${n} ใบ)`, 'good'); } });
+def('kobang', { name:'โก๋แบง', type:'creature', cost:6, vp:1, atk:1, power:1, text:'+1 ทอง<br><b>โจมตี:</b> ศัตรูแบบสุ่ม 1 คน รับ 2 ดาเมจ ต่อสัตว์อสูรแต่ละใบในกองทิ้งของคุณ',
   play: async p => {
     const n = p.discard.filter(c => c.type === 'creature').length;
     if (!n) { log(`ไม่มีสัตว์อสูรในกองทิ้งของ ${p.name} · โก๋แบงไม่มีแรงตี`); return; }
@@ -850,15 +863,15 @@ def('kobang', { name:'โก๋แบง', type:'creature', cost:6, vp:1, atk:1,
   } });
 
 // treasures
-def('crystal', { name:'Cracked Crystal', type:'treasure', cost:3, vp:1, power:1, draws:1, text:'+1 พลัง<br>จั่ว 1', play: async p => draw(p, 1) });
-def('skull', { name:'Gold Skull', type:'treasure', cost:3, vp:1, power:2, text:'+2 พลัง' });
-def('mirror', { name:'Mirror Shield', type:'treasure', cost:3, vp:1, power:1, def:1, text:'+1 พลัง<br><b>ป้องกัน:</b> เปิดเพื่อไม่โดนโจมตี ผู้โจมตีรับ 1 ดาเมจ',
+def('crystal', { name:'Cracked Crystal', type:'treasure', cost:3, vp:1, power:1, draws:1, text:'+1 ทอง<br>จั่ว 1', play: async p => draw(p, 1) });
+def('skull', { name:'Gold Skull', type:'treasure', cost:3, vp:1, power:2, text:'+2 ทอง' });
+def('mirror', { name:'Mirror Shield', type:'treasure', cost:3, vp:1, power:1, def:1, text:'+1 ทอง<br><b>ป้องกัน:</b> เปิดเพื่อไม่โดนโจมตี ผู้โจมตีรับ 1 ดาเมจ',
   onDefend: async (t, src) => { if (src) await damage(src, 1, t); } });
-def('flask', { name:'Healing Flask', type:'treasure', cost:2, power:1, text:'+1 พลัง<br>ฟื้น 4 HP', play: async p => heal(p, 4) });
-def('crown', { name:'Cursed Crown', type:'treasure', cost:5, vp:3, power:3, text:'+3 พลัง<br>คุณได้รับ Limp Wand 1 ใบ', play: async p => gainBent(p) });
-def('tome', { name:'Ancient Tome', type:'treasure', cost:6, vp:3, power:1, draws:1, text:'+1 พลัง<br>จั่ว 2', play: async p => draw(p, 2) });
+def('flask', { name:'Healing Flask', type:'treasure', cost:2, power:1, text:'+1 ทอง<br>ฟื้น 4 HP', play: async p => heal(p, 4) });
+def('crown', { name:'Cursed Crown', type:'treasure', cost:5, vp:3, power:3, text:'+3 ทอง<br>คุณได้รับ Limp Wand 1 ใบ', play: async p => gainBent(p) });
+def('tome', { name:'Ancient Tome', type:'treasure', cost:6, vp:3, power:1, draws:1, text:'+1 ทอง<br>จั่ว 2', play: async p => draw(p, 2) });
 def('deepshit', { name:'Bottomless Bucket', type:'treasure', cost:4, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนเปิดการ์ดใบบนสุดของเด็คตัวเอง แล้วทิ้งใบนั้น',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนเปิดการ์ดใบบนสุดของเด็คตัวเอง แล้วทิ้งใบนั้น',
   play: async p => {
     // the per-target dmg hook runs after defence, so dodgers keep their top card
     await attack(p, { to:'each', dmgText:'ทิ้งการ์ดใบบนสุดของเด็คคุณ', dmg: t => {
@@ -874,13 +887,13 @@ def('boner', { name:'Bone of Contention', type:'treasure', cost:3, vp:0, ongoing
   vpCalc: p => p.tokens.length,
   text:'<b>ต่อเนื่อง:</b> นับว่าคุณมี Dead Wizard Token เพิ่มอีก 1 อัน (ไม่ใช่ Token จริง · ไม่หัก VP · ส่งหรือขโมยไม่ได้)<br><b>จบเกม:</b> มีค่า 1 VP ต่อ Dead Wizard Token จริงที่คุณมี' });
 def('staph', { name:"Crusty Staff of Infection", type:'treasure', cost:4, vp:1, power:1, atk:1,
-  text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 3 ดาเมจ และได้ Limp Wand 1 ใบ',
+  text:'+1 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 3 ดาเมจ และได้ Limp Wand 1 ใบ',
   play: async p => { await attack(p, { to:'choose', dmg:3, bent:1 }); } });
 def('sexcalibur', { name:'Booty Call Bell', type:'treasure', cost:4, vp:1, draws:1,
-  text:'นำพ่อมด (Wizard) 1 ใบจากกองทิ้งขึ้นมือ (ถ้ามีต้องหยิบ)<br>ถ้าในกองทิ้งไม่มีพ่อมดเลย +2 พลัง',
+  text:'นำพ่อมด (Wizard) 1 ใบจากกองทิ้งขึ้นมือ (ถ้ามีต้องหยิบ)<br>ถ้าในกองทิ้งไม่มีพ่อมดเลย +2 ทอง',
   play: async p => {
     const wiz = p.discard.filter(c => isType(c, 'wizard'));
-    if (!wiz.length) { P(p, 2); log(`ไม่มีพ่อมดในกองทิ้งของ ${p.name} · ได้ +2 พลังแทน`); return; }
+    if (!wiz.length) { P(p, 2); log(`ไม่มีพ่อมดในกองทิ้งของ ${p.name} · ได้ +2 ทองแทน`); return; }
     const c = wiz.length === 1 ? wiz[0]
       : p.isAI ? wiz.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
       : await humanChoose(p, 'Booty Call Bell: เลือกพ่อมดจากกองทิ้งขึ้นมือ', wiz.map(x => ({ card: x, value: x })));
@@ -907,7 +920,7 @@ def('porkus', { name:'Wand of Hogwash', type:'treasure', cost:4, vp:1, atk:1, dr
     } });
   } });
 def('battlesax', { name:'Battle Saxophone', type:'treasure', cost:5, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทางซ้ายและทางขวาของคุณรับคนละ 5 ดาเมจ',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทางซ้ายและทางขวาของคุณรับคนละ 5 ดาเมจ',
   play: async p => { await attack(p, { to:'lr', dmg:5 }); } });
 def('dragonballz', { name:"Dragon Eggz", type:'treasure', cost:5, vp:0, ongoing:1, defInPlay:1,
   vpCalc: p => allCards(p).filter(c => c.id === 'dragonballz').length >= 2 ? 5 : 0,
@@ -915,7 +928,7 @@ def('dragonballz', { name:"Dragon Eggz", type:'treasure', cost:5, vp:0, ongoing:
   play: async p => heal(p, 3),
   onDefend: async t => draw(t, 1) });
 def('overkill', { name:'Legend Roast Barbecue', type:'treasure', cost:5, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ ต่อตำนาน (Legend) แต่ละใบในกองทิ้งของคนนั้น<br>ถ้าไม่ทำดาเมจใครเลย ทำลายการ์ดในมือคุณ 1 ใบได้',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ ต่อตำนาน (Legend) แต่ละใบในกองทิ้งของคนนั้น<br>ถ้าไม่ทำดาเมจใครเลย ทำลายการ์ดในมือคุณ 1 ใบได้',
   play: async p => {
     let dealt = 0;
     await attack(p, { to:'each', dmgText:'4 ดาเมจ ต่อตำนานในกองทิ้งของคุณ',
@@ -924,21 +937,21 @@ def('overkill', { name:'Legend Roast Barbecue', type:'treasure', cost:5, vp:1, p
     if (!dealt) { log(`Legend Roast Barbecue ไม่โดนใครเลย`); await destroyFromHand(p, 1); }
   } });
 def('joyboy', { name:"Goody Bag of Giggles", type:'treasure', cost:6, vp:2, power:3,
-  text:'+3 พลัง<br>เปิดการ์ดใบบนสุดของเด็คคุณ (วางคืนที่เดิม) แล้วฟื้น HP เท่ากับราคาของใบนั้น',
+  text:'+3 ทอง<br>เปิดการ์ดใบบนสุดของเด็คคุณ (วางคืนที่เดิม) แล้วฟื้น HP เท่ากับราคาของใบนั้น',
   play: async p => { const c = revealTop(p); if (c && c.cost) heal(p, c.cost); } });
 def('grail', { name:'The Cursed Cup', type:'treasure', cost:6, vp:2, power:3, def:1, defDiscard:1,
-  text:'+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ และผู้โจมตีรับ 5 ดาเมจ',
+  text:'+3 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ และผู้โจมตีรับ 5 ดาเมจ',
   onDefend: async (t, src) => { await draw(t, 1); if (src) await damage(src, 5, t); } });
-def('laurels', { name:"Golden Wreath of Grandpa Gus", type:'treasure', cost:7, vp:2, power:5, text:'+5 พลัง' });
+def('laurels', { name:"Golden Wreath of Grandpa Gus", type:'treasure', cost:7, vp:2, power:5, text:'+5 ทอง' });
 def('tshirt', { name:'Merch Booth Hoodie', type:'treasure', cost:4, vp:1, power:2,
-  text:'+2 พลัง<br>เทิร์นนี้ ตำนาน (Legend) ราคาถูกลง 2 สำหรับคุณ',
+  text:'+2 ทอง<br>เทิร์นนี้ ตำนาน (Legend) ราคาถูกลง 2 สำหรับคุณ',
   play: async p => { G.turn.legendDiscount = (G.turn.legendDiscount || 0) + 2; log(`เทิร์นนี้ ${p.name} ซื้อตำนานถูกลง ${G.turn.legendDiscount}`); render(); } });
-def('evil', { name:'Distilled Wickedness', type:'treasure', cost:5, vp:2, power:3, text:'+3 พลัง' });
+def('evil', { name:'Distilled Wickedness', type:'treasure', cost:5, vp:2, power:3, text:'+3 ทอง' });
 def('wart', { name:'Hag Mole of Power', type:'treasure', cost:5, vp:1, draws:1,
-  text:'จั่ว 1 ใบ<br>+1 พลัง ต่อสิ่งต่อเนื่องแต่ละอันที่คุณมี (การ์ดต่อเนื่อง ถ้วย และ Dead Wizard Token แบบต่อเนื่อง)',
+  text:'จั่ว 1 ใบ<br>+1 ทอง ต่อสิ่งต่อเนื่องแต่ละอันที่คุณมี (การ์ดต่อเนื่อง ถ้วย และ Dead Wizard Token แบบต่อเนื่อง)',
   play: async p => { await draw(p, 1); const n = ongoingCount(p); if (n) P(p, n); } });
 def('fatcula', { name:'Chubbula Wagon', type:'treasure', cost:6, vp:2, power:3, playFirst:1,
-  text:'+3 พลัง<br>ถ้านี่เป็นการ์ดใบแรกที่คุณเล่นในเทิร์นนี้ เลือกทิ้งการ์ดในมือทั้งหมดแล้วจั่ว 4 ใบได้',
+  text:'+3 ทอง<br>ถ้านี่เป็นการ์ดใบแรกที่คุณเล่นในเทิร์นนี้ เลือกทิ้งการ์ดในมือทั้งหมดแล้วจั่ว 4 ใบได้',
   play: async p => {
     if (G.turn.shown.length !== 1) return;
     const weak = p.hand.filter(c => aiVal(c) <= 0).length;
@@ -952,32 +965,32 @@ def('fatcula', { name:'Chubbula Wagon', type:'treasure', cost:6, vp:2, power:3, 
     await draw(p, 4);
   } });
 def('pole', { name:'Undead Disco Pole', type:'treasure', cost:6, vp:2,
-  text:'+2 พลัง ต่อ Dead Wizard Token แต่ละอันที่คุณมี',
-  play: async p => { const n = tokenCount(p); if (n) P(p, 2 * n); else log(`${p.name} ยังไม่มี Dead Wizard Token · ไม่ได้พลัง`); } });
+  text:'+2 ทอง ต่อ Dead Wizard Token แต่ละอันที่คุณมี',
+  play: async p => { const n = tokenCount(p); if (n) P(p, 2 * n); else log(`${p.name} ยังไม่มี Dead Wizard Token · ไม่ได้ทอง`); } });
 def('tongue', { name:'Cyber Tongue', type:'treasure', cost:2, vp:1, power:1, def:1, defDiscard:1, defDraw:1,
-  text:'+1 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ (เลือกไม่ทำก็ได้)',
+  text:'+1 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ (เลือกไม่ทำก็ได้)',
   onDefend: async t => { await destroyOwn(t); } });
 
 // wizards
-def('glom', { name:'Apprentice Glom', type:'wizard', cost:2, vp:1, power:1, text:'+1 พลัง<br>ถ้าเล่นพ่อมดใบอื่นมาก่อนในเทิร์นนี้ +1 พลัง',
+def('glom', { name:'Apprentice Glom', type:'wizard', cost:2, vp:1, power:1, text:'+1 ทอง<br>ถ้าเล่นพ่อมดใบอื่นมาก่อนในเทิร์นนี้ +1 ทอง',
   play: async p => { if ((G.turn.types.wizard || 0) > 1) P(p, 1); } });
 def('labrador', { name:'Hocus-Poodle', type:'wizard', cost:2, vp:1, draws:1, text:'จั่ว 1 ใบ<br>ฟื้น 2 HP',
   play: async p => { await draw(p, 1); heal(p, 2); } });
 def('carlotta', { name:'Rent-a-Familiar Rhonda', type:'wizard', cost:3, vp:1, power:1, draws:1, def:1, defDiscard:1, defDraw:1,
-  text:'+1 พลัง<br>คุณและศัตรูที่เลือกจั่วคนละ 1 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ',
+  text:'+1 ทอง<br>คุณและศัตรูที่เลือกจั่วคนละ 1 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ',
   play: async p => {
     const t = await pickTarget(p, opps(p), { label: 'Rent-a-Familiar Rhonda: เลือกศัตรูที่จะจั่ว 1 ใบด้วย' });
     await draw(p, 1); await draw(t, 1);
     log(`${t.name} จั่ว 1 ใบด้วย`);
   } });
 def('distressia', { name:'Dame Woe-Is-Me', type:'wizard', cost:3, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกเปิดการ์ดใบบนสุดของเด็คตัวเอง แล้วรับดาเมจเท่ากับราคาของใบนั้น',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกเปิดการ์ดใบบนสุดของเด็คตัวเอง แล้วรับดาเมจเท่ากับราคาของใบนั้น',
   play: async p => {
     await attack(p, { to:'choose', dmgText:'ดาเมจเท่ากับราคาการ์ดบนสุดในเด็คของคุณ',
       dmg: t => { const c = revealTop(t); return c ? (c.cost || 0) : 0; } });
   } });
 def('destiny', { name:"Child of Fate", type:'wizard', cost:3, vp:1, power:1, draws:1, playFirst:1,
-  text:'+1 พลัง<br>ถ้านี่เป็นการ์ดใบแรกที่คุณเล่นในเทิร์นนี้ ทิ้งการ์ดในมือทั้งหมด แล้วจั่ว 4 ใบ',
+  text:'+1 ทอง<br>ถ้านี่เป็นการ์ดใบแรกที่คุณเล่นในเทิร์นนี้ ทิ้งการ์ดในมือทั้งหมด แล้วจั่ว 4 ใบ',
   play: async p => {
     if (G.turn.shown.length !== 1) { log(`${p.name} ไม่ได้เล่น Child of Fate เป็นใบแรก · ไม่ได้เปลี่ยนมือ`); return; }
     const n = p.hand.length;
@@ -986,10 +999,10 @@ def('destiny', { name:"Child of Fate", type:'wizard', cost:3, vp:1, power:1, dra
     await draw(p, 4);
   } });
 def('fishmonger', { name:'Barnacle, Angler of Spells', type:'wizard', cost:4, vp:1, draws:1,
-  text:'นำคาถา (Spell) 1 ใบจากกองทิ้งขึ้นมือ (ถ้ามีต้องหยิบ)<br>ถ้าในกองทิ้งไม่มีคาถาเลย +2 พลัง',
+  text:'นำคาถา (Spell) 1 ใบจากกองทิ้งขึ้นมือ (ถ้ามีต้องหยิบ)<br>ถ้าในกองทิ้งไม่มีคาถาเลย +2 ทอง',
   play: async p => {
     const spells = p.discard.filter(c => isType(c, 'spell'));
-    if (!spells.length) { P(p, 2); log(`ไม่มีคาถาในกองทิ้งของ ${p.name} · ได้ +2 พลังแทน`); return; }
+    if (!spells.length) { P(p, 2); log(`ไม่มีคาถาในกองทิ้งของ ${p.name} · ได้ +2 ทองแทน`); return; }
     const c = spells.length === 1 ? spells[0]
       : p.isAI ? spells.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
       : await humanChoose(p, 'Barnacle, Angler of Spells: เลือกคาถาจากกองทิ้งขึ้นมือ', spells.map(x => ({ card: x, value: x })));
@@ -997,7 +1010,7 @@ def('fishmonger', { name:'Barnacle, Angler of Spells', type:'wizard', cost:4, vp
     log(`${p.name} หยิบ ${c.name} จากกองทิ้งขึ้นมือ`, 'good');
   } });
 def('rippskull', { name:'Lord Zitface', type:'wizard', cost:4, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนทิ้งการ์ดในมือคนละ 1 ใบ',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนทิ้งการ์ดในมือคนละ 1 ใบ',
   play: async p => { await attack(p, { to:'each', discard:1 }); } });
 def('sblendo', { name:'Snoozo the Nightmare Maker', type:'wizard', cost:4, vp:1, draws:1,
   text:'ดูการ์ดใบบนสุดของเด็คคุณ แล้วเลือก: จั่วขึ้นมือ <i>หรือ</i> ทำลายทิ้ง',
@@ -1013,7 +1026,7 @@ def('sblendo', { name:'Snoozo the Nightmare Maker', type:'wizard', cost:4, vp:1,
     render();
   } });
 def('expando', { name:'Bulgebrain the Thinker', type:'wizard', cost:5, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกทิ้งการ์ดราคา 5 ขึ้นไป 1 ใบ ถ้าไม่ยอมทิ้ง รับ 5 ดาเมจแทน (ถ้าไม่มีการ์ดราคา 5+ ในมือ ไม่เกิดอะไร)',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกทิ้งการ์ดราคา 5 ขึ้นไป 1 ใบ ถ้าไม่ยอมทิ้ง รับ 5 ดาเมจแทน (ถ้าไม่มีการ์ดราคา 5+ ในมือ ไม่เกิดอะไร)',
   play: async p => {
     await attack(p, { to:'choose', dmgText:'ทิ้งการ์ดราคา 5+ 1 ใบ หรือรับ 5 ดาเมจ', dmg: async t => {
       const big = t.hand.filter(c => (c.cost || 0) >= 5);
@@ -1028,14 +1041,14 @@ def('expando', { name:'Bulgebrain the Thinker', type:'wizard', cost:5, vp:1, pow
     } });
   } });
 def('pythox', { name:'Laser Wolfgang', type:'wizard', cost:5, vp:1, power:2, atk:1,
-  text:'+2 พลัง ฟื้น 2 HP<br><b>โจมตี:</b> ศัตรูทุกคนที่ HP น้อยกว่าคุณ รับคนละ 5 ดาเมจ (เทียบหลังฟื้น · HP เท่ากันไม่โดน)',
+  text:'+2 ทอง ฟื้น 2 HP<br><b>โจมตี:</b> ศัตรูทุกคนที่ HP น้อยกว่าคุณ รับคนละ 5 ดาเมจ (เทียบหลังฟื้น · HP เท่ากันไม่โดน)',
   play: async p => {
     heal(p, 2);
     if (!opps(p).some(t => t.hp < p.hp)) { log(`ไม่มีศัตรูที่ HP น้อยกว่า ${p.name} (${p.hp} HP)`); return; }
     await attack(p, { to:'where', where: t => t.hp < p.hp, dmg:5 });
   } });
 def('veearr', { name:'Goggle Wizard 3000', type:'wizard', cost:5, vp:1, power:2, def:1, defDiscard:1,
-  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 2 ใบ และทิ้ง 1 ใบในสองใบนั้น',
+  text:'+2 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 2 ใบ และทิ้ง 1 ใบในสองใบนั้น',
   onDefend: async t => {
     const got = [drawTop(t), drawTop(t)].filter(Boolean);
     if (!got.length) return;
@@ -1048,11 +1061,11 @@ def('veearr', { name:'Goggle Wizard 3000', type:'wizard', cost:5, vp:1, power:2,
     render();
   } });
 def('fingler', { name:'Twiddlethumb', type:'wizard', cost:6, vp:2, unique:1,
-  text:'+5 พลัง แต่ -1 พลัง ต่อ Dead Wizard Token 1 อันที่คุณมี (ไม่ต่ำกว่า 0)',
+  text:'+5 ทอง แต่ -1 ทอง ต่อ Dead Wizard Token 1 อันที่คุณมี (ไม่ต่ำกว่า 0)',
   play: async p => {
     const n = Math.max(0, 5 - tokenCount(p));
     P(p, n);
-    if (tokenCount(p)) log(`${p.name} มี Dead Wizard Token ${tokenCount(p)} อัน · Twiddlethumb ให้ +${n} พลัง`);
+    if (tokenCount(p)) log(`${p.name} มี Dead Wizard Token ${tokenCount(p)} อัน · Twiddlethumb ให้ +${n} ทอง`);
   } });
 def('sugarpuss', { name:'Candy Witch Saccharina', type:'wizard', cost:6, vp:2, draws:1,
   text:'จั่ว 2 ใบ แล้วทิ้ง 1 ใบจากมือ ฟื้น HP เท่ากับราคาใบที่ทิ้ง<br>ถ้าตอนนี้คุณมี 25 HP สับ Dead Wizard Token 1 อันของคุณกลับเข้ากอง',
@@ -1084,20 +1097,20 @@ def('sugarpuss', { name:'Candy Witch Saccharina', type:'wizard', cost:6, vp:2, d
     render();
   } });
 def('solzar', { name:'Starblaze the Supernova', type:'wizard', cost:7, vp:2, power:2, atk:1, draws:1,
-  text:'+2 พลัง จั่ว 1 ใบ<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 10 ดาเมจ',
+  text:'+2 ทอง จั่ว 1 ใบ<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 10 ดาเมจ',
   play: async p => { await draw(p, 1); await attack(p, { to:'choose', dmg:10 }); } });
 def('wyverns', { name:'Double Trouble Drakes!', type:'wizard', cost:5, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:3 }); } });
 def('wormster', { name:'Wigglo the Worm Mage', type:'wizard', cost:3, vp:1, power:2, def:1, defDiscard:1, defDraw:1,
-  text:'+2 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วทำลายการ์ดในมือ 1 ใบได้ (เลือกไม่ทำก็ได้)',
+  text:'+2 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วทำลายการ์ดในมือ 1 ใบได้ (เลือกไม่ทำก็ได้)',
   onDefend: async t => { await destroyFromHand(t, 1); } });
 def('slippy', { name:'Banana Peel Pete', type:'wizard', cost:4, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่นั่งทางซ้ายหรือขวาของคุณ (เลือก 1 คน) ได้ Limp Wand 1 ใบ',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูที่นั่งทางซ้ายหรือขวาของคุณ (เลือก 1 คน) ได้ Limp Wand 1 ใบ',
   play: async p => { await attack(p, { to:'choose', among: t => t === leftOf(p) || t === rightOf(p), bent:1,
     label:'Slippy Tippy: เลือกศัตรูทางซ้ายหรือขวา' }); } });
 def('splittnut', { name:'Crackpot Ground Smasher', type:'wizard', cost:4, vp:1, power:2, atk:1, def:1, defDiscard:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 4 ดาเมจ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 4 ดาเมจ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ',
   play: async p => { await attack(p, { to:'choose', dmg:4 }); },
   onDefend: async t => draw(t, 1) });
 def('weewoe', { name:'Siren Sorcerers', type:'wizard', cost:4, vp:1, draws:1, def:1, defDiscard:1,
@@ -1105,13 +1118,13 @@ def('weewoe', { name:'Siren Sorcerers', type:'wizard', cost:4, vp:1, draws:1, de
   play: async p => draw(p, 1),
   onDefend: async (t, src) => { await draw(t, 1); if (src) await damage(src, 3, t); } });
 def('cruelnipps', { name:'Meanie McGrip', type:'wizard', cost:8, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 7 ดาเมจ',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 7 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:7 }); } });
 def('pimpsbury', { name:'Doughboy Dazzler', type:'wizard', cost:5, vp:1, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 4 ดาเมจ แล้วคุณฟื้น HP เท่ากับดาเมจที่ทำได้',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 4 ดาเมจ แล้วคุณฟื้น HP เท่ากับดาเมจที่ทำได้',
   play: async p => { await attack(p, { to:'choose', dmg:4, onHit: (t, dealt) => heal(p, dealt) }); } });
 def('bing', { name:'Barry Bigclaim the Underwriter', type:'wizard', cost:6, vp:2, power:3,
-  text:'+3 พลัง<br>ทำลายการ์ด 3 ใบบนสุดของกองหลัก ถ้ามีการ์ดโกลาหลในนั้น เลือกเล่น 1 ใบได้ เพื่อรับ +3 พลัง (คุณเป็นต้นเหตุของโกลาหลนั้น)',
+  text:'+3 ทอง<br>ทำลายการ์ด 3 ใบบนสุดของกองหลัก ถ้ามีการ์ดโกลาหลในนั้น เลือกเล่น 1 ใบได้ เพื่อรับ +3 ทอง (คุณเป็นต้นเหตุของโกลาหลนั้น)',
   play: async p => {
     const gone = [];
     for (let i = 0; i < 3 && G.main.length; i++) gone.push(G.main.pop());
@@ -1124,7 +1137,7 @@ def('bing', { name:'Barry Bigclaim the Underwriter', type:'wizard', cost:6, vp:2
     const c = p.isAI
       ? (chaos.find(x => x.id !== 'quake' || !p.ongoing.length) || null)
       : await humanChoose(p, 'Bing Ryerson: เล่นการ์ดโกลาหลที่ถูกทำลาย?', [...chaos.map(x => ({ card: x, value: x })), { label: 'ไม่เล่น', value: null, ghost: true }],
-          'ถ้าเล่น จะได้ +3 พลัง · โกลาหลจะเกิดกับพ่อมดทุกคนตามที่เขียนบนการ์ด รวมถึงตัวคุณ · ถ้ามีใครตาย นับว่าคุณเป็นคนฆ่า');
+          'ถ้าเล่น จะได้ +3 ทอง · โกลาหลจะเกิดกับพ่อมดทุกคนตามที่เขียนบนการ์ด รวมถึงตัวคุณ · ถ้ามีใครตาย นับว่าคุณเป็นคนฆ่า');
     if (!c) return;
     G.curLabel = c.name;
     log(`${p.name} ปลุกโกลาหล ${c.name}!`, 'sys');
@@ -1138,18 +1151,18 @@ def('rex', { name:'Scribble Rex the Doodler', type:'wizard', cost:6, vp:2, draws
   text:'จั่ว 2 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 2 ใบ',
   play: async p => draw(p, 2),
   onDefend: async t => draw(t, 2) });
-def('wor', { name:'Clankbot the Mecha-Mage', type:'wizard', cost:7, vp:2, power:5, text:'+5 พลัง' });
+def('wor', { name:'Clankbot the Mecha-Mage', type:'wizard', cost:7, vp:2, power:5, text:'+5 ทอง' });
 def('witch', { name:'Hedge Witch', type:'wizard', cost:4, vp:1, def:1, draws:1, text:'ฟื้น 3 HP จั่ว 1<br><b>ป้องกัน:</b> เปิดเพื่อไม่โดนโจมตี และฟื้น 2 HP',
   play: async p => { heal(p, 3); await draw(p, 1); }, onDefend: async t => heal(t, 2) });
 def('battlemage', { name:'Battle Mage', type:'wizard', cost:5, vp:2, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 3 ดาเมจ +1 ต่อพ่อมดใบอื่นที่เล่นเทิร์นนี้',
   play: async p => { await attack(p, { to:'choose', dmg: 3 + Math.max(0, (G.turn.types.wizard || 1) - 1) }); } });
-def('vexx', { name:'Archmage Vexx', type:'wizard', cost:6, vp:2, power:2, text:'+2 พลัง<br>รับการ์ดราคาไม่เกิน 4 จาก Line-Up ฟรี',
+def('vexx', { name:'Archmage Vexx', type:'wizard', cost:6, vp:2, power:2, text:'+2 ทอง<br>รับการ์ดราคาไม่เกิน 4 จาก Line-Up ฟรี',
   play: async p => gainFromLineup(p, 4) });
-def('necro', { name:'Necro Scholar', type:'wizard', cost:4, vp:1, text:'ทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ ถ้าทำ +2 พลัง',
+def('necro', { name:'Necro Scholar', type:'wizard', cost:4, vp:1, text:'ทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ ถ้าทำ +2 ทอง',
   play: async p => { if (await destroyOwn(p)) P(p, 2); } });
 
 // locations (ongoing)
-def('altar', { name:'Blood Altar', type:'location', cost:4, vp:1, ongoing:1, power:1, atk:1, text:'+1 พลัง<br><b>ต่อเนื่อง:</b> ต้นเทิร์นคุณ <b>โจมตี</b> คนทางซ้าย 1 ดาเมจ',
+def('altar', { name:'Blood Altar', type:'location', cost:4, vp:1, ongoing:1, power:1, atk:1, text:'+1 ทอง<br><b>ต่อเนื่อง:</b> ต้นเทิร์นคุณ <b>โจมตี</b> คนทางซ้าย 1 ดาเมจ',
   onStart: async p => { G.curLabel = 'Blood Altar'; await attack(p, { to:'left', dmg:1 }); } });
 def('tower', { name:'Tower of Eyes', type:'location', cost:5, vp:2, ongoing:1, text:'<b>ต่อเนื่อง:</b> ต้นเทิร์นคุณ จั่ว 1', onStart: async p => draw(p, 1) });
 def('tentakill', { name:'Squid Fortress', type:'location', cost:5, vp:1, ongoing:1,
@@ -1172,8 +1185,8 @@ def('arena', { name:'Kaboom Colosseum', type:'location', cost:7, vp:3, ongoing:1
 def('giftshop', { name:'Hall of Heroes... Souvenir Stand', type:'location', cost:4, vp:1, ongoing:1,
   text:'<b>ต่อเนื่อง:</b> เมื่อคุณได้ตำนาน (Legend) เลือกวางไว้บนสุดของเด็คแทนกองทิ้งได้' });
 def('dirtywand', { name:'The Grimy Wand Car Wash', type:'location', cost:5, vp:1, ongoing:1,
-  text:'<b>ต่อเนื่อง:</b> การ์ดชื่อ “Wand” ของคุณที่ทำดาเมจ ทำเพิ่ม +2 ดาเมจ<br>ทุกครั้งที่คุณเล่นการ์ดชื่อ “Wand” +1 พลัง',
-  onCardPlayed: async (p, card) => { if (isWand(card)) { P(p, 1); log(`The Dirty Wand: +1 พลัง (${card.name})`); } } });
+  text:'<b>ต่อเนื่อง:</b> การ์ดชื่อ “Wand” ของคุณที่ทำดาเมจ ทำเพิ่ม +2 ดาเมจ<br>ทุกครั้งที่คุณเล่นการ์ดชื่อ “Wand” +1 ทอง',
+  onCardPlayed: async (p, card) => { if (isWand(card)) { P(p, 1); log(`The Dirty Wand: +1 ทอง (${card.name})`); } } });
 // cards counted as a “Wand” by The Dirty Wand: Wand, Limp Wand, Wand of Hogwash…
 const isWand = c => /\bWand\b/.test(c.name) && c.id !== 'dirtywand';
 def('palm', { name:'Hand of the Maker', type:'location', cost:6, vp:2, ongoing:1,
@@ -1592,22 +1605,22 @@ def('chaosZ', { name:'Chaos 38', type:'chaos', atk:1, text:'<b>โจมตี:<
   } });
 
 // legends
-def('grimbald', { name:'Old Grimbald', type:'legend', cost:8, vp:3, power:3, draws:1, text:'+3 พลัง จั่ว 1', play: async p => draw(p, 1), group:'—' });
+def('grimbald', { name:'Old Grimbald', type:'legend', cost:8, vp:3, power:3, draws:1, text:'+3 ทอง จั่ว 1', play: async p => draw(p, 1), group:'—' });
 def('ashra', { name:'Queen Ashra', type:'legend', cost:9, vp:4, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ', group:'พ่อมดทุกคนรับ 2 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:3 }); }, gattack: () => attack(null, { to:'all', dmg:2 }) });
 def('morgrath', { name:'Morgrath Undying', type:'legend', cost:10, vp:5, draws:1, text:'จั่ว 3', group:'พ่อมดทุกคนได้ Limp Wand',
   play: async p => draw(p, 3), gattack: () => attack(null, { to:'all', bent:1 }) });
-def('zil', { name:'Zil the Mad', type:'legend', cost:9, vp:4, power:4, text:'+4 พลัง', group:'พ่อมดทุกคนทิ้งการ์ด 1 ใบ',
+def('zil', { name:'Zil the Mad', type:'legend', cost:9, vp:4, power:4, text:'+4 ทอง', group:'พ่อมดทุกคนทิ้งการ์ด 1 ใบ',
   gattack: () => attack(null, { to:'all', discard:1 }) });
 def('oblivia', { name:'Oblivia', type:'legend', cost:11, vp:5, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 6 ดาเมจ<br>คุณฟื้น 3 HP', group:'พ่อมดทุกคนรับ 3 ดาเมจ',
   play: async p => { await attack(p, { to:'choose', dmg:6 }); heal(p, 3); }, gattack: () => attack(null, { to:'all', dmg:3 }) });
-def('hrothgut', { name:'Hrothgut', type:'legend', cost:10, vp:4, power:2, text:'+2 พลัง<br>ทำลายการ์ดจากมือ/กองทิ้งได้สูงสุด 2 ใบ', group:'พ่อมดที่ HP มากสุดรับ 4 ดาเมจ',
+def('hrothgut', { name:'Hrothgut', type:'legend', cost:10, vp:4, power:2, text:'+2 ทอง<br>ทำลายการ์ดจากมือ/กองทิ้งได้สูงสุด 2 ใบ', group:'พ่อมดที่ HP มากสุดรับ 4 ดาเมจ',
   play: async p => { if (await destroyOwn(p)) await destroyOwn(p); }, gattack: () => attack(null, { to:'strongest', dmg:4 }) });
 def('vile', { name:'Sister Vile', type:'legend', cost:12, vp:6, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ', group:'พ่อมดทุกคนรับ 2 ดาเมจ และได้ Limp Wand',
   play: async p => { await attack(p, { to:'each', dmg:4 }); }, gattack: () => attack(null, { to:'all', dmg:2, bent:1 }) });
 def('pudge', { name:'Old Pudge', type:'legend', cost:8, vp:3, draws:1, text:'ฟื้น 5 HP จั่ว 2', group:'พ่อมดทุกคนทิ้งการ์ด 1 ใบ',
   play: async p => { heal(p, 5); await draw(p, 2); }, gattack: () => attack(null, { to:'all', discard:1 }) });
-def('duke', { name:'The Pale Duke', type:'legend', cost:11, vp:5, power:3, text:'+3 พลัง<br>รับการ์ดราคาไม่เกิน 5 จาก Line-Up ฟรี', group:'พ่อมดทุกคนรับ 3 ดาเมจ',
+def('duke', { name:'The Pale Duke', type:'legend', cost:11, vp:5, power:3, text:'+3 ทอง<br>รับการ์ดราคาไม่เกิน 5 จาก Line-Up ฟรี', group:'พ่อมดทุกคนรับ 3 ดาเมจ',
   play: async p => gainFromLineup(p, 5), gattack: () => attack(null, { to:'all', dmg:3 }) });
 def('kaz', { name:'Kaz Bonecrown', type:'legend', cost:12, vp:6, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ<br>จั่ว 1 ต่อการฆ่า', group:'พ่อมดทุกคนรับ 4 ดาเมจ',
   play: async p => { const k = await attack(p, { to:'each', dmg:3 }); await draw(p, k); }, gattack: () => attack(null, { to:'all', dmg:4 }) });
@@ -1616,15 +1629,15 @@ def('kaz', { name:'Kaz Bonecrown', type:'legend', cost:12, vp:6, atk:1, text:'<b
 // bring every card of a type from the discard pile to hand; +2 power if there was none
 async function recallType(p, type, label) {
   const got = p.discard.filter(c => isType(c, type));
-  if (!got.length) { P(p, 2); log(`ไม่มี${label}ในกองทิ้งของ ${p.name} · ได้ +2 พลังแทน`); return; }
+  if (!got.length) { P(p, 2); log(`ไม่มี${label}ในกองทิ้งของ ${p.name} · ได้ +2 ทองแทน`); return; }
   p.discard = p.discard.filter(c => !got.includes(c)); p.hand.push(...got);
   log(`${p.name} นำ${label} ${got.length} ใบจากกองทิ้งขึ้นมือ`, 'good'); render();
 }
 def('willy', { name:'One-Tooth, One-Shoe Wally', type:'legend', cost:8, vp:4, power:1, atk:1, draws:1,
-  text:'+1 พลัง จั่ว 1<br><b>โจมตี (ป้องกันไม่ได้):</b> ศัตรูทุกคนรับ 1 ดาเมจ', group:'—',
+  text:'+1 ทอง จั่ว 1<br><b>โจมตี (ป้องกันไม่ได้):</b> ศัตรูทุกคนรับ 1 ดาเมจ', group:'—',
   play: async p => { await draw(p, 1); await attack(p, { to:'each', dmg:1, unblockable:1 }); } });
 def('bennana', { name:'Banana-Mancer Benny', type:'legend', cost:9, vp:5, power:2,
-  text:'+2 พลัง<br>ฟื้น 1 HP ต่อการ์ดเริ่มต้น (Rune/Wand/Fizzle) ที่คุณเล่นอยู่ ในมือ และในกองทิ้ง', group:'พ่อมดทุกคนรับ 5 ดาเมจ และได้ Limp Wand 1 ใบ',
+  text:'+2 ทอง<br>ฟื้น 1 HP ต่อการ์ดเริ่มต้น (Rune/Wand/Fizzle) ที่คุณเล่นอยู่ ในมือ และในกองทิ้ง', group:'พ่อมดทุกคนรับ 5 ดาเมจ และได้ Limp Wand 1 ใบ',
   play: async p => { const n = [...p.hand, ...p.discard, ...(p === cur() ? G.turn.played : [])].filter(c => c.type === 'starter').length; if (n) heal(p, n); },
   gattack: () => attack(null, { to:'all', dmg:5, bent:1 }) });
 def('krazztar', { name:'Gore Baron Grimtusk', type:'legend', cost:9, vp:5, draws:1,
@@ -1641,12 +1654,12 @@ def('krazztar', { name:'Gore Baron Grimtusk', type:'legend', cost:9, vp:5, draws
     return 0;
   } }) });
 def('lickity', { name:'Slurpo, Demon of the Deep', type:'legend', cost:9, vp:5,
-  text:'เปิดการ์ดใบบนสุดของกองหลัก แล้ววางบนสุดของเด็คคุณ ถ้าเป็นการ์ดโกลาหล ทำลายทิ้งแล้ว +3 พลังแทน',
+  text:'เปิดการ์ดใบบนสุดของกองหลัก แล้ววางบนสุดของเด็คคุณ ถ้าเป็นการ์ดโกลาหล ทำลายทิ้งแล้ว +3 ทองแทน',
   group:'พ่อมดทุกคนเปิดการ์ด 5 ใบบนสุดของเด็ค ทิ้งทุกใบที่ราคา 1 ขึ้นไป ใบราคา 0 วางคืนบนเด็ค',
   play: async p => {
     if (!G.main.length) { log('กองหลักหมดแล้ว'); return; }
     const c = G.main.pop();
-    if (c.type === 'chaos') { G.destroyed.push(c); P(p, 3); log(`${p.name} เปิดได้ ${c.name} · ทำลายทิ้ง แล้ว +3 พลัง`); return; }
+    if (c.type === 'chaos') { G.destroyed.push(c); P(p, 3); log(`${p.name} เปิดได้ ${c.name} · ทำลายทิ้ง แล้ว +3 ทอง`); return; }
     p.deck.push(c); gainedCard(p, c); log(`${p.name} ได้ ${c.name} วางบนสุดของเด็ค`, 'good');
   },
   gattack: () => attack(null, { to:'all', dmgText:'เปิด 5 ใบบนสุดของเด็ค ทิ้งทุกใบที่ราคา 1+', dmg: t => {
@@ -1658,7 +1671,7 @@ def('lickity', { name:'Slurpo, Demon of the Deep', type:'legend', cost:9, vp:5,
     return 0;
   } }) });
 def('chafia', { name:'Champion Blaze and Hot Kitty', type:'legend', cost:10, vp:5, power:2, draws:1,
-  text:'+2 พลัง จั่ว 1<br>ทำลาย Limp Wand ในมือ 1 ใบ และในกองทิ้ง 1 ใบ', group:'พ่อมดทุกคนได้ Limp Wand 1 ใบ ต่อสัตว์อสูรแต่ละใบใน Line-Up',
+  text:'+2 ทอง จั่ว 1<br>ทำลาย Limp Wand ในมือ 1 ใบ และในกองทิ้ง 1 ใบ', group:'พ่อมดทุกคนได้ Limp Wand 1 ใบ ต่อสัตว์อสูรแต่ละใบใน Line-Up',
   play: async p => {
     await draw(p, 1);
     for (const pile of [p.hand, p.discard]) { const b = pile.find(c => c.id === 'bent'); if (b) { pile.splice(pile.indexOf(b), 1); G.destroyed.push(b); log(`${p.name} ทำลาย Limp Wand`, 'good'); } }
@@ -1670,7 +1683,7 @@ def('chafia', { name:'Champion Blaze and Hot Kitty', type:'legend', cost:10, vp:
     return 0;
   } }) });
 def('ciggy', { name:'Smokey the Lingering Doom', type:'legend', cost:10, vp:5, power:2,
-  text:'+2 พลัง<br>ศัตรูที่เลือกได้ Limp Wand 1 ใบ (ไม่ใช่การโจมตี · ป้องกันไม่ได้)', group:'พ่อมดทุกคนทำลายการ์ดในมือ จนเหลือการ์ดแต่ละประเภทแค่ประเภทละ 1 ใบ',
+  text:'+2 ทอง<br>ศัตรูที่เลือกได้ Limp Wand 1 ใบ (ไม่ใช่การโจมตี · ป้องกันไม่ได้)', group:'พ่อมดทุกคนทำลายการ์ดในมือ จนเหลือการ์ดแต่ละประเภทแค่ประเภทละ 1 ใบ',
   play: async p => { const t = await pickTarget(p, opps(p), { label: 'Ciggy: เลือกศัตรูที่ได้ Limp Wand' }); gainBent(t); },
   gattack: () => attack(null, { to:'all', dmgText:'ทำลายการ์ดในมือจนเหลือประเภทละ 1 ใบ', dmg: async t => {
     for (const type of [...new Set(t.hand.map(c => c.type))]) {
@@ -1684,7 +1697,7 @@ def('ciggy', { name:'Smokey the Lingering Doom', type:'legend', cost:10, vp:5, p
     return 0;
   } }) });
 def('papaboner', { name:'Papa Skeleton', type:'legend', cost:10, vp:5, power:3,
-  text:'+3 พลัง<br>สุ่มได้ความสามารถพ่อมดเพิ่ม 1 อย่าง ใช้ได้จนกว่าจะมีคนปราบตำนานใบถัดไป', group:'พ่อมดทุกคนลด HP ลงให้เท่ากับคนที่ HP น้อยที่สุด',
+  text:'+3 ทอง<br>สุ่มได้ความสามารถพ่อมดเพิ่ม 1 อย่าง ใช้ได้จนกว่าจะมีคนปราบตำนานใบถัดไป', group:'พ่อมดทุกคนลด HP ลงให้เท่ากับคนที่ HP น้อยที่สุด',
   play: async p => {
     const pool = TRAITS.filter(x => x.id !== p.trait.id);
     p.trait2 = { ...pool[rnd(pool.length)] };
@@ -1715,11 +1728,11 @@ def('cosmicglyph', { name:'The Astral Rune', type:'legend', cost:10, vp:5,
     return 0;
   } }) });
 def('darklord', { name:'Overlord of the Lost and Found', type:'legend', cost:11, vp:6, draws:1,
-  text:'นำสมบัติ (Treasure) ทุกใบในกองทิ้งขึ้นมือ ถ้าไม่มีเลย +2 พลัง', group:'พ่อมดทุกคนรับ 7 ดาเมจ',
+  text:'นำสมบัติ (Treasure) ทุกใบในกองทิ้งขึ้นมือ ถ้าไม่มีเลย +2 ทอง', group:'พ่อมดทุกคนรับ 7 ดาเมจ',
   play: async p => recallType(p, 'treasure', 'สมบัติ'),
   gattack: () => attack(null, { to:'all', dmg:7 }) });
 def('skullzor', { name:'Greatest Hits Encore!!!', type:'legend', cost:11, vp:6, draws:1,
-  text:'นำคาถา (Spell) ทุกใบในกองทิ้งขึ้นมือ ถ้าไม่มีเลย +2 พลัง', group:'พ่อมดทุกคนเปิดมือ และรับ 3 ดาเมจต่อการ์ดที่มี 1 VP ขึ้นไป',
+  text:'นำคาถา (Spell) ทุกใบในกองทิ้งขึ้นมือ ถ้าไม่มีเลย +2 ทอง', group:'พ่อมดทุกคนเปิดมือ และรับ 3 ดาเมจต่อการ์ดที่มี 1 VP ขึ้นไป',
   play: async p => recallType(p, 'spell', 'คาถา'),
   gattack: () => attack(null, { to:'all', dmgText:'3 ดาเมจต่อการ์ดในมือที่มี 1 VP ขึ้นไป', dmg: t => {
     const n = t.hand.filter(c => vpOf(c, t) >= 1).length;
@@ -1727,15 +1740,15 @@ def('skullzor', { name:'Greatest Hits Encore!!!', type:'legend', cost:11, vp:6, 
     return 3 * n;
   } }) });
 def('extinction', { name:'Professor Apocalypse', type:'legend', cost:12, vp:6, playLate:1,
-  text:'พลังของคุณในเทิร์นนี้เป็น 2 เท่า (เล่นเป็นใบสุดท้าย หลังลงการ์ดพลังครบ)', group:'พ่อมดทุกคนทิ้งการ์ดในมือทุกใบที่ราคา 5 ขึ้นไป',
-  play: async p => { const n = G.turn.power; P(p, n); log(`${p.name} พลังเพิ่มเป็น 2 เท่า (${G.turn.power})`, 'sys'); },
+  text:'ทองของคุณในเทิร์นนี้เป็น 2 เท่า (เล่นเป็นใบสุดท้าย หลังลงการ์ดทองครบ)', group:'พ่อมดทุกคนทิ้งการ์ดในมือทุกใบที่ราคา 5 ขึ้นไป',
+  play: async p => { const n = G.turn.power; P(p, n); log(`${p.name} ทองเพิ่มเป็น 2 เท่า (${G.turn.power})`, 'sys'); },
   gattack: () => attack(null, { to:'all', dmgText:'ทิ้งการ์ดในมือทุกใบที่ราคา 5+', dmg: t => {
     const big = t.hand.filter(c => (c.cost || 0) >= 5);
     if (big.length) { t.hand = t.hand.filter(c => !big.includes(c)); t.discard.push(...big); log(`${t.name} ทิ้ง ${big.map(c => c.name).join(', ')}`); }
     return 0;
   } }) });
 def('jenny', { name:'Archmage Gummy Goodheart', type:'legend', cost:12, vp:6, power:4, atk:1,
-  text:'+4 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 4 ดาเมจ', group:'พ่อมดทุกคนได้ Limp Wand 1 ใบ ต่อการ์ดในมือที่ราคา 4 ขึ้นไป',
+  text:'+4 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 4 ดาเมจ', group:'พ่อมดทุกคนได้ Limp Wand 1 ใบ ต่อการ์ดในมือที่ราคา 4 ขึ้นไป',
   play: async p => { await attack(p, { to:'choose', dmg:4 }); },
   gattack: () => attack(null, { to:'all', dmgText:'Limp Wand ต่อการ์ดในมือที่ราคา 4+', dmg: t => {
     const n = t.hand.filter(c => (c.cost || 0) >= 4).length;
@@ -1745,14 +1758,14 @@ def('jenny', { name:'Archmage Gummy Goodheart', type:'legend', cost:12, vp:6, po
 def('peetfarm', { name:'Gloomy County Bog Farm', type:'legend', alsoType:'location', cost:8, vp:4, ongoing:1,
   text:'<b>ต่อเนื่อง:</b> (ไม่มีผลอะไร วางไว้เฉย ๆ)', group:'—' });
 def('goreorgy', { name:'Countess Grisly, the Tasty Undead', type:'legend', alsoType:'wizard', cost:9, vp:3, power:4, atk:1,
-  text:'+4 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ ต่อ Dead Wizard Token แต่ละอันของคุณ', group:'—',
+  text:'+4 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ ต่อ Dead Wizard Token แต่ละอันของคุณ', group:'—',
   play: async p => {
     const n = tokenCount(p);
     if (!n) { log(`${p.name} ยังไม่มี Dead Wizard Token · Lady Gore-Orgy ไม่โจมตี`); return; }
     await attack(p, { to:'each', dmg: 4 * n });
   } });
 def('elderwand', { name:"Ancient Wand of the Grubby Kid", type:'legend', alsoType:'spell', cost:9, vp:3, power:3, atk:1,
-  text:'+3 พลัง<br><b>โจมตี:</b> ศัตรูทางซ้ายหรือขวา (เลือก) รับ 10 ดาเมจ ถ้าตาย โจมตีแบบเดียวกันต่อกับศัตรูคนถัดไปในทิศเดียวกัน', group:'—',
+  text:'+3 ทอง<br><b>โจมตี:</b> ศัตรูทางซ้ายหรือขวา (เลือก) รับ 10 ดาเมจ ถ้าตาย โจมตีแบบเดียวกันต่อกับศัตรูคนถัดไปในทิศเดียวกัน', group:'—',
   play: async p => {
     let t = await pickTarget(p, [...new Set([leftOf(p), rightOf(p)])], { dmg:10, label:'Elder Wand: เลือกศัตรูทางซ้ายหรือขวา' });
     const next = t === leftOf(p) ? leftOf : rightOf; // keep going the same way round the table
@@ -1773,10 +1786,10 @@ def('sinobiting', { name:'The Bite of Sin', type:'legend', alsoType:'spell', cos
     log(`เทิร์นนี้ ${t.name} ใช้การป้องกันไม่ได้`, 'sys');
   } });
 def('blistreria', { name:'Shriekina, Queen of the Gremlin Shriekers', type:'legend', alsoType:'creature', cost:10, vp:4, power:3, atk:1,
-  text:'+3 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนได้ Limp Wand คนละ 2 ใบ', group:'—',
+  text:'+3 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนได้ Limp Wand คนละ 2 ใบ', group:'—',
   play: async p => { await attack(p, { to:'each', bent:2 }); } });
 def('explozivo', { name:'Kablooey the Bowel Blaster', type:'legend', alsoType:'wizard', cost:10, vp:4, power:2, atk:1,
-  text:'+2 พลัง<br>สุ่มทำลายตำนาน 1 ใบในกองตำนาน<br><b>โจมตี:</b> ศัตรูทุกคนรับดาเมจเท่ากับราคาของตำนานใบนั้น', group:'—',
+  text:'+2 ทอง<br>สุ่มทำลายตำนาน 1 ใบในกองตำนาน<br><b>โจมตี:</b> ศัตรูทุกคนรับดาเมจเท่ากับราคาของตำนานใบนั้น', group:'—',
   play: async p => {
     // a face-down Legend from the stack; only when the stack is empty, a face-up one (its slot then stays empty)
     let L;
@@ -1794,10 +1807,10 @@ def('snackcart', { name:"Chubbula Snack Shack", type:'legend', alsoType:'locatio
   text:'<b>ต่อเนื่อง:</b> ในเทิร์นของคุณ ทุกครั้งที่คุณทำดาเมจศัตรู ฟื้น HP เท่าดาเมจนั้น<br>ขณะที่คุณมี 25 HP ตอนจบเทิร์นจั่วเพิ่มอีก 2 ใบ', group:'—' });
 def('goldy', { name:'Goldie the Egg-Laying Goose', type:'legend', alsoType:'creature', cost:10, vp:0, power:1,
   vpCalc: p => 2 * allCards(p).filter(c => c.type === 'legend').length,
-  text:'+1 พลัง<br><b>จบเกม:</b> มีค่า 2 VP ต่อตำนานแต่ละใบที่คุณมี (นับใบนี้ด้วย)', group:'—' });
+  text:'+1 ทอง<br><b>จบเกม:</b> มีค่า 2 VP ต่อตำนานแต่ละใบที่คุณมี (นับใบนี้ด้วย)', group:'—' });
 def('dingler', { name:'Two-Headed Lucky Doodad', type:'legend', alsoType:'creature', cost:10, vp:4,
-  text:'<b>✲ เปิดใช้:</b> พลังของคุณเป็น 2 เท่า', group:'—',
-  activate: async p => { const n = G.turn.power; P(p, n); log(`${p.name} พลังเพิ่มเป็น 2 เท่า (${G.turn.power})`, 'sys'); } });
+  text:'<b>✲ เปิดใช้:</b> ทองของคุณเป็น 2 เท่า', group:'—',
+  activate: async p => { const n = G.turn.power; P(p, n); log(`${p.name} ทองเพิ่มเป็น 2 เท่า (${G.turn.power})`, 'sys'); } });
 def('rlyeh', { name:"Squid Temple Rave", type:'legend', alsoType:'spell', cost:11, vp:4, atk:1, draws:1,
   text:'พ่อมดทุกคนจั่ว 2 ใบ<br><b>โจมตี (ป้องกันไม่ได้):</b> ศัตรูทุกคนทิ้งการ์ดในมือแบบสุ่ม 2 ใบ แล้วรับดาเมจเท่ากับราคารวมของ 2 ใบนั้น', group:'—',
   play: async p => {
@@ -1811,7 +1824,7 @@ def('rlyeh', { name:"Squid Temple Rave", type:'legend', alsoType:'spell', cost:1
     } });
   } });
 def('limpwandlegend', { name:'The Floppiest Wand', type:'legend', alsoType:'treasure', cost:11, vp:4, power:4, atk:1,
-  text:'+4 พลัง<br><b>โจมตี:</b> ผู้เล่นที่เลือกรับ 7 ดาเมจ ถ้าตาย ให้ Limp Wand เขาได้สูงสุด 3 ใบ จากมือ กองทิ้ง หรือกอง Limp Wand', group:'—',
+  text:'+4 ทอง<br><b>โจมตี:</b> ผู้เล่นที่เลือกรับ 7 ดาเมจ ถ้าตาย ให้ Limp Wand เขาได้สูงสุด 3 ใบ จากมือ กองทิ้ง หรือกอง Limp Wand', group:'—',
   play: async p => {
     await attack(p, { to:'choose', dmg:7, onKill: async t => {
       for (let k = 0; k < 3; k++) {
@@ -1839,25 +1852,25 @@ def('throne', { name:'Seat of Shenanigans', type:'legend', alsoType:'location', 
     await attack(p, { to:'choose', dmg: c.cost });
   } });
 def('orbital', { name:'Space Laser Wizard Strike', type:'legend', alsoType:'spell', cost:12, vp:4, power:5, atk:1,
-  text:'+5 พลัง<br><b>โจมตี:</b> ศัตรูทางซ้ายและทางขวารับคนละ 10 ดาเมจ', group:'—',
+  text:'+5 ทอง<br><b>โจมตี:</b> ศัตรูทางซ้ายและทางขวารับคนละ 10 ดาเมจ', group:'—',
   play: async p => { await attack(p, { to:'lr', dmg:10 }); } });
 def('kombatant', { name:'Undying Tournament Champ', type:'legend', alsoType:'creature', cost:13, vp:5, power:4, atk:1,
-  text:'+4 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกตายทันที เปิด Dead Wizard Token 3 อัน คุณเลือกว่าเขาได้อันไหน อีก 2 อันคืนกอง', group:'—',
+  text:'+4 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกตายทันที เปิด Dead Wizard Token 3 อัน คุณเลือกว่าเขาได้อันไหน อีก 2 อันคืนกอง', group:'—',
   play: async p => { await attack(p, { to:'choose', dmgText:'ตายทันที', dmg: t => t.hp + 1, tokenPick:3 }); } });
 def('pylon', { name:"Traffic Cone of Papa Skeleton", type:'legend', alsoType:'treasure', cost:13, vp:5, ongoing:1,
-  text:'<b>ต่อเนื่อง:</b> ทุกเทิร์น +1 พลัง ต่อ Dead Wizard Token แต่ละอันของคุณ (เริ่มตั้งแต่เทิร์นที่ลงการ์ด)', group:'—',
+  text:'<b>ต่อเนื่อง:</b> ทุกเทิร์น +1 ทอง ต่อ Dead Wizard Token แต่ละอันของคุณ (เริ่มตั้งแต่เทิร์นที่ลงการ์ด)', group:'—',
   play: async p => { if (tokenCount(p)) P(p, tokenCount(p)); },
-  onStart: async p => { if (tokenCount(p)) { P(p, tokenCount(p)); log(`Traffic Cone of Papa Skeleton: +${tokenCount(p)} พลัง`); } } });
+  onStart: async p => { if (tokenCount(p)) { P(p, tokenCount(p)); log(`Traffic Cone of Papa Skeleton: +${tokenCount(p)} ทอง`); } } });
 def('viagrus', { name:'Stiffus the Unbending', type:'legend', alsoType:'wizard', cost:13, vp:5, ongoing:1,
-  text:'<b>ต่อเนื่อง:</b> ต้นเทิร์น เลือกรับ Limp Wand 1 ใบเข้ามือได้ · เมื่อคุณเล่น Limp Wand +3 พลัง<br><b>จบเกม:</b> Limp Wand ของคุณมีค่า +1 VP แทน -1', group:'—',
+  text:'<b>ต่อเนื่อง:</b> ต้นเทิร์น เลือกรับ Limp Wand 1 ใบเข้ามือได้ · เมื่อคุณเล่น Limp Wand +3 ทอง<br><b>จบเกม:</b> Limp Wand ของคุณมีค่า +1 VP แทน -1', group:'—',
   onStart: async p => {
     if (G.bent <= 0) return;
-    const yes = p.isAI || await humanChoose(p, 'Viagrus: รับ Limp Wand เข้ามือไหม?', [{ label: 'รับ (+3 พลังเมื่อเล่น)', value: true }, { label: 'ไม่รับ', value: false, ghost: true }]);
+    const yes = p.isAI || await humanChoose(p, 'Viagrus: รับ Limp Wand เข้ามือไหม?', [{ label: 'รับ (+3 ทองเมื่อเล่น)', value: true }, { label: 'ไม่รับ', value: false, ghost: true }]);
     if (yes) { G.bent--; p.hand.push(make('bent')); log(`${p.name} รับ Limp Wand เข้ามือ (Viagrus)`); }
   },
-  onCardPlayed: async (p, card) => { if (card.id === 'bent') { P(p, 3); log('Viagrus: +3 พลัง'); } } });
+  onCardPlayed: async (p, card) => { if (card.id === 'bent') { P(p, 3); log('Viagrus: +3 ทอง'); } } });
 def('deathlunch', { name:'Doom Buffet!', type:'legend', alsoType:'spell', cost:14, vp:5,
-  text:'ถ้าคุณไม่มี Dead Wizard Token เลย +7 พลัง<br>ไม่อย่างนั้น เลือกทำลาย Dead Wizard Token 1 อันของคุณได้', group:'—',
+  text:'ถ้าคุณไม่มี Dead Wizard Token เลย +7 ทอง<br>ไม่อย่างนั้น เลือกทำลาย Dead Wizard Token 1 อันของคุณได้', group:'—',
   play: async p => {
     if (!tokenCount(p)) { P(p, 7); return; }
     if (!p.tokens.length) return; // only Bone of Contention's pretend token: nothing to destroy
@@ -1868,14 +1881,14 @@ def('deathlunch', { name:'Doom Buffet!', type:'legend', alsoType:'spell', cost:1
     log(`${p.name} ทำลาย Token “${k.name}” ออกจากเกม (+${-tokenVP(k)} VP)`, 'good'); render();
   } });
 def('continuum', { name:"Dr. Timewarp and Lil Toot", type:'legend', alsoType:'wizard', cost:14, vp:5, power:1, playFirst:1,
-  text:'+1 พลัง<br>เทิร์นนี้ ทุกครั้งที่คุณได้การ์ด เลือกนำเข้ามือได้เลย (ซื้อแล้วเล่นได้ทันที)', group:'—',
+  text:'+1 ทอง<br>เทิร์นนี้ ทุกครั้งที่คุณได้การ์ด เลือกนำเข้ามือได้เลย (ซื้อแล้วเล่นได้ทันที)', group:'—',
   play: async p => { G.turn.gainToHand = true; log(`เทิร์นนี้ ${p.name} นำการ์ดที่ได้เข้ามือได้`, 'sys'); } });
 def('gatling', { name:"Gatling Wand of Sergeant Boom", type:'legend', alsoType:'treasure', cost:15, vp:5, atk:1,
-  text:'<b>โจมตี 4 ครั้ง:</b> แต่ละครั้งผู้เล่นที่เลือกรับ 7 ดาเมจ (เลือกใหม่ได้ทุกครั้ง · ป้องกันแยกกัน)<br>+3 พลัง ต่อการฆ่า 1 ครั้งด้วยการ์ดนี้', group:'—',
+  text:'<b>โจมตี 4 ครั้ง:</b> แต่ละครั้งผู้เล่นที่เลือกรับ 7 ดาเมจ (เลือกใหม่ได้ทุกครั้ง · ป้องกันแยกกัน)<br>+3 ทอง ต่อการฆ่า 1 ครั้งด้วยการ์ดนี้', group:'—',
   play: async p => {
     let k = 0;
     for (let i = 0; i < 4; i++) k += await attack(p, { to:'choose', dmg:7, label:`Gatling Wand: เลือกเป้าหมาย นัดที่ ${i + 1}/4` });
-    if (k) { P(p, 3 * k); log(`Gatling Wand ฆ่าได้ ${k} ครั้ง · +${3 * k} พลัง`, 'sys'); }
+    if (k) { P(p, 3 * k); log(`Gatling Wand ฆ่าได้ ${k} ครั้ง · +${3 * k} ทอง`, 'sys'); }
   } });
 def('nacho', { name:'Mega Cheese Kaboom Colosseum', type:'legend', alsoType:'location', cost:15, vp:5, ongoing:1,
   text:'<b>ต่อเนื่อง:</b> การโจมตีของคุณทำดาเมจกับศัตรู 2 เท่า', group:'—' });
@@ -1893,7 +1906,7 @@ def('heist', { name:'Grand Larceny', type:'legend', alsoType:'spell', cost:16, v
     log(`${p.name} ขโมยตำนาน ${c.name} ไว้บนสุดของเด็ค!`, 'sys'); render();
   } });
 def('reaper', { name:'The Jolly Grim Reaper', type:'legend', alsoType:'creature', cost:16, vp:6, power:4, atk:1,
-  text:'+4 พลัง<br><b>โจมตี:</b> ให้ Dead Wizard Token 1 อันของคุณกับผู้เล่นที่เลือก แล้ว Token นั้นทำงานอีกครั้ง', group:'—',
+  text:'+4 ทอง<br><b>โจมตี:</b> ให้ Dead Wizard Token 1 อันของคุณกับผู้เล่นที่เลือก แล้ว Token นั้นทำงานอีกครั้ง', group:'—',
   play: async p => {
     if (!p.tokens.length) { log(`${p.name} ไม่มี Dead Wizard Token ให้ส่ง`); return; }
     await attack(p, { to:'choose', dmgText:'รับ Dead Wizard Token จากผู้โจมตี', dmg: async t => {
@@ -1907,15 +1920,15 @@ def('reaper', { name:'The Jolly Grim Reaper', type:'legend', alsoType:'creature'
     } });
   } });
 def('devil', { name:'Pact with the Pitlord', type:'legend', alsoType:'spell', cost:17, vp:6, power:6,
-  text:'+6 พลัง<br>ทำลายการ์ดในกองทิ้งได้กี่ใบก็ได้', group:'—',
+  text:'+6 ทอง<br>ทำลายการ์ดในกองทิ้งได้กี่ใบก็ได้', group:'—',
   play: async p => { while (await destroyOwn(p, { discardOnly: true })); } });
 def('mrbun', { name:'Sir Fluffington, Rogue Pet', type:'legend', alsoType:'creature', cost:17, vp:6, atk:1, draws:1,
   text:'จั่ว 3 ใบ<br><b>โจมตี:</b> ศัตรูทุกคนรับ 20 ดาเมจ', group:'—',
   play: async p => { await draw(p, 3); await attack(p, { to:'each', dmg:20 }); } });
 def('vortexfuckery', { name:'The Whirlpool of Total Nonsense', type:'legend', alsoType:'location', cost:18, vp:6, ongoing:1,
-  text:'<b>ต่อเนื่อง:</b> ครั้งแรกในแต่ละเทิร์นที่การโจมตีของคุณทำดาเมจ ได้พลังเท่ากับดาเมจรวมที่ทำได้', group:'—' });
+  text:'<b>ต่อเนื่อง:</b> ครั้งแรกในแต่ละเทิร์นที่การโจมตีของคุณทำดาเมจ ได้ทองเท่ากับดาเมจรวมที่ทำได้', group:'—' });
 def('schadenfreude', { name:'Saint Gloatsworth', type:'legend', alsoType:'wizard', cost:19, vp:7, power:5, atk:1,
-  text:'+5 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกได้ Dead Wizard Token 2 อันจากนอกเกม (สะท้อนกลับไม่ได้ แต่ป้องกันได้)', group:'—',
+  text:'+5 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกได้ Dead Wizard Token 2 อันจากนอกเกม (สะท้อนกลับไม่ได้ แต่ป้องกันได้)', group:'—',
   play: async p => {
     await attack(p, { to:'choose', noRedirect:true, dmgText:'ได้ Dead Wizard Token 2 อัน (-6 VP)', dmg: t => {
       for (let i = 0; i < 2; i++) { const k = { ...TOKENS[rnd(TOKENS.length)] }; t.tokens.push(k); announceToken(t, k); } // fresh tokens: the shared pile is untouched
@@ -1924,7 +1937,7 @@ def('schadenfreude', { name:'Saint Gloatsworth', type:'legend', alsoType:'wizard
     } });
   } });
 def('winnerwand', { name:"The Champion Wand of Victory", type:'legend', alsoType:'treasure', cost:20, vp:7, power:8, atk:1,
-  text:'+8 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 1 ดาเมจ ถ้าเขาตายด้วยวิธีนี้ <b>คุณชนะเกมทันที</b>', group:'—',
+  text:'+8 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 1 ดาเมจ ถ้าเขาตายด้วยวิธีนี้ <b>คุณชนะเกมทันที</b>', group:'—',
   play: async p => {
     await attack(p, { to:'choose', dmg:1, onKill: async t => {
       G.instantWinner = p; G.ending = `${p.name} ฆ่า ${t.name} ด้วย The Champion Wand of Victory`;
@@ -1933,7 +1946,7 @@ def('winnerwand', { name:"The Champion Wand of Victory", type:'legend', alsoType
     } });
   } });
 def('blackbart', { name:'Captain Plunderbeard', type:'legend', alsoType:'wizard', cost:9, vp:3, power:2, atk:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> เปิดการ์ด 4 ใบบนสุดของเด็คศัตรูที่เลือก เลือกเล่น 1 ใบเป็นของคุณ แล้วทั้ง 4 ใบลงกองทิ้งของเจ้าของ', group:'—',
+  text:'+2 ทอง<br><b>โจมตี:</b> เปิดการ์ด 4 ใบบนสุดของเด็คศัตรูที่เลือก เลือกเล่น 1 ใบเป็นของคุณ แล้วทั้ง 4 ใบลงกองทิ้งของเจ้าของ', group:'—',
   play: async p => {
     await attack(p, { to:'choose', dmgText:'เปิดการ์ด 4 ใบบนสุดของเด็คคุณ ให้ผู้โจมตีเลือกเล่น 1 ใบ', dmg: async t => {
       if (t === p) return 0;
@@ -1950,14 +1963,14 @@ def('blackbart', { name:'Captain Plunderbeard', type:'legend', alsoType:'wizard'
   } });
 
 // familiars (only the owner may buy)
-def('imp', { name:'Imp Pip', type:'familiar', cost:4, vp:1, power:2, def:1, redirect:1, text:'+2 พลัง<br><b>ป้องกัน:</b> เปิดเพื่อสะท้อนดาเมจกลับไปหาผู้โจมตี' });
+def('imp', { name:'Imp Pip', type:'familiar', cost:4, vp:1, power:2, def:1, redirect:1, text:'+2 ทอง<br><b>ป้องกัน:</b> เปิดเพื่อสะท้อนดาเมจกลับไปหาผู้โจมตี' });
 def('gcat', { name:'Grave Cat', type:'familiar', cost:4, vp:1, draws:1, text:'จั่ว 2', play: async p => draw(p, 2) });
 def('newt', { name:'Ember Newt', type:'familiar', cost:5, vp:1, atk:1, def:1, redirect:1, text:'<b>โจมตี:</b> ซ้ายและขวารับคนละ 2<br><b>ป้องกัน:</b> สะท้อนดาเมจกลับ',
   play: async p => { await attack(p, { to:'lr', dmg:2 }); } });
-def('oracle', { name:'Toad Oracle', type:'familiar', cost:3, vp:1, power:1, text:'+1 พลัง ฟื้น 2 HP<br>ทำลายการ์ด 1 ใบได้', play: async p => { heal(p, 2); await destroyOwn(p); } });
+def('oracle', { name:'Toad Oracle', type:'familiar', cost:3, vp:1, power:1, text:'+1 ทอง ฟื้น 2 HP<br>ทำลายการ์ด 1 ใบได้', play: async p => { heal(p, 2); await destroyOwn(p); } });
 def('raven', { name:'Hex Raven', type:'familiar', cost:5, vp:2, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 2 ดาเมจ และได้ Limp Wand',
   play: async p => { await attack(p, { to:'choose', dmg:2, bent:1 }); } });
-def('golem', { name:'Moss Golem', type:'familiar', cost:5, vp:2, power:2, def:1, text:'+2 พลัง<br><b>ป้องกัน:</b> เปิดเพื่อไม่โดนโจมตี ฟื้น 2 HP', onDefend: async t => heal(t, 2) });
+def('golem', { name:'Moss Golem', type:'familiar', cost:5, vp:2, power:2, def:1, text:'+2 ทอง<br><b>ป้องกัน:</b> เปิดเพื่อไม่โดนโจมตี ฟื้น 2 HP', onDefend: async t => heal(t, 2) });
 def('sprite', { name:'Spore Sprite', type:'familiar', cost:4, vp:1, draws:1, text:'ทำลายการ์ด 1 ใบได้<br>จั่ว 1', play: async p => { await destroyOwn(p); await draw(p, 1); } });
 /* ---- Familiars (2026-10-09 batch) ---- */
 // most of them share one defence: discard to dodge, draw 1, and bounce the attack back
@@ -1968,32 +1981,32 @@ const inPlay = p => [...p.ongoing, ...(p === cur() && G.turn ? G.turn.played : [
 const DODGE_DRAW = n => ({ def:1, defDiscard:1, onDefend: async t => draw(t, n) });
 
 fam('goldyfam', { name:'Shiny!', power:3, ...REFLECT,
-  text:`+3 พลัง ถ้ามีสมบัติในกองทิ้ง 3 ใบขึ้นไป +3 พลังเพิ่ม<br>${REFLECT_TXT}`,
+  text:`+3 ทอง ถ้ามีสมบัติในกองทิ้ง 3 ใบขึ้นไป +3 ทองเพิ่ม<br>${REFLECT_TXT}`,
   play: async p => { if (p.discard.filter(c => isType(c, 'treasure')).length >= 3) P(p, 3); } });
 fam('hairy', { name:'Fuzzles the Cosmic Furball', power:2, atk:1, ...REFLECT,
-  text:`+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 7 ดาเมจ<br>${REFLECT_TXT}`,
+  text:`+2 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 7 ดาเมจ<br>${REFLECT_TXT}`,
   play: async p => { await attack(p, { to:'choose', dmg:7 }); } });
 fam('hocusporkus', { name:'Abracadabra Piglet', draws:1, ...REFLECT,
   text:`จั่ว 2 ใบ แล้วฟื้น HP เท่ากับราคารวมของ 2 ใบนั้น<br>${REFLECT_TXT}`,
   play: async p => { const b = p.hand.length; await draw(p, 2); const n = p.hand.slice(b).reduce((s, c) => s + (c.cost || 0), 0); if (n) heal(p, n); } });
 fam('hank', { name:'Rowdy Rick, Party Imp', ...REFLECT,
-  text:'+2 พลัง ต่อ Dead Wizard Token แต่ละอันของคุณ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ สะท้อนการโจมตีกลับ และผู้โจมตีรับเพิ่มอีก 4 ดาเมจ',
+  text:'+2 ทอง ต่อ Dead Wizard Token แต่ละอันของคุณ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ สะท้อนการโจมตีกลับ และผู้โจมตีรับเพิ่มอีก 4 ดาเมจ',
   play: async p => { if (tokenCount(p)) P(p, 2 * tokenCount(p)); },
   onDefend: async (t, src) => { await draw(t, 1); if (src) await damage(src, 4, t); } });
 fam('hugchuck', { name:'Haggis Hugger', power:2, atk:1, ...REFLECT,
-  text:`+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ ต่อพ่อมดแต่ละใบที่คุณควบคุมและในกองทิ้งของคุณ<br>${REFLECT_TXT}`,
+  text:`+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ ต่อพ่อมดแต่ละใบที่คุณควบคุมและในกองทิ้งของคุณ<br>${REFLECT_TXT}`,
   play: async p => { const n = [...inPlay(p), ...p.discard].filter(c => isType(c, 'wizard')).length; if (n) await attack(p, { to:'each', dmg: 2 * n }); else log('ไม่มีพ่อมด · Hugchuck ไม่โจมตี'); } });
 fam('kids', { name:'Brats!', power:2, endBottom:1, def:1, defBottom:1, redirect:1, onDefend: async t => draw(t, 1),
-  text:'+2 พลัง ตอนจบเทิร์น ใบนี้ไปอยู่ใต้เด็คของคุณ (ไม่ลงกองทิ้ง)<br><b>ป้องกัน:</b> วางใบนี้ใต้เด็คเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วสะท้อนการโจมตีกลับ' });
+  text:'+2 ทอง ตอนจบเทิร์น ใบนี้ไปอยู่ใต้เด็คของคุณ (ไม่ลงกองทิ้ง)<br><b>ป้องกัน:</b> วางใบนี้ใต้เด็คเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วสะท้อนการโจมตีกลับ' });
 fam('squeakers', { name:'Sir Nibbles, Esquire', power:2, atk:1, ...REFLECT,
-  text:`+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ ต่อสัตว์อสูรแต่ละใบที่คุณควบคุมและในกองทิ้งของคุณ<br>${REFLECT_TXT}`,
+  text:`+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ ต่อสัตว์อสูรแต่ละใบที่คุณควบคุมและในกองทิ้งของคุณ<br>${REFLECT_TXT}`,
   play: async p => { const n = [...inPlay(p), ...p.discard].filter(c => isType(c, 'creature')).length; if (n) await attack(p, { to:'each', dmg: 2 * n }); else log('ไม่มีสัตว์อสูร · Squeakers ไม่โจมตี'); } });
 fam('poof', { name:'Puff the Rainbow Cloud', power:2, atk:1, def:1, defDiscard:1,
-  text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนได้ Limp Wand คนละ 1 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ และผู้โจมตีได้ Limp Wand 1 ใบ',
+  text:'+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนได้ Limp Wand คนละ 1 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ และผู้โจมตีได้ Limp Wand 1 ใบ',
   play: async p => { await attack(p, { to:'each', bent:1 }); },
   onDefend: async (t, src) => { await draw(t, 1); if (src) gainBent(src); } });
 fam('stinkus', { name:'Saint Pongo', power:3, ...REFLECT,
-  text:'+3 พลัง เลือกทำลายการ์ด 1 ใบใน Line-Up แล้วเปิดใบใหม่มาแทนได้<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ สะท้อนการโจมตีกลับ และทำลายการ์ดในมือ 1 ใบได้',
+  text:'+3 ทอง เลือกทำลายการ์ด 1 ใบใน Line-Up แล้วเปิดใบใหม่มาแทนได้<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ สะท้อนการโจมตีกลับ และทำลายการ์ดในมือ 1 ใบได้',
   play: async p => {
     const opts = G.lineup.map((c, i) => ({ c, i })).filter(o => o.c);
     if (!opts.length || p.isAI) return; // the AI leaves the Line-Up alone
@@ -2004,10 +2017,10 @@ fam('stinkus', { name:'Saint Pongo', power:3, ...REFLECT,
   },
   onDefend: async t => { await draw(t, 1); await destroyFromHand(t, 1); } });
 fam('phlegm', { name:'Sir Snot the Holy', power:2, ...REFLECT,
-  text:'+2 พลัง ฟื้น 6 HP<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ฟื้น 3 HP แล้วสะท้อนการโจมตีกลับ',
+  text:'+2 ทอง ฟื้น 6 HP<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ฟื้น 3 HP แล้วสะท้อนการโจมตีกลับ',
   play: async p => heal(p, 6), onDefend: async t => { await draw(t, 1); heal(t, 3); } });
 fam('sparky', { name:'Kindle, Page of Flames', power:2, ...REFLECT,
-  text:`+2 พลัง ดูการ์ด 2 ใบบนสุดของเด็คคุณ ทำลายได้ 1 ใบ<br>${REFLECT_TXT}`,
+  text:`+2 ทอง ดูการ์ด 2 ใบบนสุดของเด็คคุณ ทำลายได้ 1 ใบ<br>${REFLECT_TXT}`,
   play: async p => {
     const two = [drawTop(p), drawTop(p)].filter(Boolean);
     if (!two.length) return;
@@ -2017,10 +2030,10 @@ fam('sparky', { name:'Kindle, Page of Flames', power:2, ...REFLECT,
     p.deck.push(...two.filter(x => x !== c).reverse());
   } });
 fam('spoogy', { name:'Squirt the Wizard Squid', power:3, ...REFLECT,
-  text:`+3 พลัง ถ้ามีคาถาในกองทิ้ง 3 ใบขึ้นไป +3 พลังเพิ่ม<br>${REFLECT_TXT}`,
+  text:`+3 ทอง ถ้ามีคาถาในกองทิ้ง 3 ใบขึ้นไป +3 ทองเพิ่ม<br>${REFLECT_TXT}`,
   play: async p => { if (p.discard.filter(c => isType(c, 'spell')).length >= 3) P(p, 3); } });
 fam('dungeonmaster', { name:'The Game Master', power:2, ...REFLECT,
-  text:`+2 พลัง สุ่มหยิบการ์ดโกลาหล 2 ใบจากกองที่ถูกทำลาย เลือกเล่น 1 ใบ (เลือกไม่เข้าร่วมได้)<br>${REFLECT_TXT}`,
+  text:`+2 ทอง สุ่มหยิบการ์ดโกลาหล 2 ใบจากกองที่ถูกทำลาย เลือกเล่น 1 ใบ (เลือกไม่เข้าร่วมได้)<br>${REFLECT_TXT}`,
   play: async p => {
     const two = shuffle(G.destroyed.filter(c => c.type === 'chaos').slice()).slice(0, 2);
     if (!two.length) { log('ยังไม่มีการ์ดโกลาหลในกองที่ถูกทำลาย'); return; }
@@ -2031,10 +2044,10 @@ fam('dungeonmaster', { name:'The Game Master', power:2, ...REFLECT,
     finally { G.optOut = null; G.chaosShown = null; render(); }
   } });
 fam('juice', { name:'The Smoothie', power:2, atk:1, ...REFLECT,
-  text:`+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 7 ดาเมจ ลดลง 2 ต่อ Dead Wizard Token ของคนนั้น<br>${REFLECT_TXT}`,
+  text:`+2 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 7 ดาเมจ ลดลง 2 ต่อ Dead Wizard Token ของคนนั้น<br>${REFLECT_TXT}`,
   play: async p => { await attack(p, { to:'each', dmgText:'7 ดาเมจ ลด 2 ต่อ Dead Wizard Token ของคุณ', dmg: t => Math.max(0, 7 - 2 * tokenCount(t)) }); } });
 fam('lastlaugh', { name:'The Final Chuckle', power:2, def:1, defDiscard:1,
-  text:'+2 พลัง นำการ์ดจากกองทิ้งไปวางใต้เด็คได้สูงสุด 2 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าคุณมี 5 HP หรือน้อยกว่า สลับ HP กับผู้โจมตีได้',
+  text:'+2 ทอง นำการ์ดจากกองทิ้งไปวางใต้เด็คได้สูงสุด 2 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าคุณมี 5 HP หรือน้อยกว่า สลับ HP กับผู้โจมตีได้',
   play: async p => {
     for (let k = 0; k < 2 && p.discard.length; k++) {
       const c = p.isAI ? p.discard.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
@@ -2051,10 +2064,10 @@ fam('lastlaugh', { name:'The Final Chuckle', power:2, def:1, defDiscard:1,
   } });
 
 fam('buzzy', { name:'Rumble the Chainsaw', power:3, ...REFLECT,
-  text:`+3 พลัง การโจมตีครั้งถัดไปที่คุณเล่นในเทิร์นนี้ป้องกันไม่ได้<br>${REFLECT_TXT}`,
+  text:`+3 ทอง การโจมตีครั้งถัดไปที่คุณเล่นในเทิร์นนี้ป้องกันไม่ได้<br>${REFLECT_TXT}`,
   play: async p => { G.turn.nextUnblockable = true; } });
 fam('candy', { name:'Sugar Rush Soldiers', power:3, atk:1, def:1, defDiscard:1,
-  text:'+3 พลัง<br><b>โจมตี:</b> HP ของพ่อมดทุกคน (รวมคุณ) กลายเป็น 10<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าคุณมี 10 HP หรือน้อยกว่า ตั้ง HP ตัวเองเป็น 20 ได้',
+  text:'+3 ทอง<br><b>โจมตี:</b> HP ของพ่อมดทุกคน (รวมคุณ) กลายเป็น 10<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าคุณมี 10 HP หรือน้อยกว่า ตั้ง HP ตัวเองเป็น 20 ได้',
   play: async p => {
     p.hp = 10; log(`${p.name} HP เป็น 10`);
     await attack(p, { to:'each', dmgText:'HP ของคุณกลายเป็น 10', dmg: t => { t.hp = 10; t.hitFlash = true; log(`${t.name} HP เป็น 10`); render(); return 0; } });
@@ -2070,14 +2083,14 @@ fam('cosmo', { name:'Comet of Every Kind', allTypes:1, draws:1, ...REFLECT,
   play: async p => draw(p, 2) });
 fam('suitors', { name:'Spare Boyfriends', power:2, draws:1, def:1,
   aiDefOk: t => t.hand.length > 1,
-  text:'+2 พลัง จั่ว 1<br><b>ป้องกัน:</b> เปิดใบนี้ให้ดู แล้วทิ้งการ์ดใบอื่นในมือแบบสุ่ม 1 ใบ เพื่อไม่โดนการโจมตี (ใบนี้อยู่ในมือต่อ)',
+  text:'+2 ทอง จั่ว 1<br><b>ป้องกัน:</b> เปิดใบนี้ให้ดู แล้วทิ้งการ์ดใบอื่นในมือแบบสุ่ม 1 ใบ เพื่อไม่โดนการโจมตี (ใบนี้อยู่ในมือต่อ)',
   play: async p => draw(p, 1),
   onDefend: async (t, src, self) => { const others = t.hand.filter(c => c !== self); if (!others.length) return;
     const c = others[rnd(others.length)]; t.hand.splice(t.hand.indexOf(c), 1); t.discard.push(c); log(`${t.name} ทิ้ง ${c.name} (สุ่ม)`); } });
 fam('dogo', { name:'Doggo the Gloomy', power:3, ...DODGE_DRAW(1),
-  text:'ขณะที่ใบนี้อยู่ในกองทิ้งของคุณ ทุกครั้งที่คุณได้ Dead Wizard Token ยกเลิกผลทันทีของ Token นั้น (ผลต่อเนื่องยังอยู่)<br>+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ' });
+  text:'ขณะที่ใบนี้อยู่ในกองทิ้งของคุณ ทุกครั้งที่คุณได้ Dead Wizard Token ยกเลิกผลทันทีของ Token นั้น (ผลต่อเนื่องยังอยู่)<br>+3 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ' });
 fam('dukefreak', { name:'Baron Freakshow, Esquire', power:3, def:1, defDiscard:1, defDraw:1,
-  text:'+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วดูการ์ดใบบนสุดของกองหลัก ถ้าไม่ใช่โกลาหล นำขึ้นมือได้',
+  text:'+3 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วดูการ์ดใบบนสุดของกองหลัก ถ้าไม่ใช่โกลาหล นำขึ้นมือได้',
   onDefend: async t => {
     const c = G.main[G.main.length - 1];
     if (!c || c.type === 'chaos') { if (c) log(`${t.name} เห็น ${c.name} บนกองหลัก · เป็นโกลาหล`); return; }
@@ -2087,11 +2100,11 @@ fam('dukefreak', { name:'Baron Freakshow, Esquire', power:3, def:1, defDiscard:1
   } });
 fam('gimby', { name:'Grub the Goblin Butler', power:5, def:1,
   aiDefOk: (t, src, spec) => t.hp > 6 && (typeof spec.dmg !== 'number' || spec.dmg > 6), // only when the hit is worse than 6
-  text:'+5 พลัง แล้วคุณรับ 6 ดาเมจ<br><b>ป้องกัน:</b> เปิดใบนี้ให้ดูแล้วรับ 6 ดาเมจ เพื่อไม่โดนการโจมตี (ใบนี้อยู่ในมือต่อ)',
+  text:'+5 ทอง แล้วคุณรับ 6 ดาเมจ<br><b>ป้องกัน:</b> เปิดใบนี้ให้ดูแล้วรับ 6 ดาเมจ เพื่อไม่โดนการโจมตี (ใบนี้อยู่ในมือต่อ)',
   play: async p => { await damage(p, 6, null); },
   onDefend: async t => { await damage(t, 6, null); } });
 fam('hando', { name:'Gimme the Living Glove', power:3, atk:1, def:1, defDiscard:1,
-  text:'+3 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนทิ้งการ์ดชื่อ “Wand” ในมือ แล้วคุณเลือกเล่น Wand ที่ถูกทิ้งได้ทุกใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าการโจมตีนั้นมาจาก Wand ใช้การโจมตีของ Wand นั้นเล็งใครก็ได้',
+  text:'+3 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนทิ้งการ์ดชื่อ “Wand” ในมือ แล้วคุณเลือกเล่น Wand ที่ถูกทิ้งได้ทุกใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าการโจมตีนั้นมาจาก Wand ใช้การโจมตีของ Wand นั้นเล็งใครก็ได้',
   play: async p => {
     const got = [];
     await attack(p, { to:'each', dmgText:'ทิ้งการ์ดชื่อ Wand ทุกใบในมือ', dmg: t => {
@@ -2113,7 +2126,7 @@ fam('yore', { name:'Tales of Olden Days', draws:1, ...DODGE_DRAW(2),
   text:'จั่ว 1 ใบ เทิร์นนี้ตำนานราคาถูกลง 2<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 2 ใบ',
   play: async p => { await draw(p, 1); G.turn.legendDiscount = (G.turn.legendDiscount || 0) + 2; } });
 fam('leviathan', { name:'Kraken Egg', power:3, def:1, defDiscard:1,
-  text:'ถ้าใบนี้เข้ามือคนที่ไม่ใช่เจ้าของ คนนั้นเสีย 20 HP ทันที แล้วใบนี้สับกลับเข้าเด็คของเจ้าของ<br>+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนการโจมตี วางใบนี้ในกองทิ้งของผู้โจมตีได้ แล้วจั่ว 3 ใบ',
+  text:'ถ้าใบนี้เข้ามือคนที่ไม่ใช่เจ้าของ คนนั้นเสีย 20 HP ทันที แล้วใบนี้สับกลับเข้าเด็คของเจ้าของ<br>+3 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้เพื่อไม่โดนการโจมตี วางใบนี้ในกองทิ้งของผู้โจมตีได้ แล้วจั่ว 3 ใบ',
   onDefend: async (t, src, self) => {
     if (src && (t.isAI || await humanChoose(t, `Kraken Egg: วางใบนี้ในกองทิ้งของ ${src.name}?`, [{ label: 'วาง', value: true }, { label: 'ไม่', value: false, ghost: true }]))) {
       t.discard.splice(t.discard.indexOf(self), 1); src.discard.push(self); log(`${t.name} ฝาก Kraken Egg ไว้ในกองทิ้งของ ${src.name}...`, 'sys');
@@ -2121,27 +2134,27 @@ fam('leviathan', { name:'Kraken Egg', power:3, def:1, defDiscard:1,
     await draw(t, 3);
   } });
 fam('nil', { name:'Null, Hungry God of the Void', vp:4, power:7, def:1, defBottom:1, redirect:1, redirectTimes:2,
-  text:'+7 พลัง<br><b>ป้องกัน:</b> วางใบนี้ใต้เด็คเพื่อไม่โดนการโจมตี จั่ว 2 ใบ แล้วสะท้อนการโจมตีกลับไปหาผู้โจมตี 2 ครั้ง',
+  text:'+7 ทอง<br><b>ป้องกัน:</b> วางใบนี้ใต้เด็คเพื่อไม่โดนการโจมตี จั่ว 2 ใบ แล้วสะท้อนการโจมตีกลับไปหาผู้โจมตี 2 ครั้ง',
   onDefend: async t => draw(t, 2) });
 fam('palcenta', { name:'Snack-Sack! Your Lunch Buddy', def:1, defDiscard:1,
-  text:'สุ่มการ์ด 1 ใบในกองทิ้ง ทำลายใบนั้นเพื่อรับพลัง 2 เท่าของราคาได้ ถ้าไม่ทำลาย +3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วฟื้น HP เท่ากับดาเมจที่จะโดน',
+  text:'สุ่มการ์ด 1 ใบในกองทิ้ง ทำลายใบนั้นเพื่อรับทอง 2 เท่าของราคาได้ ถ้าไม่ทำลาย +3 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วฟื้น HP เท่ากับดาเมจที่จะโดน',
   play: async p => {
     if (!p.discard.length) { P(p, 3); return; }
     const c = p.discard[rnd(p.discard.length)], gain = 2 * (c.cost || 0);
     const yes = p.isAI ? gain > 3 && (vpOf(c, p) <= 1 || gain >= 10)
-      : await humanChoose(p, `Pal-Centa: สุ่มได้ ${c.name}`, [{ label: `ทำลาย รับ +${gain} พลัง`, value: true }, { label: 'ไม่ทำลาย รับ +3 พลัง', value: false, ghost: true }], cardHTML(c, { small: true }));
-    if (yes) { p.discard.splice(p.discard.indexOf(c), 1); G.destroyed.push(c); P(p, gain); log(`${p.name} ทำลาย ${c.name} ได้ +${gain} พลัง`); }
+      : await humanChoose(p, `Pal-Centa: สุ่มได้ ${c.name}`, [{ label: `ทำลาย รับ +${gain} ทอง`, value: true }, { label: 'ไม่ทำลาย รับ +3 ทอง', value: false, ghost: true }], cardHTML(c, { small: true }));
+    if (yes) { p.discard.splice(p.discard.indexOf(c), 1); G.destroyed.push(c); P(p, gain); log(`${p.name} ทำลาย ${c.name} ได้ +${gain} ทอง`); }
     else P(p, 3);
   },
   onDefend: async (t, src, self, spec) => { await draw(t, 1); if (spec && typeof spec.dmg === 'number' && spec.dmg) heal(t, spec.dmg); } });
 fam('pussy', { name:'Kitty the Henpecked', def:1, defDiscard:1, defDraw:1,
-  text:'ศัตรูแต่ละคนเลือกส่งการ์ด 1 ใบเข้ามือคุณได้ (ไม่บังคับ) · +3 พลัง ต่อการ์ดที่ได้รับ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วทำลายการ์ดในมือหรือกองทิ้ง 2 ใบพอดี',
+  text:'ศัตรูแต่ละคนเลือกส่งการ์ด 1 ใบเข้ามือคุณได้ (ไม่บังคับ) · +3 ทอง ต่อการ์ดที่ได้รับ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วทำลายการ์ดในมือหรือกองทิ้ง 2 ใบพอดี',
   play: async p => {
     let n = 0;
     for (const t of turnOrder().filter(x => x !== p)) {
       if (!t.hand.length) continue;
       const c = t.isAI ? (t.hand.find(x => x.id === 'bent') || t.hand.find(x => x.id === 'fizzle') || null)
-        : await humanChoose(t, `Kitty the Henpecked: ส่งการ์ดให้ ${p.name}? (เขาได้ +3 พลัง)`, [...t.hand.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }]);
+        : await humanChoose(t, `Kitty the Henpecked: ส่งการ์ดให้ ${p.name}? (เขาได้ +3 ทอง)`, [...t.hand.map(x => ({ card: x, value: x })), { label: 'ไม่ส่ง', value: null, ghost: true }]);
       if (!c) continue;
       t.hand.splice(t.hand.indexOf(c), 1); await toHand(p, c); n++; log(`${t.name} ส่ง ${c.name} ให้ ${p.name}`);
     }
@@ -2156,7 +2169,7 @@ fam('pussy', { name:'Kitty the Henpecked', def:1, defDiscard:1, defDraw:1,
     }
   } });
 fam('ramon', { name:'Mortimer Mold, the Bookmite', draws:1, def:1, defDiscard:1,
-  text:'จั่ว 1 ใบ +1 พลัง ต่อ Dead Wizard Token แต่ละอันของคุณ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วแลก Dead Wizard Token 1 อันกับผู้โจมตีได้ (ทั้งสอง Token ทำงาน)',
+  text:'จั่ว 1 ใบ +1 ทอง ต่อ Dead Wizard Token แต่ละอันของคุณ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วแลก Dead Wizard Token 1 อันกับผู้โจมตีได้ (ทั้งสอง Token ทำงาน)',
   play: async p => { await draw(p, 1); if (tokenCount(p)) P(p, tokenCount(p)); },
   onDefend: async (t, src) => {
     await draw(t, 1);
@@ -2169,7 +2182,7 @@ fam('ramon', { name:'Mortimer Mold, the Bookmite', draws:1, def:1, defDiscard:1,
     if (theirs.now) await theirs.now(t, null); if (mine.now) await mine.now(src, null);
   } });
 fam('spellboy', { name:'Spellkid', power:3, def:1, defDiscard:1, defDraw:1,
-  text:'+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วนำการ์ดชื่อ “Wand” ทุกใบในกองทิ้งขึ้นมือได้',
+  text:'+3 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วนำการ์ดชื่อ “Wand” ทุกใบในกองทิ้งขึ้นมือได้',
   onDefend: async t => {
     const w = t.discard.filter(isWand); if (!w.length) return;
     const yes = t.isAI ? w.filter(c => c.id !== 'bent').length > w.filter(c => c.id === 'bent').length
@@ -2177,10 +2190,10 @@ fam('spellboy', { name:'Spellkid', power:3, def:1, defDiscard:1, defDraw:1,
     if (yes) { t.discard = t.discard.filter(c => !w.includes(c)); for (const c of w) await toHand(t, c); log(`${t.name} นำ Wand ${w.length} ใบขึ้นมือ`); }
   } });
 fam('spoiledmilk', { name:'Sour Milk and the Brat Pack', power:3, atk:1, ...REFLECT,
-  text:`+3 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือก ตอนจบเทิร์นถัดไปของเขาจั่วน้อยลง 1 ใบ<br>${REFLECT_TXT}`,
+  text:`+3 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือก ตอนจบเทิร์นถัดไปของเขาจั่วน้อยลง 1 ใบ<br>${REFLECT_TXT}`,
   play: async p => { await attack(p, { to:'choose', dmgText:'จบเทิร์นถัดไปจั่วน้อยลง 1 ใบ', dmg: t => { t.drawPenalty = (t.drawPenalty || 0) + 1; log(`${t.name} จะจั่วน้อยลง 1 ใบ`); return 0; } }); } });
 fam('breakfast', { name:'The Balanced Breakfast', power:3, def:1, defDiscard:1,
-  text:'+3 พลัง ศัตรูที่เลือกทิ้งการ์ดในมือแบบสุ่ม 1 ใบ (ไม่ใช่การโจมตี · ป้องกันไม่ได้)<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ และผู้โจมตีรับ 6 ดาเมจ',
+  text:'+3 ทอง ศัตรูที่เลือกทิ้งการ์ดในมือแบบสุ่ม 1 ใบ (ไม่ใช่การโจมตี · ป้องกันไม่ได้)<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ และผู้โจมตีรับ 6 ดาเมจ',
   play: async p => { const t = await pickTarget(p, opps(p), { label:'The Balanced Breakfast: เลือกศัตรู' });
     if (t.hand.length) { const c = t.hand.splice(rnd(t.hand.length), 1)[0]; t.discard.push(c); log(`${t.name} ทิ้ง ${c.name} (สุ่ม)`); } },
   onDefend: async (t, src) => { await draw(t, 1); if (src) await damage(src, 6, t); } });
@@ -2197,10 +2210,10 @@ fam('scaredstiff', { name:'The Petrified Social Club', alsoType:'location', ongo
     if (yes) { log(`${t.name} ใช้ผล “${k.name}” กับ ${src.name}`, 'sys'); await k.now(src, null); }
   } });
 fam('skeeve', { name:'The Sleazy Jester', power:3, atk:1, ...REFLECT,
-  text:`+3 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกได้ Limp Wand 1 ใบ<br>${REFLECT_TXT}`,
+  text:`+3 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกได้ Limp Wand 1 ใบ<br>${REFLECT_TXT}`,
   play: async p => { await attack(p, { to:'choose', bent:1 }); } });
 fam('turdlings', { name:'The Stinklings', power:1, def:1, defDiscard:1, defDraw:1,
-  text:'+1 พลัง ทำลายการ์ดในมือที่ราคา 1 ขึ้นไปได้ 1 ใบ ถ้าทำ ได้การ์ด 1 ใบจาก Line-Up วางบนสุดของเด็ค<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วส่งการ์ด 1 ใบจากมือหรือกองทิ้งไปที่มือของผู้โจมตีได้',
+  text:'+1 ทอง ทำลายการ์ดในมือที่ราคา 1 ขึ้นไปได้ 1 ใบ ถ้าทำ ได้การ์ด 1 ใบจาก Line-Up วางบนสุดของเด็ค<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ แล้วส่งการ์ด 1 ใบจากมือหรือกองทิ้งไปที่มือของผู้โจมตีได้',
   play: async p => {
     const pool = p.hand.filter(c => (c.cost || 0) >= 1), line = G.lineup.map((c, i) => ({ c, i })).filter(o => o.c);
     if (!pool.length || !line.length) return;
@@ -2221,7 +2234,7 @@ fam('turdlings', { name:'The Stinklings', power:1, def:1, defDiscard:1, defDraw:
     const pile = t.hand.includes(c) ? t.hand : t.discard; pile.splice(pile.indexOf(c), 1); await toHand(src, c); log(`${t.name} ยัด ${c.name} ใส่มือ ${src.name}`);
   } });
 fam('tiny', { name:'Teeny, the Pocket Wizard', power:2, def:1, defDiscard:1, defDraw:1,
-  text:'+2 พลัง นำคาถา 1 ใบจากกองทิ้งไปวางบนสุดของเด็คได้<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าผู้โจมตี HP มากกว่าคุณ เขาลด HP ลงให้เท่ากับคุณ',
+  text:'+2 ทอง นำคาถา 1 ใบจากกองทิ้งไปวางบนสุดของเด็คได้<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าผู้โจมตี HP มากกว่าคุณ เขาลด HP ลงให้เท่ากับคุณ',
   play: async p => {
     const sp = p.discard.filter(c => isType(c, 'spell')); if (!sp.length) return;
     const c = p.isAI ? sp.slice().sort((a, b) => aiVal(b) - aiVal(a))[0]
@@ -2230,7 +2243,7 @@ fam('tiny', { name:'Teeny, the Pocket Wizard', power:2, def:1, defDiscard:1, def
   },
   onDefend: async (t, src) => { if (src && src.hp > t.hp) { log(`${src.name} HP ลดเหลือ ${t.hp} (Tiny)`, 'dmg'); src.hp = t.hp; src.hitFlash = true; render(); } } });
 fam('tombofnil', { name:'Crypt of Null', power:3, def:1, defDiscard:1,
-  text:'+3 พลัง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าการโจมตีนั้นคือ Wand ที่คุณยิงใส่ตัวเอง ทำลายใบนี้แล้วรับ Null, Hungry God of the Void',
+  text:'+3 ทอง<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าการโจมตีนั้นคือ Wand ที่คุณยิงใส่ตัวเอง ทำลายใบนี้แล้วรับ Null, Hungry God of the Void',
   onDefend: async (t, src, self) => {
     await draw(t, 1);
     const ao = G.attackOnly;
@@ -2240,11 +2253,11 @@ fam('tombofnil', { name:'Crypt of Null', power:3, def:1, defDiscard:1,
     log(`${t.name} ปลุก Null, Hungry God of the Void!`, 'sys');
   } });
 fam('weeby', { name:'Anime Fanboy', power:3, atk:1, ...DODGE_DRAW(1),
-  text:'+3 พลัง ถ้าคุณควบคุมตำนานอยู่ <b>โจมตี:</b> ศัตรูทุกคนรับ 8 ดาเมจ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ',
+  text:'+3 ทอง ถ้าคุณควบคุมตำนานอยู่ <b>โจมตี:</b> ศัตรูทุกคนรับ 8 ดาเมจ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วจั่ว 1 ใบ',
   play: async p => { if (inPlay(p).some(c => c.type === 'legend')) await attack(p, { to:'each', dmg:8 }); else log('ไม่ได้ควบคุมตำนาน · Weeby ไม่โจมตี'); } });
 fam('wolfeye', { name:'Eye of the Moonwolf', power:3, def:1, defDiscard:1,
-  text:'+3 พลัง ถ้าเป็นการ์ดใบแรกที่คุณเล่นในเทิร์นนี้ ทิ้งการ์ดในมือทั้งหมด แล้ว +4 พลังเพิ่ม<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วเลือกทิ้งการ์ดในมือทั้งหมดและจั่วใหม่ 5 ใบได้',
-  play: async p => { if (G.turn.shown.length !== 1) return; const n = p.hand.length; p.discard.push(...p.hand); p.hand = []; P(p, 4); log(`${p.name} ทิ้งการ์ดในมือ ${n} ใบ · +4 พลัง`); },
+  text:'+3 ทอง ถ้าเป็นการ์ดใบแรกที่คุณเล่นในเทิร์นนี้ ทิ้งการ์ดในมือทั้งหมด แล้ว +4 ทองเพิ่ม<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี แล้วเลือกทิ้งการ์ดในมือทั้งหมดและจั่วใหม่ 5 ใบได้',
+  play: async p => { if (G.turn.shown.length !== 1) return; const n = p.hand.length; p.discard.push(...p.hand); p.hand = []; P(p, 4); log(`${p.name} ทิ้งการ์ดในมือ ${n} ใบ · +4 ทอง`); },
   onDefend: async t => {
     const weak = t.hand.filter(c => aiVal(c) <= 0).length;
     const yes = t.isAI ? weak * 2 >= t.hand.length : await humanChoose(t, 'Wolf Eye: ทิ้งทั้งมือแล้วจั่ว 5?', [{ label: 'ทิ้งแล้วจั่ว 5', value: true }, { label: 'ไม่', value: false, ghost: true }]);
@@ -2283,7 +2296,7 @@ fam('treats', { name:'Trick-or-Treat Terror', atk:1, ...REFLECT,
     } });
   } });
 
-def('eel', { name:'Void Eel', type:'familiar', cost:6, vp:2, power:1, atk:1, def:1, redirect:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 3<br><b>ป้องกัน:</b> สะท้อนดาเมจกลับ',
+def('eel', { name:'Void Eel', type:'familiar', cost:6, vp:2, power:1, atk:1, def:1, redirect:1, text:'+1 ทอง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 3<br><b>ป้องกัน:</b> สะท้อนดาเมจกลับ',
   play: async p => { await attack(p, { to:'choose', dmg:3 }); } });
 
 const MAIN = { fireball:4, lightning:2, meteor:2, rot:3, leech:2, torrent:5, chain:3, siphon:2, purge:3, grabo:2, dragonwhored:2, luckyday:2, sinfection:2, megafisting:2, mistme:2, goregasm:2, stoverheated:2, vomitcomet:2, wizardbabies:1, annihilaggedon:1, lowfive:2, wizardwaste:2, wolfcookie:2, hocus:2, poopal:2, summontrash:2, brainystorm:2, dontgive:2, lamps:2, winmore:2, friendality:1, scry:3, doom:1, vortex:2, ward:3,
@@ -2308,10 +2321,10 @@ const TRAITS = [
     activate: async p => { await loseHP(p, 4); await draw(p, 1); } },
   { id:'creatureHeal', name:'พลังชีวิตสัตว์อสูร', text:'ทุกครั้งที่คุณลงสัตว์อสูรในเทิร์นคุณ ฟื้น HP เท่ากับ VP ของใบนั้น',
     onCardPlayed: async (p, c) => { if (isType(c, 'creature')) { const n = vpOf(c, p); if (n > 0) heal(p, n); } } },
-  { id:'variety', name:'ครบเครื่อง', text:'ถ้าเทิร์นนี้คุณลงการ์ดต่างประเภทกันครบ 4 ประเภทขึ้นไป +1 พลัง และจั่ว 1 ใบ (เทิร์นละครั้ง)',
+  { id:'variety', name:'ครบเครื่อง', text:'ถ้าเทิร์นนี้คุณลงการ์ดต่างประเภทกันครบ 4 ประเภทขึ้นไป +1 ทอง และจั่ว 1 ใบ (เทิร์นละครั้ง)',
     onCardPlayed: async p => {
       if (G.turn.varietyDone || TRAIT_TYPES.filter(t => G.turn.types[t]).length < 4) return;
-      G.turn.varietyDone = true; P(p, 1); await draw(p, 1); log(`${p.name} ลงการ์ดครบ 4 ประเภท: +1 พลัง จั่ว 1`, 'good');
+      G.turn.varietyDone = true; P(p, 1); await draw(p, 1); log(`${p.name} ลงการ์ดครบ 4 ประเภท: +1 ทอง จั่ว 1`, 'good');
     } },
   { id:'cheapTop', name:'ของถูกขึ้นเด็ค', text:'การ์ดราคา 4 หรือต่ำกว่าที่ซื้อหรือได้จาก Line-Up ไปวางบนสุดของเด็คแทนกองทิ้ง (บังคับ)' },
   { id:'spellPeek', name:'ตาทิพย์', text:'ทุกครั้งที่คุณลงคาถาในเทิร์นคุณ ดูการ์ดใบบนสุดของเด็ค แล้วเลือกทิ้งได้',
@@ -2321,11 +2334,11 @@ const TRAITS = [
       const yes = p.isAI ? isJunk(p)(top) : await humanChoose(p, `ตาทิพย์: ทิ้ง ${top.name}?`, [{ label: 'ทิ้ง', value: true }, { label: 'เก็บไว้บนเด็ค', value: false, ghost: true }], cardHTML(top, { small: true }));
       if (yes) { p.discard.push(top); log(`${p.name} ทิ้ง ${top.name} จากบนเด็ค`); } else p.deck.push(top);
     } },
-  { id:'pairs', name:'คู่หู', text:'ถ้าเทิร์นนี้ลงพ่อมดต่างชื่อกัน 2 ใบขึ้นไป +2 พลัง · ถ้าลงสัตว์อสูรต่างชื่อกัน 2 ใบขึ้นไป +2 พลัง (ได้ทั้งสองอย่าง)',
+  { id:'pairs', name:'คู่หู', text:'ถ้าเทิร์นนี้ลงพ่อมดต่างชื่อกัน 2 ใบขึ้นไป +2 ทอง · ถ้าลงสัตว์อสูรต่างชื่อกัน 2 ใบขึ้นไป +2 ทอง (ได้ทั้งสองอย่าง)',
     onCardPlayed: async p => {
       for (const ty of ['wizard', 'creature']) {
         const names = new Set(G.turn.shown.filter(c => isType(c, ty)).map(c => c.name));
-        if (names.size >= 2 && !(G.turn.pairsDone ||= {})[ty]) { G.turn.pairsDone[ty] = true; P(p, 2); log(`${p.name} คู่หู${ty === 'wizard' ? 'พ่อมด' : 'สัตว์อสูร'}: +2 พลัง`, 'good'); }
+        if (names.size >= 2 && !(G.turn.pairsDone ||= {})[ty]) { G.turn.pairsDone[ty] = true; P(p, 2); log(`${p.name} คู่หู${ty === 'wizard' ? 'พ่อมด' : 'สัตว์อสูร'}: +2 ทอง`, 'good'); }
       }
     } },
   { id:'wizardDraw', name:'รับสมัครพ่อมด', text:'ตอนจบเทิร์น จั่วเพิ่ม 1 ใบ ต่อพ่อมดที่ซื้อหรือได้มาในเทิร์นนี้' },
@@ -3156,7 +3169,7 @@ async function attack(src, spec) {
   }
   // The Whirlpool of Total Nonsense: the first attack each turn that deals damage gives that much power
   if (src && src === cur() && dealtTotal && !G.turn.vortexUsed && src.ongoing.some(c => c.id === 'vortexfuckery')) {
-    G.turn.vortexUsed = true; P(src, dealtTotal); log(`The Vortex: ${src.name} +${dealtTotal} พลัง`, 'sys');
+    G.turn.vortexUsed = true; P(src, dealtTotal); log(`The Vortex: ${src.name} +${dealtTotal} ทอง`, 'sys');
   }
   return kills;
 }
@@ -3467,7 +3480,7 @@ async function startTurn(p) {
       await damage(t, 1, p);
     }
   }
-  if (hasTrait(p, 'coin') && p.hand.some(c => c.type === 'treasure')) { P(p, 1); log(`${p.name} (Coin Witch) +1 พลัง`); }
+  if (hasTrait(p, 'coin') && p.hand.some(c => c.type === 'treasure')) { P(p, 1); log(`${p.name} (Coin Witch) +1 ทอง`); }
   render();
 }
 
@@ -3708,7 +3721,7 @@ const RULES_HTML = `<div class="rules rg">
 <div class="rg-tiles">
   <div class="rg-tile"><div class="rg-num">10</div><div class="rg-lbl">ใบในเด็คเริ่มต้น</div>
     <div class="rg-bar"><i style="flex:6;background:var(--t-starter)">Rune ×6</i><i style="flex:1;background:var(--t-spell)">W</i><i style="flex:3;background:#4a4048">Fizzle ×3</i></div>
-    <div class="rg-small">Rune +1 พลัง · Wand +1 พลัง โจมตี 1 · Fizzle ไม่มีผล</div></div>
+    <div class="rg-small">Rune +1 ทอง · Wand +1 ทอง โจมตี 1 · Fizzle ไม่มีผล</div></div>
   <div class="rg-tile"><div class="rg-num" style="color:var(--hp)">20</div><div class="rg-lbl">HP เริ่มต้น</div><div class="rg-small">ฟื้นได้สูงสุด 25</div></div>
   <div class="rg-tile"><div class="rg-num">5</div><div class="rg-lbl">ใบในมือ</div><div class="rg-small">จั่วใหม่ 5 ใบทุกจบเทิร์น</div></div>
   <div class="rg-tile"><div class="rg-num" style="color:var(--t-familiar)">1/2</div><div class="rg-lbl">เลือกสัตว์รับใช้</div><div class="rg-small">ซื้อได้เฉพาะคุณ · ได้ความสามารถพ่อมดแบบสุ่ม 1 อย่าง</div></div>
@@ -3722,9 +3735,9 @@ const RULES_HTML = `<div class="rules rg">
 <ol class="rg-flow">
   <li><span>1</span><b>เติม Line-Up</b>ให้ครบ 5 ใบ · เจอโกลาหล (Chaos) ทำผลทันทีแล้วนำออก</li>
   <li><span>2</span><b>ต้นเทิร์น</b>ผลของการ์ดต่อเนื่อง ความสามารถพ่อมด และ Token</li>
-  <li><span>3</span><b>เล่นการ์ด</b>จากมือ ลำดับใดก็ได้ รวมเป็น <em>พลัง</em></li>
-  <li><span>4</span><b>ซื้อการ์ด</b>กี่ใบก็ได้ที่ราคารวมไม่เกินพลัง → เข้ากองทิ้ง · เล่นต่อหลังซื้อได้</li>
-  <li><span>5</span><b>จบเทิร์น</b>ทิ้งมือและการ์ดที่เล่น จั่ว 5 ใบ · พลังที่เหลือหายไป</li>
+  <li><span>3</span><b>เล่นการ์ด</b>จากมือ ลำดับใดก็ได้ รวมเป็น <em>ทอง</em></li>
+  <li><span>4</span><b>ซื้อการ์ด</b>กี่ใบก็ได้ที่ราคารวมไม่เกินทอง → เข้ากองทิ้ง · เล่นต่อหลังซื้อได้</li>
+  <li><span>5</span><b>จบเทิร์น</b>ทิ้งมือและการ์ดที่เล่น จั่ว 5 ใบ · ทองที่เหลือหายไป</li>
 </ol>
 <div class="rg-note">ช่องตำนานที่ถูกซื้อจะว่างจนจบเทิร์น แล้วเปิดใบใหม่มาเติม พ่อมดทุกคนโดน <b>Group Attack</b> ของใบนั้น</div>
 
@@ -3756,7 +3769,7 @@ const RULES_HTML = `<div class="rules rg">
   <dt>ต่อเนื่อง</dt><dd>เล่นแล้ววางค้างไว้ ทำผลทุกต้นเทิร์นของคุณ</dd>
   <dt>ทำลาย</dt><dd>นำการ์ดออกจากเกมถาวร</dd>
   <dt>✲ เปิดใช้</dt><dd>กดใช้ได้ 1 ครั้งภายหลังในเทิร์นนั้น</dd>
-  <dt>Wild Surge</dt><dd>+2 พลัง หรือเปิดการ์ดบนสุดของศัตรูมาเล่นเป็นของคุณ · ใช้แล้วกลับเข้ากอง Wild Surge</dd>
+  <dt>Wild Surge</dt><dd>+2 ทอง หรือเปิดการ์ดบนสุดของศัตรูมาเล่นเป็นของคุณ · ใช้แล้วกลับเข้ากอง Wild Surge</dd>
 </dl>
 
 <h3>เกมจบเมื่อ</h3>
@@ -4023,6 +4036,7 @@ function seatHTML(p, dir) {
     </div>`;
 }
 
+let lastGold = {}; // render(): the gold counter bumps only when the amount changes during the same player's turn
 function render() {
   if (!G) return;
   trackMoves(); // show cards that moved since the last redraw
@@ -4069,10 +4083,21 @@ function render() {
   // everything that happened to cards this turn (received, discarded, destroyed, revealed, defended, ✲) is behind a
   // button; it opens in the viewer (openViewer 'events'), which keeps updating while it is open
   const nEv = (G.turn && G.turn.events || []).length;
-  const arenaTitle = `<div class="arena-title">สนามร่ายเวท · ${who} <span>· พลังเทิร์นนี้ <b class="arena-pw">${pw}</b></span> ${waitHTML}
+  const arenaTitle = `<div class="arena-title">สนามร่ายเวท · ${who} ${waitHTML}
       ${nEv ? `<button class="linkbtn ev-btn" data-act="view" data-what="events">เกิดอะไรขึ้นบ้าง (${nEv})</button>` : ''}</div>`;
+  // your turn buttons sit at the arena's right edge: wizard-ability ✲ buttons, then End Turn
+  // this turn's gold: a big coin counter above End Turn that bumps whenever the amount changes
+  const goldBump = lastGold.cur === G.cur && lastGold.v !== pw;
+  lastGold = { cur: G.cur, v: pw };
+  const turnBtns = `<div class="arena-actions">
+      <div class="goldbox ${goldBump ? 'bump' : ''}" title="ทองที่ใช้ซื้อการ์ดได้ในเทิร์นนี้"><span class="coin" aria-hidden="true"></span>
+        <b class="arena-pw">${pw}</b><small>ทองเทิร์นนี้</small></div>
+      ${traitsOf(me).filter(tr => tr.activate).map(tr => `<button class="btn ghost" data-act="trait" data-id="${tr.id}" ${myTurn && traitReady(me, tr) ? '' : 'disabled'} title="${tr.name}: ${tr.text}">✲ ${tr.actText}</button>`).join('')}
+      <button class="btn end-btn" data-act="end" ${myTurn ? '' : 'disabled'}>จบเทิร์น</button>
+    </div>`;
   const arena = `<div class="arena ${shown.length || nEv ? 'busy' : ''}">
       <div class="cards played">${arenaCards || '<div class="empty">ยังไม่มีการ์ดถูกเล่นในเทิร์นนี้</div>'}</div>
+      ${turnBtns}
     </div>`;
 
   const hand = me.hand.length ? me.hand.map((c, i) => cardHTML(c, { play: myTurn, dim: (G.turn.defUsed || []).includes(c), attrs: `data-act="play" data-i="${i}"` })).join('') : '<div class="empty">มือว่าง</div>';
@@ -4098,13 +4123,8 @@ function render() {
     <div class="seats"><div class="side l">${seats.left.slice().reverse().join('')}</div>${seatHTML(me, 'คุณ')}<div class="side r">${seats.right.slice().reverse().join('')}</div></div>
     <section class="you ${cur() === me ? 'active' : ''} ${me.hitFlash ? 'hit' : ''}" style="--pc:${me.color}">
       <div class="youbar">
-        <div class="big pw"><span class="v">${cur() === me ? pw : '–'}</span><span class="k">พลัง</span></div>
+        <div class="big pw"><span class="v">${cur() === me ? pw : '–'}</span><span class="k">ทอง</span></div>
         <div style="min-width:0;flex:1;font-family:var(--f-display);font-size:22px">${pcName(me)} <span class="seatdir">มือและสัตว์รับใช้ของคุณ</span></div>
-        <div class="actions">
-          ${traitsOf(me).filter(tr => tr.activate).map(tr => `<button class="btn ghost" data-act="trait" data-id="${tr.id}" ${myTurn && traitReady(me, tr) ? "" : "disabled"} title="${tr.name}: ${tr.text}">✲ ${tr.actText}</button>`).join("")}
-          <button class="btn ghost" data-act="playall" ${myTurn && me.hand.length ? '' : 'disabled'}>เล่นทั้งมือ</button>
-          <button class="btn" data-act="end" ${myTurn ? '' : 'disabled'}>จบเทิร์น</button>
-        </div>
       </div>
       <div class="zones">
         <div class="zone"><div class="sect-label">สัตว์รับใช้</div>${fam}</div>

@@ -30,7 +30,7 @@ Example:
 6
 1
 2 ใบ
-+1 พลัง โจมตีศัตรูแบบสุ่ม 1 คน รับ 2 ดาเมจ ต่อสัตว์อสูรแต่ละใบในกองทิ้งของคุณ
++1 ทอง โจมตีศัตรูแบบสุ่ม 1 คน รับ 2 ดาเมจ ต่อสัตว์อสูรแต่ละใบในกองทิ้งของคุณ
 ```
 
 Several cards may come in one message, separated by blank lines. Ask only if a line is genuinely ambiguous.
@@ -53,9 +53,10 @@ Ignore stray lines like "ชุด 1" (left over from copy-paste). If the copies
 
 - Add a `def('<id>', {...})` next to the other cards of the same type. `<id>` is a short lowercase ASCII
   romanisation of the name (e.g. โก๋แบง → `kobang`); tell the user the id, since card art uses `art/<id>.png`.
-- Set `name`, `type`, `cost`, `vp`; flat `+N พลัง` goes in `power:N`; add `atk:1` / `def:1` / `ongoing:1` / `draws:1` as the ability implies.
+- Set `name`, `type`, `cost`, `vp`; flat `+N ทอง` goes in `power:N`; add `atk:1` / `def:1` / `ongoing:1` / `draws:1` as the ability implies.
 - Attack extras: `noRedirect:true` (can be dodged, never reflected), `tokenPick:n` (killer picks the token from n). Arena / Nacho Arena double attack damage (stacking), Vortex turns a turn's first damaging attack into power, Snack Cart heals on damage. `G.turn.gainToHand` (Dr. Continuum) sends gains to hand; `G.instantWinner` + `G.ending` ends the game with that winner.
 - Wizard ability tiles (`TRAITS`, the user's set 1 + set 2, one per player): check with `hasTrait(p, id)` (covers Papa Boner's temporary `p.trait2`; `traitsOf(p)` lists both). Tile hooks: `onCardPlayed(p, card)` (own turn), `activate` + `canActivate` + `actText` + `aiUse` (once-per-turn button, `useTrait`). Engine checks: `cheapTop` (uses `G.gainSrc`), `creatureTop`, `wizardDraw`/`spellDraw` (`G.turn.gainedWiz/gainedSpell`), `treasureLover`, `weirdWand` (+ `weirdwand` starter card). The old placeholder abilities (ember, iron…) are gone; their `hasTrait` checks are now inert. `G.optOut` = a player sitting out a Chaos card (The Cosmic Glyph); `turnOrder()` and `attack` skip them.
+- The buying currency is called **ทอง** in all Thai text (renamed from พลัง on 2026-10-16; code still says `power`). If the user writes "+N พลัง", write "+N ทอง". The wizard tile name พลังชีวิตสัตว์อสูร is life force, not currency, and keeps its name.
 - Official terms the user may paste: Glyph = `rune`, Wild Magic = Wild Surge (`wild`), Limp Wand = `bent`, Mayhem = Chaos.
 - Chaos helpers: `turnOrder()` (turn player first), `handCost(p)`, `gainTopOfMain(p)` (skips/destroys Chaos), `attackOnly(card, owner, self)` (resolve just a card's attack — Chaos O/Q), attack `benign:true` (AI won't defend a helpful "attack" — Chaos S/T).
 - Limp Wand: the -1 VP junk card (16 in its own stack, not in `MAIN`); internal id is still `bent`, so use `bent:1` / `gainBent` and `art/bent.png`.
