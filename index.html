@@ -24,21 +24,36 @@ html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;
   background-image:radial-gradient(ellipse at 50% -20%, #3a1d2e 0%, transparent 60%);}
 button{font-family:inherit}
-.app{display:flex;flex-direction:column;gap:12px;padding:12px 16px;min-height:100%}
-header.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-header.top h1{font-family:var(--f-display);font-weight:400;font-size:34px;margin:0;color:var(--accent);letter-spacing:.5px;line-height:1}
-header.top .sub{color:var(--mute);font-size:12px}
-header.top .sp{flex:1}
+.app{display:flex;flex-direction:column;gap:12px;padding:4px 16px 12px;min-height:100%}
+/* settings: a gear on the board's top-right corner opens a small menu (AI speed, sound, music, art, rules, new game) */
+.settings{position:fixed;top:6px;right:8px;z-index:48;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.gear{width:34px;height:34px;border-radius:50%;border:1px solid var(--gold);background:#1a1220e6;color:var(--gold);font-size:19px;line-height:1;
+  cursor:pointer;display:grid;place-items:center;box-shadow:0 2px 10px #000a}
+.gear:hover,.gear[aria-expanded="true"]{background:var(--gold);color:#2a1d05}
+.setmenu{display:flex;flex-direction:column;gap:6px;min-width:190px;padding:10px;border-radius:10px;background:var(--panel);
+  border:1px solid var(--gold);box-shadow:0 12px 40px #000c}
+.setmenu .btn{text-align:left;width:100%}
+.sm-title{font-family:var(--f-display);font-size:20px;color:var(--gold);line-height:1;margin-bottom:2px}
 .btn{background:var(--accent);color:#1a0f0a;border:0;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:14px}
 .btn:hover{filter:brightness(1.1)}
 .btn:focus-visible,.card:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn:disabled{opacity:.4;cursor:default}
 .sect-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
-/* tabletop: the board spans the full width, every player's panel (yours first) sits in one row under it, then your mat */
+/* tabletop: the board spans the full width, every player's panel sits in one row under it (yours always in the
+   middle column, rivals to its left and right), then your mat */
 .table{display:grid;gap:12px;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "seats" "you"}
-.seats{grid-area:seats;display:flex;flex-wrap:wrap;justify-content:center;gap:12px;min-width:0}
-.seats .rival{flex:1 1 240px;max-width:380px;padding:8px 10px;gap:5px}
+.seats{grid-area:seats;display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,360px) minmax(0,1fr);gap:12px;min-width:0;
+  align-items:stretch;padding-top:6px}
+.seats .side{display:flex;gap:12px;min-width:0}
+.seats .side.l{justify-content:flex-end} .seats .side.r{justify-content:flex-start}
+.seats .rival{flex:0 1 340px;min-width:0;padding:8px 10px;gap:5px}
+@media (max-width:900px){.seats{display:flex;flex-direction:column}.seats .side{flex-direction:column}.seats .mine{order:-1}}
+/* whose turn it is: that panel lifts, glows and gets a "กำลังร่ายเวท" pill */
+.seats .rival{transition:transform .25s,background .25s}
+.seats .rival.active{transform:translateY(-6px);border-color:var(--accent);border-width:2px 2px 2px 5px;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 24%, var(--panel)), var(--panel) 85%)}
+.turnpill{font-size:11px;font-weight:700;color:#1a0f0a;background:var(--accent);border-radius:999px;padding:1px 9px;white-space:nowrap}
 .rival .rname{flex-wrap:wrap;align-items:center}
 .rival .rbtns{margin-left:auto;display:flex;gap:6px;align-items:center}
 .rival .rbtns .linkbtn{padding:2px 8px}
@@ -356,6 +371,8 @@ table.score tr.win td{color:var(--gold);font-weight:700}
 @keyframes buyglow{50%{box-shadow:0 0 0 2px var(--gold),0 0 30px #f0c35aaa}}
 .rival.active,.you.active{animation:activeglow 1.6s ease-in-out infinite var(--ph,0ms)}
 @keyframes activeglow{50%{box-shadow:0 0 0 1px var(--accent) inset,0 0 40px #ff7a3d66}}
+.seats .rival.active{box-shadow:0 0 0 2px var(--accent),0 0 28px #ff7a3d88;animation-name:seatglow}
+@keyframes seatglow{50%{box-shadow:0 0 0 2px var(--accent),0 0 50px #ff7a3dcc}}
 /* FX layer: lives outside #board so render() never wipes an effect mid-flight */
 .app{position:relative;z-index:1}
 #embers{position:fixed;inset:0;z-index:0;pointer-events:none}
@@ -394,7 +411,7 @@ table.score tr.win td{color:var(--gold);font-weight:700}
 @keyframes csglow{50%{filter:drop-shadow(0 0 16px #b06cff) brightness(1.08)}}
 .chaos-show .cs-hint{font-size:12px;color:var(--mute);letter-spacing:.1em}
 @media (prefers-reduced-motion:reduce){.chaos-show .cs-card,.chaos-show .cs-title{animation:none}}
-@media (prefers-reduced-motion:reduce){.card.buyable,.rival.active,.you.active,.banner .b-title{animation:none}}
+@media (prefers-reduced-motion:reduce){.card.buyable,.rival.active,.you.active,.banner .b-title{animation:none}.seats .rival{transition:none}}
 /* online play: lobby, waiting pill, seat tags */
 .online-box{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px;width:100%}
 .online-btns{display:flex;gap:8px;flex-wrap:wrap}
@@ -416,19 +433,21 @@ table.score tr.win td{color:var(--gold);font-weight:700}
 
 <canvas id="embers" aria-hidden="true"></canvas>
 <div class="app" id="app">
-  <header class="top">
-    <h1>Spellbrawl</h1>
-    <span class="sub">เกมการ์ดสร้างเด็ค · พ่อมดตีกันจนกว่าจะเหลือตำนานคนสุดท้าย</span>
-    <span class="sp"></span>
-    <button class="btn ghost" id="btn-speed" data-act="speed">AI: ปกติ</button>
-    <button class="btn ghost" id="btn-sfx" data-act="sfx">เสียง: เปิด</button>
-    <button class="btn ghost" id="btn-music" data-act="music">เพลง: เปิด</button>
-    <button class="btn ghost" data-act="artedit">ภาพกระดาน/การ์ด</button>
-    <button class="btn ghost" data-act="rules">กติกา</button>
+  <!-- no title bar: the settings live behind the gear in the top-right corner, so the board starts at the top edge -->
+  <div class="settings">
+    <button class="gear" id="gear" type="button" aria-label="ตั้งค่า" aria-expanded="false" aria-controls="setmenu" title="ตั้งค่า">⚙</button>
+    <div class="setmenu" id="setmenu" hidden>
+      <div class="sm-title">ตั้งค่า</div>
+      <button class="btn ghost" id="btn-speed" data-act="speed">AI: ปกติ</button>
+      <button class="btn ghost" id="btn-sfx" data-act="sfx">เสียง: เปิด</button>
+      <button class="btn ghost" id="btn-music" data-act="music">เพลง: เปิด</button>
+      <button class="btn ghost" data-act="artedit">ภาพกระดาน/การ์ด</button>
+      <button class="btn ghost" data-act="rules">กติกา</button>
+      <button class="btn ghost" data-act="newgame">เกมใหม่</button>
+    </div>
     <input type="file" id="art-file" accept="image/*" hidden>
     <style id="art-css"></style>
-    <button class="btn ghost" data-act="newgame">เกมใหม่</button>
-  </header>
+  </div>
   <main class="table" id="board"></main>
 </div>
 
@@ -3997,7 +4016,7 @@ function seatHTML(p, dir) {
     <div class="rival ${p === meP() ? 'mine' : ''} ${cur() === p ? 'active' : ''} ${p.hitFlash ? 'hit' : ''}" data-pi="${i}" style="--pc:${p.color}">
       <div class="rname"><b>${p.name}</b><span class="seatdir">${dir}</span>
         ${G.online ? `<span class="seattag">${p.away ? 'หลุด · AI เล่นแทน' : p.isAI ? 'AI' : 'ผู้เล่น'}</span>` : ''}
-        ${cur() === p ? '<span class="trait">กำลังร่ายเวท…</span>' : ''}
+        ${cur() === p ? '<span class="turnpill">▶ กำลังร่ายเวท</span>' : ''}
         <span class="rbtns">${ong}<button class="linkbtn" data-act="view" data-what="info" data-p="${i}">ข้อมูล</button></span></div>
       <div class="hprow"><div class="hpbar"><i style="width:${hpPct(p)}%"></i></div><span class="hpnum">${p.hp} HP</span></div>
       <div class="trait clamp" title="${traits}">${traits}</div>
@@ -4012,8 +4031,9 @@ function render() {
   // G.ending (e.g. the Dead Wizard Token pile ran out) ends the game after this turn: the player still finishes it
   const myTurn = cur() === me && !G.over && G.endTurnResolve;
   const pw = G.turn ? G.turn.power : 0;
-  // seating: the rivals' panels sit in one row under the board, clockwise from you: your left neighbour at the far
-  // left, round the table to your right neighbour at the far right (the first half are tagged left, the rest right)
+  // seating: the players' panels sit in one row under the board with yours always in the middle; the first half of
+  // the rivals (clockwise from you) sit on your left with your left neighbour next to you, the rest on your right with
+  // your right neighbour next to you
   const others = [...G.players.slice(ME + 1), ...G.players.slice(0, ME)];
   const seats = { left: [], right: [] };
   const nLeft = Math.ceil(others.length / 2);
@@ -4075,7 +4095,7 @@ function render() {
       </div></div>
       ${arena}
     </section>
-    <div class="seats">${seatHTML(me, 'คุณ')}${[...seats.left, ...seats.right].join('')}</div>
+    <div class="seats"><div class="side l">${seats.left.slice().reverse().join('')}</div>${seatHTML(me, 'คุณ')}<div class="side r">${seats.right.slice().reverse().join('')}</div></div>
     <section class="you ${cur() === me ? 'active' : ''} ${me.hitFlash ? 'hit' : ''}" style="--pc:${me.color}">
       <div class="youbar">
         <div class="big pw"><span class="v">${cur() === me ? pw : '–'}</span><span class="k">พลัง</span></div>
@@ -4169,6 +4189,15 @@ function openViewer(what, pi) {
   $('#viewer').hidden = false;
 }
 
+// settings menu: the gear toggles it; picking rules / art / new game, a click outside, or Esc closes it
+// (AI speed, sound and music only relabel their button, so the menu stays open for those)
+const setMenu = open => { $('#setmenu').hidden = !open; $('#gear').setAttribute('aria-expanded', String(open)); };
+document.addEventListener('click', e => {
+  if (e.target.closest('#gear')) return setMenu($('#setmenu').hidden);
+  const inMenu = e.target.closest('#setmenu');
+  if (!inMenu || ['rules', 'artedit', 'newgame'].includes(e.target.closest('[data-act]')?.dataset.act)) setMenu(false);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#setmenu').hidden) setMenu(false); });
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act;
