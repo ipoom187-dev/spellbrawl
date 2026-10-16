@@ -502,17 +502,17 @@ def('wild', { name:'Wild Surge', type:'wild', cost:2, text:'เลือก 1: +
 // spells
 def('fireball', { name:'Hiccup Fireball', type:'spell', cost:3, vp:1, atk:1, text:'<b>โจมตี:</b> คนทางซ้ายรับ 3 ดาเมจ',
   play: async p => { await attack(p, { to:'left', dmg:3 }); } });
-def('lightning', { name:'Snot Lightning', type:'spell', cost:5, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 2 ดาเมจ',
-  play: async p => { await attack(p, { to:'each', dmg:2 }); } });
-def('meteor', { name:'Meteor Belch', type:'spell', cost:6, vp:2, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 5 ดาเมจ ถ้าฆ่าได้ +2 พลัง',
-  play: async p => { await attack(p, { to:'choose', dmg:5, onKill: async () => P(p, 2) }); } });
+def('lightning', { name:'Snot Lightning', type:'spell', cost:5, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ',
+  play: async p => { await attack(p, { to:'each', dmg:3 }); } });
+def('meteor', { name:'Meteor Belch', type:'spell', cost:6, vp:2, atk:1, text:'<b>โจมตี:</b> ศัตรูที่เลือกรับ 7 ดาเมจ ถ้าฆ่าได้ +2 พลัง',
+  play: async p => { await attack(p, { to:'choose', dmg:7, onKill: async () => P(p, 2) }); } });
 def('rot', { name:'Hex of Rot', type:'spell', cost:3, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูที่แข็งแกร่งที่สุด (HP มากสุด) รับ 1 ดาเมจ และได้ Limp Wand',
   play: async p => { await attack(p, { to:'strongest', dmg:1, bent:1 }); } });
 def('leech', { name:'Mind Leech', type:'spell', cost:4, vp:1, atk:1, power:1, text:'+1 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนทิ้งการ์ดในมือ 1 ใบ',
   play: async p => { await attack(p, { to:'each', discard:1 }); } });
 def('torrent', { name:'Arcane Torrent', type:'spell', cost:2, power:2, text:'+2 พลัง' });
-def('chain', { name:'Chain Zap', type:'spell', cost:4, vp:1, atk:1, text:'<b>โจมตี:</b> คนทางซ้ายและทางขวารับคนละ 2 ดาเมจ',
-  play: async p => { await attack(p, { to:'lr', dmg:2 }); } });
+def('chain', { name:'Chain Zap', type:'spell', cost:4, vp:1, atk:1, text:'<b>โจมตี:</b> คนทางซ้ายและทางขวารับคนละ 3 ดาเมจ',
+  play: async p => { await attack(p, { to:'lr', dmg:3 }); } });
 def('siphon', { name:'Soul Siphon', type:'spell', cost:5, vp:1, atk:1, text:'<b>โจมตี:</b> ศัตรูที่อ่อนแอที่สุด (HP น้อยสุด) รับ 3 ดาเมจ<br>คุณฟื้น 3 HP',
   play: async p => { await attack(p, { to:'weakest', dmg:3 }); heal(p, 3); } });
 def('purge', { name:'Purge Ritual', type:'spell', cost:3, vp:1, power:1, text:'+1 พลัง<br>ทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ (เลือกไม่ทำก็ได้)',
@@ -567,7 +567,7 @@ def('wizardbabies', { name:'Tattletale Toddlers', type:'spell', cost:6, vp:2, po
 def('annihilaggedon', { name:'Kaboomageddon!', type:'spell', cost:7, vp:2, power:3, atk:1,
   text:'+3 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 7 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:7 }); } });
-def('lowfive', { name:'Half-Hearted High Five', type:'spell', cost:2, vp:4, draws:1,
+def('lowfive', { name:'Half-Hearted High Five', type:'spell', cost:2, vp:1, draws:1,
   text:'คุณและผู้เล่นอีก 1 คนที่คุณเลือก จั่วคนละ 1',
   play: async p => {
     await draw(p, 1);
@@ -603,7 +603,7 @@ def('poopal', { name:'Turd Buddy Payback', type:'spell', cost:4, vp:1, power:2, 
 def('summontrash', { name:'Conjure Garbage', type:'spell', cost:4, vp:1, atk:1,
   text:'ทำลายการ์ด 1 ใบจากกองทิ้งได้ (เลือกไม่ทำก็ได้)<br><b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ',
   play: async p => { await destroyOwn(p, { discardOnly: true }); await attack(p, { to:'each', dmg:4 }); } });
-def('brainystorm', { name:'Thinkstorm', type:'spell', cost:5, vp:1, draws:1, text:'จั่ว 2 ใบ', play: async p => draw(p, 2) });
+def('brainystorm', { name:'Thinkstorm', type:'spell', cost:5, vp:1, power:1, draws:1, text:'+1 พลัง<br>จั่ว 2 ใบ', play: async p => draw(p, 2) });
 def('dontgive', { name:"Zero Bothers Given", type:'spell', cost:5, vp:1,
   text:'เปิดการ์ดใบบนสุดของเด็คคุณ แล้วเลือก: ทำลายใบนั้น <i>หรือ</i> +พลังเท่ากับราคาของใบนั้น (การ์ดยังอยู่บนเด็ค)',
   play: async p => {
@@ -628,9 +628,9 @@ def('winmore', { name:'Winning Harder... Harder', type:'spell', cost:6, vp:2, po
 def('friendality', { name:'Frenemy Finisher', type:'spell', cost:7, vp:2, power:4,
   text:'+4 พลัง<br>ครั้งถัดไปที่คุณฆ่าศัตรูในเทิร์นนี้: เลือกให้เขาไม่ต้องรับ Dead Wizard Token ได้ ถ้าเลือก คุณรับ Token นั้นแทน และได้ตำนาน 1 ใบ',
   play: async () => { G.turn.friendality = (G.turn.friendality || 0) + 1; } });
-def('scry', { name:'Scry Burst', type:'spell', cost:3, vp:1, text:'จั่ว 2 ใบ', draws:1, play: async p => draw(p, 2) });
-def('doom', { name:'Doom Rain', type:'spell', cost:7, vp:3, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ<br>+1 พลังต่อการฆ่าแต่ละครั้ง',
-  play: async p => { const k = await attack(p, { to:'each', dmg:3 }); P(p, k); } });
+def('scry', { name:'Scry Burst', type:'spell', cost:4, vp:1, text:'จั่ว 2 ใบ', draws:1, play: async p => draw(p, 2) });
+def('doom', { name:'Doom Rain', type:'spell', cost:7, vp:3, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 5 ดาเมจ<br>+1 พลังต่อการฆ่าแต่ละครั้ง',
+  play: async p => { const k = await attack(p, { to:'each', dmg:5 }); P(p, k); } });
 def('vortex', { name:'Vortex Burp', type:'spell', cost:5, vp:2, atk:1, power:2, text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 2 ดาเมจ และได้ Limp Wand',
   play: async p => { await attack(p, { to:'choose', dmg:2, bent:1 }); } });
 def('ward', { name:'Ward Bubble', type:'spell', cost:2, power:1, def:1, text:'+1 พลัง<br><b>ป้องกัน:</b> เปิดจากมือเพื่อไม่โดนการโจมตี' });
@@ -716,7 +716,7 @@ def('harpies', { name:'Gremlin Shriekers', type:'creature', cost:5, vp:1, power:
     else log(`${p.name} ไม่มี Limp Wand ให้ฮาร์ปี้คาบไปปา`);
     if (!dealt) { log('ไม่โดนใครเลย · จั่ว 1 แทน'); await draw(p, 1); }
   } });
-def('twins', { name:'The Conjoined Cousins', type:'creature', cost:5, vp:1, draws:1, text:'จั่ว 2 ใบ', play: async p => draw(p, 2) });
+def('twins', { name:'The Conjoined Cousins', type:'creature', cost:5, vp:1, power:1, draws:1, text:'+1 พลัง<br>จั่ว 2 ใบ', play: async p => draw(p, 2) });
 // ongoing things a player controls: Ongoing cards in play, the Champion trophy, and Ongoing Dead Wizard tokens
 const ongoingCount = p => p.ongoing.length + (G.trophy === p ? 1 : 0) + (standHolder() === p ? 1 : 0) + p.tokens.filter(k => k.text.startsWith('ต่อเนื่อง')).length;
 def('what', { name:'The Huh?!', type:'creature', cost:5, vp:1, power:2, atk:1,
@@ -800,8 +800,8 @@ def('blobies', { name:'Mega Gloopies', type:'creature', cost:5, vp:1, ongoing:1,
   text:'<b>ต่อเนื่อง:</b> +1 พลัง ทุกเทิร์น (เทิร์นที่ลงการ์ด และต้นเทิร์นต่อๆ ไปของคุณ)',
   onStart: async p => P(p, 1) });
 def('satan', { name:'Totally Rad Demon Lord', type:'creature', cost:5, vp:1, atk:1, draws:1,
-  text:'จั่ว 1<br><b>โจมตี:</b> คนทางซ้ายและทางขวารับคนละ 6 ดาเมจ',
-  play: async p => { await draw(p, 1); await attack(p, { to:'lr', dmg:6 }); } });
+  text:'จั่ว 1<br><b>โจมตี:</b> คนทางซ้ายและทางขวารับคนละ 4 ดาเมจ',
+  play: async p => { await draw(p, 1); await attack(p, { to:'lr', dmg:4 }); } });
 def('beerholder', { name:'Hold-My-Mead Ogre', type:'creature', cost:6, vp:2, power:4, text:'+4 พลัง' });
 // creatures p controls right now: played this turn (including the one being resolved) + creature Ongoing cards
 const creaturesControlled = p => [...G.turn.played, ...p.ongoing].filter(c => c.type === 'creature').length;
@@ -819,7 +819,7 @@ def('kobang', { name:'โก๋แบง', type:'creature', cost:6, vp:1, atk:1,
   } });
 
 // treasures
-def('crystal', { name:'Cracked Crystal', type:'treasure', cost:3, power:1, draws:1, text:'+1 พลัง<br>จั่ว 1', play: async p => draw(p, 1) });
+def('crystal', { name:'Cracked Crystal', type:'treasure', cost:3, vp:1, power:1, draws:1, text:'+1 พลัง<br>จั่ว 1', play: async p => draw(p, 1) });
 def('skull', { name:'Gold Skull', type:'treasure', cost:3, vp:1, power:2, text:'+2 พลัง' });
 def('mirror', { name:'Mirror Shield', type:'treasure', cost:3, vp:1, power:1, def:1, text:'+1 พลัง<br><b>ป้องกัน:</b> เปิดเพื่อไม่โดนโจมตี ผู้โจมตีรับ 1 ดาเมจ',
   onDefend: async (t, src) => { if (src) await damage(src, 1, t); } });
@@ -1016,7 +1016,7 @@ def('veearr', { name:'Goggle Wizard 3000', type:'wizard', cost:5, vp:1, power:2,
     log(`${t.name} จั่ว ${got.length} ใบ แล้วทิ้ง ${c.name}`);
     render();
   } });
-def('fingler', { name:'Twiddlethumb', type:'wizard', cost:6, vp:3, unique:1,
+def('fingler', { name:'Twiddlethumb', type:'wizard', cost:6, vp:2, unique:1,
   text:'+5 พลัง แต่ -1 พลัง ต่อ Dead Wizard Token 1 อันที่คุณมี (ไม่ต่ำกว่า 0)',
   play: async p => {
     const n = Math.max(0, 5 - tokenCount(p));
@@ -1055,7 +1055,7 @@ def('sugarpuss', { name:'Candy Witch Saccharina', type:'wizard', cost:6, vp:2, d
 def('solzar', { name:'Starblaze the Supernova', type:'wizard', cost:7, vp:2, power:2, atk:1, draws:1,
   text:'+2 พลัง จั่ว 1 ใบ<br><b>โจมตี:</b> ศัตรูที่เลือกรับ 10 ดาเมจ',
   play: async p => { await draw(p, 1); await attack(p, { to:'choose', dmg:10 }); } });
-def('wyverns', { name:'Double Trouble Drakes!', type:'wizard', cost:3, vp:1, power:2, atk:1,
+def('wyverns', { name:'Double Trouble Drakes!', type:'wizard', cost:5, vp:1, power:2, atk:1,
   text:'+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ',
   play: async p => { await attack(p, { to:'each', dmg:3 }); } });
 def('wormster', { name:'Wigglo the Worm Mage', type:'wizard', cost:3, vp:1, power:2, def:1, defDiscard:1, defDraw:1,
@@ -1711,7 +1711,7 @@ def('jenny', { name:'Archmage Gummy Goodheart', type:'legend', cost:12, vp:6, po
     for (let i = 0; i < n; i++) gainBent(t);
     return 0;
   } }) });
-def('peetfarm', { name:'Gloomy County Bog Farm', type:'legend', alsoType:'location', cost:8, vp:6, ongoing:1,
+def('peetfarm', { name:'Gloomy County Bog Farm', type:'legend', alsoType:'location', cost:8, vp:4, ongoing:1,
   text:'<b>ต่อเนื่อง:</b> (ไม่มีผลอะไร วางไว้เฉย ๆ)', group:'—' });
 def('goreorgy', { name:'Countess Grisly, the Tasty Undead', type:'legend', alsoType:'wizard', cost:9, vp:3, power:4, atk:1,
   text:'+4 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 4 ดาเมจ ต่อ Dead Wizard Token แต่ละอันของคุณ', group:'—',
@@ -2000,8 +2000,8 @@ fam('dungeonmaster', { name:'The Game Master', power:2, ...REFLECT,
     finally { G.optOut = null; G.chaosShown = null; render(); }
   } });
 fam('juice', { name:'The Smoothie', power:2, atk:1, ...REFLECT,
-  text:`+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 10 ดาเมจ ลดลง 2 ต่อ Dead Wizard Token ของคนนั้น<br>${REFLECT_TXT}`,
-  play: async p => { await attack(p, { to:'each', dmgText:'10 ดาเมจ ลด 2 ต่อ Dead Wizard Token ของคุณ', dmg: t => Math.max(0, 10 - 2 * tokenCount(t)) }); } });
+  text:`+2 พลัง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 7 ดาเมจ ลดลง 2 ต่อ Dead Wizard Token ของคนนั้น<br>${REFLECT_TXT}`,
+  play: async p => { await attack(p, { to:'each', dmgText:'7 ดาเมจ ลด 2 ต่อ Dead Wizard Token ของคุณ', dmg: t => Math.max(0, 7 - 2 * tokenCount(t)) }); } });
 fam('lastlaugh', { name:'The Final Chuckle', power:2, def:1, defDiscard:1,
   text:'+2 พลัง นำการ์ดจากกองทิ้งไปวางใต้เด็คได้สูงสุด 2 ใบ<br><b>ป้องกัน:</b> ทิ้งใบนี้จากมือเพื่อไม่โดนการโจมตี จั่ว 1 ใบ ถ้าคุณมี 5 HP หรือน้อยกว่า สลับ HP กับผู้โจมตีได้',
   play: async p => {
@@ -2264,7 +2264,7 @@ const LEGENDS = ['grimbald','ashra','morgrath','zil','oblivia','hrothgut','vile'
   'kombatant','pylon','viagrus','deathlunch','continuum','gatling','nacho','heist','reaper','devil','mrbun','vortexfuckery','schadenfreude','winnerwand'];
 const FAMILIARS = ['imp','gcat','newt','oracle','raven','golem','sprite','eel',
   'goldyfam','hairy','hocusporkus','hank','hugchuck','kids','squeakers','poof','stinkus','phlegm','sparky','spoogy','dungeonmaster','juice','lastlaugh',
-  'buzzy','candy','cosmo','suitors','dogo','dukefreak','gimby','hando','yore','leviathan','nil','palcenta','pussy','ramon','spellboy','spoiledmilk',
+  'buzzy','candy','cosmo','suitors','dogo','dukefreak','gimby','hando','yore','leviathan','palcenta','pussy','ramon','spellboy','spoiledmilk',
   'breakfast','scaredstiff','skeeve','turdlings','tiny','tombofnil','weeby','wolfeye','orangypsy','treats'];
 
 // Wizard ability tiles (the user's set 1 + set 2, 2026-10-10), dealt at random — one per player, no repeats.
