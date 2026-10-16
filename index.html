@@ -1726,7 +1726,7 @@ def('pudge', { name:'Old Pudge', type:'legend', cost:8, vp:3, draws:1, text:'ฟ
   play: async p => { heal(p, 5); await draw(p, 2); }, gattack: () => attack(null, { to:'all', discard:1 }) });
 def('duke', { name:'The Pale Duke', type:'legend', cost:11, vp:5, power:3, text:'+3 ทอง<br>รับการ์ดราคาไม่เกิน 5 จาก Line-Up ฟรี', group:'พ่อมดทุกคนรับ 3 ดาเมจ',
   play: async p => gainFromLineup(p, 5), gattack: () => attack(null, { to:'all', dmg:3 }) });
-def('kaz', { name:'Kaz Bonecrown', type:'legend', cost:12, vp:6, atk:1, text:'<b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ<br>จั่ว 1 ต่อการฆ่า', group:'พ่อมดทุกคนรับ 4 ดาเมจ',
+def('kaz', { name:'Kaz Bonecrown', type:'legend', cost:12, vp:6, power:1, atk:1, text:'+1 ทอง<br><b>โจมตี:</b> ศัตรูทุกคนรับ 3 ดาเมจ<br>จั่ว 1 ต่อการฆ่า', group:'พ่อมดทุกคนรับ 4 ดาเมจ',
   play: async p => { const k = await attack(p, { to:'each', dmg:3 }); await draw(p, k); }, gattack: () => attack(null, { to:'all', dmg:4 }) });
 
 /* ---- Legends (2026-10-09 batch) ---- */
@@ -1738,8 +1738,8 @@ async function recallType(p, type, label) {
   log(`${p.name} นำ${label} ${got.length} ใบจากกองทิ้งขึ้นมือ`, 'good'); render();
 }
 def('willy', { name:'One-Tooth, One-Shoe Wally', type:'legend', cost:8, vp:4, power:1, atk:1, draws:1,
-  text:'+1 ทอง จั่ว 1<br><b>โจมตี (ป้องกันไม่ได้):</b> ศัตรูทุกคนรับ 1 ดาเมจ', group:'—',
-  play: async p => { await draw(p, 1); await attack(p, { to:'each', dmg:1, unblockable:1 }); } });
+  text:'+1 ทอง จั่ว 1<br><b>โจมตี (ป้องกันไม่ได้):</b> ศัตรูทุกคนรับ 2 ดาเมจ', group:'—',
+  play: async p => { await draw(p, 1); await attack(p, { to:'each', dmg:2, unblockable:1 }); } });
 def('bennana', { name:'Banana-Mancer Benny', type:'legend', cost:9, vp:5, power:2,
   text:'+2 ทอง<br>ฟื้น 1 HP ต่อการ์ดเริ่มต้น (Rune/Wand/Fizzle) ที่คุณเล่นอยู่ ในมือ และในกองทิ้ง', group:'พ่อมดทุกคนรับ 5 ดาเมจ และได้ Limp Wand 1 ใบ',
   play: async p => { const n = [...p.hand, ...p.discard, ...(p === cur() ? G.turn.played : [])].filter(c => c.type === 'starter').length; if (n) heal(p, n); },
@@ -1758,7 +1758,7 @@ def('krazztar', { name:'Gore Baron Grimtusk', type:'legend', cost:9, vp:5, draws
     return 0;
   } }) });
 def('lickity', { name:'Slurpo, Demon of the Deep', type:'legend', cost:9, vp:5,
-  text:'เปิดการ์ดใบบนสุดของกองหลัก แล้ววางบนสุดของเด็คคุณ ถ้าเป็นการ์ดโกลาหล ทำลายทิ้งแล้ว +3 ทองแทน',
+  text:'เปิดการ์ดใบบนสุดของกองหลัก แล้ววางไว้บนสุดของเด็คคุณ ถ้าเป็นการ์ดโกลาหล ทำลายทิ้งแล้ว +3 ทองแทน',
   group:'พ่อมดทุกคนเปิดการ์ด 5 ใบบนสุดของเด็ค ทิ้งทุกใบที่ราคา 1 ขึ้นไป ใบราคา 0 วางคืนบนเด็ค',
   play: async p => {
     if (!G.main.length) { log('กองหลักหมดแล้ว'); return; }
@@ -1787,8 +1787,8 @@ def('chafia', { name:'Champion Blaze and Hot Kitty', type:'legend', cost:10, vp:
     return 0;
   } }) });
 def('ciggy', { name:'Smokey the Lingering Doom', type:'legend', cost:10, vp:5, power:2,
-  text:'+2 ทอง<br>เป้าหมายได้ Limp Wand 1 ใบ (ไม่ใช่การโจมตี · ป้องกันไม่ได้)', group:'พ่อมดทุกคนทำลายการ์ดในมือ จนเหลือการ์ดแต่ละประเภทแค่ประเภทละ 1 ใบ',
-  play: async p => { const t = await pickTarget(p, opps(p), { label: 'Ciggy: เลือกศัตรูที่ได้ Limp Wand' }); gainBent(t); },
+  text:'+2 ทอง<br>เป้าหมายได้ Limp Wand 2 ใบ (ไม่ใช่การโจมตี · ป้องกันไม่ได้)', group:'พ่อมดทุกคนทำลายการ์ดในมือ จนเหลือการ์ดแต่ละประเภทแค่ประเภทละ 1 ใบ',
+  play: async p => { const t = await pickTarget(p, opps(p), { label: 'Ciggy: เลือกศัตรูที่ได้ Limp Wand' }); gainBent(t); gainBent(t); },
   gattack: () => attack(null, { to:'all', dmgText:'ทำลายการ์ดในมือจนเหลือประเภทละ 1 ใบ', dmg: async t => {
     for (const type of [...new Set(t.hand.map(c => c.type))]) {
       const same = t.hand.filter(c => c.type === type);
