@@ -447,6 +447,17 @@ table.score tr.win td{color:var(--gold);font-weight:700}
 .fx{position:absolute;pointer-events:none;will-change:transform,opacity}
 .fx.spark{left:0;top:0;border-radius:50%;transform:translate(-50%,-50%)}
 .fx.spark.coin{width:13px;height:13px;background:radial-gradient(circle at 35% 35%,#fff6c8,#f0c35a 45%,#a8761a);box-shadow:0 0 12px #f0c35a}
+/* attack styles (FX.strike) */
+.fx.orb.magic{box-shadow:0 0 26px 10px var(--c),0 0 4px 2px #fff inset}
+.fx.claw{width:7px;border-radius:7px;background:linear-gradient(#fff,#ff4d5e 40%,#8a0f1f);box-shadow:0 0 12px #ff4d5e,0 0 3px #fff;transform-origin:50% 0}
+.fx.beam{height:12px;border-radius:12px;transform-origin:0 50%;background:linear-gradient(90deg,transparent,var(--c) 15%,#fff 50%,var(--c) 85%,transparent);box-shadow:0 0 22px 6px var(--c)}
+.fx.trinket{left:0;top:0;width:30px;height:30px;display:grid;place-items:center;font-size:24px;color:#fff6c8;border-radius:6px;
+  background:radial-gradient(circle at 35% 30%,#fff6c8,#f0c35a 45%,#a8741c);box-shadow:0 0 18px #f0c35a;text-shadow:0 0 6px #fff}
+.fx.meteor{left:0;top:0;width:60px;height:26px;border-radius:50% 60% 60% 50%;
+  background:radial-gradient(circle at 80% 50%,#fff 0 12%,#ffd27a 25%,#ff6a3d 50%,transparent 75%),linear-gradient(90deg,transparent,#ff335588 40%,#ff6a3dcc);
+  box-shadow:0 0 30px 10px #ff6a3d88}
+.fx.ring.boom{width:120px;height:120px;border-color:#ffb454;box-shadow:0 0 40px #ff6a3d,inset 0 0 30px #ff6a3d}
+.fx.wave{border-radius:50%;border:5px solid var(--c);transform:translate(-50%,-50%);box-shadow:0 0 30px var(--c),inset 0 0 40px var(--c)}
 .fx.orb{left:0;top:0;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle,#fff 0 18%,var(--c) 45%,transparent 72%);box-shadow:0 0 26px 10px var(--c)}
 .fx.float{font-family:var(--f-display);font-size:46px;line-height:1;white-space:nowrap;transform:translate(-50%,-50%);text-shadow:0 0 14px currentColor,0 3px 0 #000,0 0 3px #000}
 .fx.float.dmg{color:#ff4d5e} .fx.float.crit{font-size:70px;color:#ff2d45}
@@ -3074,6 +3085,59 @@ const FX = (() => {
     };
   }
 
+  // --- attack styles for FX.strike (from: {x,y}, to: {x,y}, t: the target player) ---
+  const arcPt = (a, b, lift) => { const cx = (a.x + b.x) / 2, cy = Math.min(a.y, b.y) - lift; return u => ({ x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * cx + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * cy + u * u * b.y }); };
+  async function orbShot(a, b, t, color) {               // spell: sparkling magic orb on an arc with a glitter trail
+    const pt = arcPt(a, b, Math.min(180, Math.hypot(b.x - a.x, b.y - a.y) * .35)), dur = T(440), orb = spawn('orb magic', 0, 0);
+    orb.style.setProperty('--c', color);
+    fire(orb, Array.from({ length: 11 }, (_, i) => { const p = pt(i / 10); return { transform: `translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${.5 + i / 12}) rotate(${i * 40}deg)` }; }), { duration: dur, easing: 'ease-in' });
+    for (let k = 1; k < 9; k++) setTimeout(() => { const p = pt(Math.pow(k / 9, 1.5)); sparks(p.x, p.y, k % 2 ? '#fff' : color, 2, 18, 5); }, dur * k / 9);
+    await sleep(dur); sparks(b.x, b.y, color, 14, 70, 9);
+  }
+  async function claw(a, b, t, color) {                  // creature: a quick lunge, then three claw slashes across the target
+    const el = seat(t), r = el ? el.getBoundingClientRect() : { left: b.x - 80, top: b.y - 40, width: 160, height: 80 };
+    const lunge = spawn('orb', 0, 0); lunge.style.setProperty('--c', '#ff6a3d');
+    fire(lunge, [{ transform: `translate(${a.x}px,${a.y}px) translate(-50%,-50%) scale(.6)` }, { transform: `translate(${b.x}px,${b.y}px) translate(-50%,-50%) scale(1.2)` }], { duration: T(260), easing: 'cubic-bezier(.5,0,.9,.4)' });
+    await sleep(T(240));
+    for (let i = 0; i < 3; i++) {
+      const c = spawn('claw', r.left + r.width * (.3 + i * .18), r.top + r.height / 2);
+      c.style.height = Math.max(60, r.height * 1.2) + 'px';
+      fire(c, [{ transform: 'translate(-50%,-50%) rotate(28deg) scaleY(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) rotate(28deg) scaleY(1)', opacity: 1, offset: .35 },
+        { transform: 'translate(-50%,-50%) rotate(28deg) scaleY(1)', opacity: 0 }], { duration: T(520), delay: T(i * 70) });
+    }
+    sparks(b.x, b.y, '#ff4d5e', 16, 80, 8); shake(4); await sleep(T(260));
+  }
+  async function beam(a, b, t, color) {                  // wizard: a straight beam that snaps across, then fades
+    const len = Math.hypot(b.x - a.x, b.y - a.y), ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI, el = spawn('beam', a.x, a.y);
+    el.style.width = len + 'px'; el.style.setProperty('--c', color);
+    fire(el, [{ transform: `translateY(-50%) rotate(${ang}deg) scaleX(0)`, opacity: 1 }, { transform: `translateY(-50%) rotate(${ang}deg) scaleX(1)`, opacity: 1, offset: .35 },
+      { transform: `translateY(-50%) rotate(${ang}deg) scaleX(1) scaleY(.2)`, opacity: 0 }], { duration: T(520), easing: 'ease-out' });
+    await sleep(T(190)); sparks(b.x, b.y, color, 18, 80, 8); sparks(b.x, b.y, '#fff', 6, 40, 5); await sleep(T(150));
+  }
+  async function spin(a, b, t, color) {                  // treasure: a gold trinket tumbling through the air
+    const pt = arcPt(a, b, Math.min(220, Math.hypot(b.x - a.x, b.y - a.y) * .45)), dur = T(520), el = spawn('trinket', 0, 0, '✦');
+    fire(el, Array.from({ length: 11 }, (_, i) => { const p = pt(i / 10); return { transform: `translate(${p.x}px,${p.y}px) translate(-50%,-50%) rotate(${i * 72}deg) scale(${.7 + i / 20})` }; }), { duration: dur, easing: 'ease-in-out' });
+    await sleep(dur); sparks(b.x, b.y, '#f0c35a', 16, 70, 8); sparks(b.x, b.y, color, 8, 50, 7);
+  }
+  async function meteor(a, b, t, color) {                // legend: a meteor drops from the top of the screen with a fire trail
+    const sx = b.x + (b.x < innerWidth / 2 ? -220 : 220), sy = -60, dur = T(560), el = spawn('meteor', 0, 0);
+    const ang = Math.atan2(b.y - sy, b.x - sx) * 180 / Math.PI;
+    fire(el, [{ transform: `translate(${sx}px,${sy}px) translate(-50%,-50%) rotate(${ang}deg) scale(.6)` }, { transform: `translate(${b.x}px,${b.y}px) translate(-50%,-50%) rotate(${ang}deg) scale(1.2)` }], { duration: dur, easing: 'cubic-bezier(.6,0,1,.7)' });
+    for (let k = 1; k < 8; k++) setTimeout(() => sparks(sx + (b.x - sx) * k / 8, sy + (b.y - sy) * k / 8, k % 2 ? '#ffb454' : '#ff3355', 3, 22, 8), dur * k / 8);
+    await sleep(dur);
+    const boom = spawn('ring boom', b.x, b.y);
+    fire(boom, [{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.6)', opacity: 0 }], { duration: T(500), easing: 'ease-out' });
+    sparks(b.x, b.y, '#ff6a3d', 26, 130, 11); sparks(b.x, b.y, '#ffd27a', 12, 80, 7); shake(10);
+  }
+  async function shockwave(from, targets, color) {       // several targets: one expanding shockwave, every target hit as it passes
+    const reach = Math.max(...targets.map(t => { const p = at(t); return Math.hypot(p.x - from.x, p.y - from.y); }), 120);
+    const dur = T(620), w = spawn('wave', from.x, from.y); w.style.setProperty('--c', color);
+    fire(w, [{ width: '20px', height: '20px', opacity: 1 }, { width: reach * 2.3 + 'px', height: reach * 2.3 + 'px', opacity: 0 }], { duration: dur, easing: 'cubic-bezier(.2,.6,.4,1)' });
+    sparks(from.x, from.y, color, 14, 60, 8); shake(6);
+    await Promise.all(targets.map(t => { const p = at(t), d = Math.hypot(p.x - from.x, p.y - from.y);
+      return sleep(dur * Math.min(.85, d / (reach * 1.15))).then(() => sparks(p.x, p.y, color, 14, 70, 9)); }));
+  }
+
   return {
     // a glowing bolt arcing from the caster's seat (or the board, for Chaos/Legends) to the target
     async bolt(from, to, color) {
@@ -3087,6 +3151,19 @@ const FX = (() => {
       for (let k = 1; k < 7; k++) setTimeout(() => { const p = pt(Math.pow(k / 7, 1.6)); sparks(p.x, p.y, color, 2, 16, 6); }, dur * k / 7);
       await sleep(dur);
       sparks(b.x, b.y, color, 10, 60, 9);
+    },
+    // an attack's look depends on what attacked (kind) — spell: magic orb · creature: claw slashes · wizard: straight
+    // beam · treasure: spinning trinket · legend / Group Attack: falling meteor · chaos: storm orb. An attack on
+    // several players at once (wave) is one shockwave from the attacker instead of separate shots. The shot starts
+    // at the attacking card in the arena when it's there. Light effects / reduced motion: the plain orb.
+    async strike(src, targets, kind, color, card, wave) {
+      if (!targets.length) return;
+      if (fxLite() || RM.matches) return Promise.all(targets.map(t => FX.bolt(src, t, color)));
+      const cardEl = card && document.querySelector(`.arena .card[data-zoom="${card.uid}"]`);
+      const from = cardEl ? (r => clampPt(r.left + r.width / 2, r.top + r.height * .35))(cardEl.getBoundingClientRect()) : at(src);
+      if (wave) return shockwave(from, targets, kind === 'legend' || kind === 'chaos' ? '#ff3355' : color);
+      const one = kind === 'creature' ? claw : kind === 'wizard' ? beam : kind === 'treasure' ? spin : kind === 'legend' ? meteor : orbShot;
+      await Promise.all(targets.map(t => one(from, at(t), t, kind === 'spell' ? '#b46cff' : color)));
     },
     // the card whose attack is about to fly lifts and glows in the casting arena (found by its uid, so guests can too)
     async windup(card) {
@@ -3273,7 +3350,13 @@ async function attack(src, spec) {
   const color = !spec.dmg ? (spec.bent ? '#b07cff' : '#59c2c7') : spec.chaos ? '#c27dff' : src ? '#ff7a3d' : '#ff3355';
   if (src && G.curCard) await FX.windup(G.curCard);
   AUD.play('cast');
-  await Promise.all(targets.map(t => FX.bolt(src, t, color)));
+  // what the shot looks like follows what attacked (see FX.strike); hitting everyone (or 3+) is one shockwave
+  const atkCard = src ? G.curCard : null;
+  const kind = !src ? (spec.chaos ? 'chaos' : 'legend')
+    : !atkCard ? 'spell' : atkCard.type === 'legend' ? 'legend' : atkCard.type === 'familiar' ? 'creature'
+    : ['spell', 'creature', 'wizard', 'treasure'].find(ty => isType(atkCard, ty)) || 'spell';
+  const wave = targets.length > 1 && (spec.to === 'each' || spec.to === 'all' || targets.length >= 3);
+  await FX.strike(src, targets, kind, color, atkCard, wave);
   let kills = 0, dealtTotal = 0;
   // Rumble the Chainsaw: the next attack its player makes this turn can't be dodged
   let unblock = spec.unblockable;
