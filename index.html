@@ -42,7 +42,7 @@ button{font-family:inherit}
 .sect-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
 /* tabletop: the board spans the full width, every player's panel sits in one row under it (yours always in the
    middle column, rivals to its left and right), then your mat */
-.table{display:grid;gap:12px;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "seats" "you"}
+.table{display:grid;gap:12px;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "seats" "you";align-content:start}
 .seats{grid-area:seats;display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,360px) minmax(0,1fr);gap:12px;min-width:0;
   align-items:stretch;padding-top:6px}
 .seats .side{display:flex;gap:12px;min-width:0}
@@ -315,6 +315,25 @@ button{font-family:inherit}
 .dialog .msub{color:var(--mute);font-size:13px}
 .opts{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
 .opts .opt-card .card{cursor:pointer}
+/* familiar pick (start of game): the wizard ability in a gold box, the two familiars side by side in the middle at
+   the zoomed card's size (shrunk only to fit the screen's width and height) */
+#modal .dialog:has(.fam-pick){max-width:820px}
+.fam-pick{display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center}
+.fp-trait{width:100%;border:2px solid var(--gold);border-radius:12px;padding:12px 18px;
+  background:radial-gradient(ellipse at 50% 0%, #f0c35a33, transparent 75%), var(--panel2);box-shadow:0 0 24px #f0c35a33}
+.fp-k{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.fp-trait b{display:block;font-family:var(--f-display);font-weight:400;font-size:clamp(24px,4vw,32px);line-height:1.1;color:var(--gold);margin:2px 0 4px}
+.fp-trait p{margin:0;font-size:clamp(14px,2vw,17px);line-height:1.5;color:var(--ink)}
+.fp-note{font-size:13px;color:var(--mute)}
+.dialog:has(.fam-pick) .opts{justify-content:center;flex-wrap:nowrap;gap:clamp(12px, 3vw, 24px)}
+.dialog:has(.fam-pick) .opts .card{width:min(340px, 38vw, calc((100vh - 300px) / 1.8));--nf:clamp(15px, 2.4vw, 28px)}
+.dialog:has(.fam-pick) .opts .card .c-head{padding:6px 12px;height:calc(var(--nf) * 2.1 + 12px)}
+.dialog:has(.fam-pick) .opts .card .c-cost{min-width:32px;height:32px;font-size:17px}
+.dialog:has(.fam-pick) .opts .card .c-type{font-size:12px;padding:0 12px}
+.dialog:has(.fam-pick) .opts .card .c-text{font-size:clamp(11px, 1.2vw, 15px);line-height:1.5;padding:10px 12px}
+.dialog:has(.fam-pick) .opts .card .c-foot{padding:8px 12px}
+.dialog:has(.fam-pick) .opts .card .tag{font-size:12px;padding:2px 7px}
+.dialog:has(.fam-pick) .opts .card .c-vp{font-size:16px}
 .opts .opt-card .card:hover{transform:translateY(-4px);box-shadow:0 0 0 2px var(--gold)}
 .setup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute)}
@@ -3671,7 +3690,9 @@ async function startGame(name, nAI, guests = []) {
   // every human picks at the same time (online, each in their own browser)
   await Promise.all(G.players.filter(p => !p.isAI).map(async p => {
     p.familiar = await humanChoose(p, 'เลือกสัตว์รับใช้ของคุณ', p.famChoices.map(c => ({ card: c, value: c })),
-      `ความสามารถพ่อมดของคุณ: <b>${p.trait.name}</b> — ${p.trait.text}<br>สัตว์รับใช้วางข้างตัวคุณ มีแค่คุณที่ซื้อได้`);
+      // .fam-pick in the sub switches the dialog to its big, centred layout (CSS :has), on guests' screens too
+      `<div class="fam-pick"><div class="fp-trait"><span class="fp-k">ความสามารถพ่อมดของคุณ</span><b>${p.trait.name}</b><p>${p.trait.text}</p></div>
+        <div class="fp-note">เลือกสัตว์รับใช้ 1 ใบ · วางข้างตัวคุณ มีแค่คุณที่ซื้อเข้าเด็คได้</div></div>`);
     if (p.isAI && !p.famChoices.includes(p.familiar)) p.familiar = p.famChoices[0]; // left during the pick
   }));
   log(`เริ่มเกม! ${G.players[G.cur].name} เล่นก่อน`, 'sys');
@@ -3975,6 +3996,9 @@ new MutationObserver(muts => {
   if (fitQueued || !muts.some(m => [...m.addedNodes].some(n => !isMoreBtn(n)))) return;
   fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitNames(); });
 }).observe(document.body, { childList: true, subtree: true });
+// card sizes follow the window (shop row, familiar pick…), so refit names and ability text after a resize
+let fitResize = null;
+addEventListener('resize', () => { clearTimeout(fitResize); fitResize = setTimeout(() => fitNames(), 150); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#zoom').hidden) closeZoom(); });
 $('#zoom').addEventListener('click', closeZoom);
 function cardHTML(c, o = {}) {
@@ -4036,6 +4060,7 @@ function seatHTML(p, dir) {
     </div>`;
 }
 
+let keepH = {}; // render(): the tallest the table has been this turn (see boardEl.style.minHeight)
 let lastGold = {}; // render(): the gold counter bumps only when the amount changes during the same player's turn
 function render() {
   if (!G) return;
@@ -4105,7 +4130,12 @@ function render() {
   const ongoing = me.ongoing.length ? me.ongoing.map(c => !(myTurn && c.sacrifice) ? cardHTML(c, { small: true })
     : `<div class="act-wrap">${cardHTML(c, { small: true })}<button class="btn act-btn" data-act="sacrifice" data-uid="${c.uid}" title="${c.sacText || ''}">ทำลายเพื่อใช้</button></div>`).join('') : '';
 
-  $('#board').innerHTML = `
+  // the table never gets shorter during one player's turn: playing cards out of a hand that wrapped onto 2 lines
+  // used to shrink the page, and the browser then scrolled the view up (you had to scroll back down to the hand)
+  const boardEl = $('#board');
+  if (keepH.cur !== G.cur || G.over) { keepH = { cur: G.cur, h: 0 }; boardEl.style.minHeight = ''; }
+  keepH.h = Math.max(keepH.h, boardEl.offsetHeight);
+  boardEl.innerHTML = `
     <section class="boardc">
       <div class="market">
         <div class="mgroup mg-legend"><span class="cap" title="เลือกซื้อได้ 3 ใบ"><b>ตำนาน</b> · กองคว่ำเหลือ ${G.legends.length} ใบ</span>${legendHTML}</div>
@@ -4132,6 +4162,7 @@ function render() {
           ${ongoing ? `<div class="sect-label" style="margin-top:10px">การ์ดต่อเนื่องของคุณ</div><div class="cards">${ongoing}</div>` : ''}</div>
       </div>
     </section>`;
+  boardEl.style.minHeight = keepH.h + 'px';
   G.players.forEach(p => p.hitFlash = false);
   NET.dirty();
   if (!$('#viewer').hidden && viewerState && viewerState.what !== 'art') openViewer(viewerState.what, viewerState.p);
