@@ -3072,6 +3072,8 @@ const Embers = (() => {
 const FX = (() => {
   const pace = () => { const p = G && cur(); return p && p.isAI ? Math.max(.25, Math.min(1.6, AI_DELAY / 650)) : 1; };
   const T = ms => Math.round(ms * pace());
+  // attack shots (FX.strike, windup, bolt) run slower than the other effects so they can be followed by eye
+  const ATK_SLOW = 1.7, TA = ms => T(ms * ATK_SLOW);
   const px = v => typeof v === 'number' ? v + 'px' : v;
   function spawn(cls, x, y, text) {
     const el = document.createElement('div');
@@ -3123,7 +3125,7 @@ const FX = (() => {
     fire(el, [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 },
       { transform: 'translate(-50%,-80%) scale(1.35)', opacity: 1, offset: .15 },
       { transform: 'translate(-50%,-110%) scale(1)', opacity: 1, offset: .6 },
-      { transform: 'translate(-50%,-190%) scale(.9)', opacity: 0 }], { duration: 1200, easing: 'ease-out' });
+      { transform: 'translate(-50%,-190%) scale(.9)', opacity: 0 }], { duration: 1700, easing: 'ease-out' });
     return el;
   }
   const screen = (cls, kf, ms) => fire(spawn('screen ' + cls, 0, 0), kf, { duration: ms });
@@ -3211,7 +3213,7 @@ const FX = (() => {
   // --- attack styles for FX.strike (from: {x,y}, to: {x,y}, t: the target player) ---
   const arcPt = (a, b, lift) => { const cx = (a.x + b.x) / 2, cy = Math.min(a.y, b.y) - lift; return u => ({ x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * cx + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * cy + u * u * b.y }); };
   async function orbShot(a, b, t, color) {               // spell: sparkling magic orb on an arc with a glitter trail
-    const pt = arcPt(a, b, Math.min(180, Math.hypot(b.x - a.x, b.y - a.y) * .35)), dur = T(440), orb = spawn('orb magic', 0, 0);
+    const pt = arcPt(a, b, Math.min(180, Math.hypot(b.x - a.x, b.y - a.y) * .35)), dur = TA(440), orb = spawn('orb magic', 0, 0);
     AUD.local('zap');
     orb.style.setProperty('--c', color);
     fire(orb, Array.from({ length: 11 }, (_, i) => { const p = pt(i / 10); return { transform: `translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${.5 + i / 12}) rotate(${i * 40}deg)` }; }), { duration: dur, easing: 'ease-in' });
@@ -3221,42 +3223,42 @@ const FX = (() => {
   async function claw(a, b, t, color) {                  // creature: a quick lunge, then three claw slashes across the target
     const el = seat(t), r = el ? el.getBoundingClientRect() : { left: b.x - 80, top: b.y - 40, width: 160, height: 80 };
     const lunge = spawn('orb', 0, 0); lunge.style.setProperty('--c', '#ff6a3d');
-    fire(lunge, [{ transform: `translate(${a.x}px,${a.y}px) translate(-50%,-50%) scale(.6)` }, { transform: `translate(${b.x}px,${b.y}px) translate(-50%,-50%) scale(1.2)` }], { duration: T(260), easing: 'cubic-bezier(.5,0,.9,.4)' });
-    await sleep(T(240)); AUD.local('slash');
+    fire(lunge, [{ transform: `translate(${a.x}px,${a.y}px) translate(-50%,-50%) scale(.6)` }, { transform: `translate(${b.x}px,${b.y}px) translate(-50%,-50%) scale(1.2)` }], { duration: TA(260), easing: 'cubic-bezier(.5,0,.9,.4)' });
+    await sleep(TA(240)); AUD.local('slash');
     for (let i = 0; i < 3; i++) {
       const c = spawn('claw', r.left + r.width * (.3 + i * .18), r.top + r.height / 2);
       c.style.height = Math.max(60, r.height * 1.2) + 'px';
       fire(c, [{ transform: 'translate(-50%,-50%) rotate(28deg) scaleY(0)', opacity: 1 }, { transform: 'translate(-50%,-50%) rotate(28deg) scaleY(1)', opacity: 1, offset: .35 },
-        { transform: 'translate(-50%,-50%) rotate(28deg) scaleY(1)', opacity: 0 }], { duration: T(520), delay: T(i * 70) });
+        { transform: 'translate(-50%,-50%) rotate(28deg) scaleY(1)', opacity: 0 }], { duration: TA(520), delay: TA(i * 70) });
     }
-    sparks(b.x, b.y, '#ff4d5e', 16, 80, 8); shake(4); await sleep(T(260));
+    sparks(b.x, b.y, '#ff4d5e', 16, 80, 8); shake(4); await sleep(TA(260));
   }
   async function beam(a, b, t, color) {                  // wizard: a straight beam that snaps across, then fades
     const len = Math.hypot(b.x - a.x, b.y - a.y), ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI, el = spawn('beam', a.x, a.y);
     el.style.width = len + 'px'; el.style.setProperty('--c', color); AUD.local('beam');
     fire(el, [{ transform: `translateY(-50%) rotate(${ang}deg) scaleX(0)`, opacity: 1 }, { transform: `translateY(-50%) rotate(${ang}deg) scaleX(1)`, opacity: 1, offset: .35 },
-      { transform: `translateY(-50%) rotate(${ang}deg) scaleX(1) scaleY(.2)`, opacity: 0 }], { duration: T(520), easing: 'ease-out' });
-    await sleep(T(190)); sparks(b.x, b.y, color, 18, 80, 8); sparks(b.x, b.y, '#fff', 6, 40, 5); await sleep(T(150));
+      { transform: `translateY(-50%) rotate(${ang}deg) scaleX(1) scaleY(.2)`, opacity: 0 }], { duration: TA(520), easing: 'ease-out' });
+    await sleep(TA(190)); sparks(b.x, b.y, color, 18, 80, 8); sparks(b.x, b.y, '#fff', 6, 40, 5); await sleep(TA(150));
   }
   async function spin(a, b, t, color) {                  // treasure: a gold trinket tumbling through the air
-    const pt = arcPt(a, b, Math.min(220, Math.hypot(b.x - a.x, b.y - a.y) * .45)), dur = T(520), el = spawn('trinket', 0, 0, '✦');
+    const pt = arcPt(a, b, Math.min(220, Math.hypot(b.x - a.x, b.y - a.y) * .45)), dur = TA(520), el = spawn('trinket', 0, 0, '✦');
     AUD.local('whoosh');
     fire(el, Array.from({ length: 11 }, (_, i) => { const p = pt(i / 10); return { transform: `translate(${p.x}px,${p.y}px) translate(-50%,-50%) rotate(${i * 72}deg) scale(${.7 + i / 20})` }; }), { duration: dur, easing: 'ease-in-out' });
     await sleep(dur); AUD.local('coin'); sparks(b.x, b.y, '#f0c35a', 16, 70, 8); sparks(b.x, b.y, color, 8, 50, 7);
   }
   async function meteor(a, b, t, color) {                // legend: a meteor drops from the top of the screen with a fire trail
-    const sx = b.x + (b.x < innerWidth / 2 ? -220 : 220), sy = -60, dur = T(560), el = spawn('meteor', 0, 0);
+    const sx = b.x + (b.x < innerWidth / 2 ? -220 : 220), sy = -60, dur = TA(560), el = spawn('meteor', 0, 0);
     const ang = Math.atan2(b.y - sy, b.x - sx) * 180 / Math.PI; AUD.local('fall');
     fire(el, [{ transform: `translate(${sx}px,${sy}px) translate(-50%,-50%) rotate(${ang}deg) scale(.6)` }, { transform: `translate(${b.x}px,${b.y}px) translate(-50%,-50%) rotate(${ang}deg) scale(1.2)` }], { duration: dur, easing: 'cubic-bezier(.6,0,1,.7)' });
     for (let k = 1; k < 8; k++) setTimeout(() => sparks(sx + (b.x - sx) * k / 8, sy + (b.y - sy) * k / 8, k % 2 ? '#ffb454' : '#ff3355', 3, 22, 8), dur * k / 8);
     await sleep(dur);
     const boom = spawn('ring boom', b.x, b.y); AUD.local('boom');
-    fire(boom, [{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.6)', opacity: 0 }], { duration: T(500), easing: 'ease-out' });
+    fire(boom, [{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.6)', opacity: 0 }], { duration: TA(500), easing: 'ease-out' });
     sparks(b.x, b.y, '#ff6a3d', 26, 130, 11); sparks(b.x, b.y, '#ffd27a', 12, 80, 7); shake(10);
   }
   async function shockwave(from, targets, color) {       // several targets: one expanding shockwave, every target hit as it passes
     const reach = Math.max(...targets.map(t => { const p = at(t); return Math.hypot(p.x - from.x, p.y - from.y); }), 120);
-    const dur = T(620), w = spawn('wave', from.x, from.y); w.style.setProperty('--c', color);
+    const dur = TA(620), w = spawn('wave', from.x, from.y); w.style.setProperty('--c', color);
     fire(w, [{ width: '20px', height: '20px', opacity: 1 }, { width: reach * 2.3 + 'px', height: reach * 2.3 + 'px', opacity: 0 }], { duration: dur, easing: 'cubic-bezier(.2,.6,.4,1)' });
     sparks(from.x, from.y, color, 14, 60, 8); shake(6); AUD.local('wave');
     await Promise.all(targets.map(t => { const p = at(t), d = Math.hypot(p.x - from.x, p.y - from.y);
@@ -3268,7 +3270,7 @@ const FX = (() => {
     async bolt(from, to, color) {
       const a = at(from), b = at(to);
       if (RM.matches || Math.hypot(b.x - a.x, b.y - a.y) < 8) return;
-      const dur = T(420), cx = (a.x + b.x) / 2, cy = Math.min(a.y, b.y) - Math.min(180, Math.hypot(b.x - a.x, b.y - a.y) * .35);
+      const dur = TA(420), cx = (a.x + b.x) / 2, cy = Math.min(a.y, b.y) - Math.min(180, Math.hypot(b.x - a.x, b.y - a.y) * .35);
       const pt = u => ({ x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * cx + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * cy + u * u * b.y });
       const orb = spawn('orb', 0, 0); orb.style.setProperty('--c', color);
       fire(orb, Array.from({ length: 9 }, (_, i) => { const p = pt(i / 8); return { transform: `translate(${p.x}px,${p.y}px) translate(-50%,-50%) scale(${.5 + i / 10})` }; }),
@@ -3297,9 +3299,9 @@ const FX = (() => {
       el.closest('.slot')?.style.setProperty('z-index', 6);
       el.animate([{ transform: 'none', filter: 'none' },
         { transform: 'translateY(-16px) scale(1.06)', filter: 'drop-shadow(0 0 18px #ff7a3d) brightness(1.15)', offset: .55 },
-        { transform: 'none', filter: 'none' }], { duration: T(520), easing: 'cubic-bezier(.3,1.4,.5,1)' });
+        { transform: 'none', filter: 'none' }], { duration: TA(520), easing: 'cubic-bezier(.3,1.4,.5,1)' });
       const r = el.getBoundingClientRect(); sparks(r.left + r.width / 2, r.top + 20, '#ff7a3d', 8, 40, 6, 30);
-      await sleep(T(300));
+      await sleep(TA(300));
     },
     // a defence: a glowing dome pops over the defender's panel and the incoming bolt shatters on it ("ป้องกัน!");
     // a reflect adds a mirror sweep ("สะท้อน!") before the bolt flies back
