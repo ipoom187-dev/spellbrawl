@@ -133,11 +133,17 @@ button{font-family:inherit}
 .ev-reveal .ev-cap,.ev-defend .ev-cap{background:var(--def);color:#06282a;border-color:var(--def)}
 .ev-act .ev-cap{background:var(--accent);color:#1a0f0a;border-color:var(--accent)}
 /* centre-screen pop-up of the latest affected cards (does not block clicks) */
-#tok-note{position:fixed;inset:0;z-index:55;display:grid;place-items:center;background:#0b0810b0;padding:16px}
+#tok-note{position:fixed;inset:0;z-index:55;display:grid;place-items:center;background:#0b0810e8;padding:16px}
 #tok-note[hidden]{display:none}
-#tok-note .tn-box{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:min(360px,92vw);text-align:center;animation:popin .32s cubic-bezier(.2,1.3,.4,1)}
-#tok-note .tn-cap{font-family:var(--f-display);font-size:28px;line-height:1.1;color:#ff8a9a;text-shadow:0 2px 0 #000,0 0 18px #c8001e99;text-wrap:balance}
-#tok-note .card{width:min(340px,82vw);box-shadow:0 18px 50px #000d}
+#tok-note .tn-box{display:flex;flex-direction:column;align-items:center;gap:14px;width:min(500px,92vw);max-height:100%;overflow:auto;text-align:center;animation:popin .32s cubic-bezier(.2,1.3,.4,1)}
+#tok-note .tn-cap{font-family:var(--f-body);font-weight:700;font-size:clamp(24px,5vw,34px);line-height:1.25;color:#ff8a9a;text-shadow:0 2px 0 #000,0 0 18px #c8001e99;text-wrap:balance}
+#tok-note .card{width:min(250px,58vw);flex:none;box-shadow:0 18px 50px #000d}
+#tok-note .card.tokencoin{padding:34px 34px 28px} /* % padding would follow the (wider) box, not the coin */
+#tok-note .tokencoin .tk-name{font-size:13cqw}
+#tok-note .tokencoin .tk-vp{font-size:10cqw}
+#tok-note .tn-text{font-size:clamp(18px,4.2vw,22px);line-height:1.55;color:var(--ink);background:#24101acc;border:1px solid #7a1f2e;
+  border-radius:12px;padding:12px 18px;width:100%;text-wrap:pretty}
+#tok-note .btn{font-size:18px;padding:10px 28px}
 /* Dead Wizard Token coin (tokenHTML) */
 .card.tokencoin{container-type:inline-size;aspect-ratio:1/1;border-radius:50%;min-height:0;padding:13% 15% 11%;gap:2cqw;
   display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;
@@ -149,7 +155,7 @@ button{font-family:inherit}
 .tokencoin .tk-text{font-size:6.4cqw;line-height:1.3;color:#f3e2e5;overflow:hidden}
 .tokencoin .tk-vp{font-weight:700;font-size:7.5cqw;color:#2a0d14;background:#e9c46a;border-radius:999px;padding:.2cqw 4cqw;margin-top:1cqw}
 .card.zoomed.tokencoin{width:min(380px,86vw)}
-#tok-note .tn-sub{font-size:12px;color:var(--mute)}
+#tok-note .tn-sub{font-size:15px;color:var(--mute)}
 @media (prefers-reduced-motion:reduce){#tok-note .tn-box{animation:none}}
 #pop{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);z-index:40;pointer-events:none;display:flex;gap:16px;flex-wrap:nowrap;justify-content:center;max-width:96vw}
 @media (max-width:760px){
@@ -2608,8 +2614,10 @@ function tokenNotice(p, card, how) {
 function drawTokenNotice() {
   const el = $('#tok-note'), it = TOKNOTE[0];
   if (!it) { el.hidden = true; el.innerHTML = ''; return; }
-  el.innerHTML = `<div class="tn-box"><div class="tn-cap" id="tok-note-cap">☠ คุณ${it.how}</div>${cardHTML(it.card, { noZoom: true })}
-    <div class="tn-sub">ผลของ Token เขียนอยู่ในเหรียญ · VP ที่หักตอนจบเกมอยู่ด้านล่าง</div>
+  // the effect goes in its own box under the coin (inside the round coin a long text got cut off)
+  el.innerHTML = `<div class="tn-box"><div class="tn-cap" id="tok-note-cap">☠ คุณ${it.how}</div>${cardHTML(it.card, { noZoom: true, noText: true })}
+    <div class="tn-text">${it.card.text || 'ไม่มีผลพิเศษ'}</div>
+    <div class="tn-sub">VP บนเหรียญจะถูกนับตอนจบเกม</div>
     <button class="btn" id="tn-ok">รับทราบ${TOKNOTE.length > 1 ? ` (อีก ${TOKNOTE.length - 1})` : ''}</button></div>`;
   el.hidden = false;
   $('#tn-ok').focus();
@@ -3990,7 +3998,7 @@ function newGame(name, nAI, more = []) {
   const main = [];
   for (const [id, n] of Object.entries(MAIN)) for (let k = 0; k < n; k++) main.push(make(id));
   shuffle(main);
-  const nLeg = { 2:5, 3:6, 4:7, 5:8 }[players.length];
+  const nLeg = 15; // face-down Legend stack (any player count); the game ends when it runs out
   // Dead Wizard tokens: each kind once, 4 per player drawn at random (5 players use all 20)
   const tokPool = shuffle(TOKENS.map(k => ({ ...k }))).slice(0, players.length * 4);
   G = { players, cur: 0, main, lineup: [null, null, null, null, null], wild: 16, bent: 16, destroyed: [], log: [],
@@ -4346,7 +4354,7 @@ function tokenHTML(c, o = {}) {
   const vp = c.vp ? `${c.vp > 0 ? '+' : ''}${c.vp} VP` : '0 VP';
   return `<div class="card tokencoin ${o.small ? 'small' : ''} ${o.cls || ''}" ${o.noZoom ? '' : `data-zoom="${zk}"`} title="${c.name}: ${c.text}">
     <div class="tk-skull" aria-hidden="true">☠</div><div class="tk-name">${c.name.replace(/^☠\s*/, '')}</div>
-    <div class="tk-text">${c.text || ''}</div><div class="tk-vp">${vp}</div></div>`;
+    ${o.noText ? '' : `<div class="tk-text">${c.text || ''}</div>`}<div class="tk-vp">${vp}</div></div>`;
 }
 function cardHTML(c, o = {}) {
   if (c.type === 'token') return tokenHTML(c, o);
