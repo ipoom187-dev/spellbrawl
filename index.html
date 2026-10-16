@@ -64,11 +64,11 @@ header.top .sp{flex:1}
 .arena-pw{color:var(--gold);font-size:16px}
 /* casting arena keeps one fixed size: one row of cards that are all --arena-h tall (long ability text shrinks to fit,
    see fitNames), with room for the ✲ button; when the row is full the cards overlap instead of wrapping */
-.arena{--arena-h:330px}
+.arena{--arena-h:var(--card-h)}
 .arena .cards.played{flex-wrap:nowrap;align-items:flex-start;height:calc(var(--arena-h) + 40px);gap:6px;padding-right:126px}
-.arena .cards.played>.slot{flex:0 1 132px;min-width:22px;position:relative}
+.arena .cards.played>.slot{flex:0 1 var(--card-w);min-width:22px;position:relative}
 .arena .cards.played>.slot:hover{z-index:5}
-.arena .cards.played>.slot>.card,.arena .cards.played>.slot>.act-wrap{width:132px}
+.arena .cards.played>.slot>.card,.arena .cards.played>.slot>.act-wrap{width:var(--card-w)}
 .arena .cards.played .card{height:var(--arena-h);min-height:0;overflow:hidden}
 .arena .cards.played .card .c-text{overflow:hidden}
 .arena .cards.played>.empty{align-self:center}
@@ -154,7 +154,8 @@ header.top .sp{flex:1}
 .hall-title span{font-family:var(--f-body);font-size:12px;color:var(--mute);margin-left:8px}
 .legend-hall .cards{justify-content:center;gap:22px}
 .market-row{border-top:1px dashed color-mix(in srgb, var(--gold) 30%, transparent);padding-top:14px}
-.piles{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;justify-content:center}
+/* pile counts: one strip under the market, so the Line-Up and Wild Surge get the whole row */
+.piles{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;margin-top:-6px;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;justify-content:center}
 .piles b{color:var(--ink)}
 /* cards */
 .cards{display:flex;gap:8px;flex-wrap:wrap}
@@ -167,17 +168,24 @@ header.top .sp{flex:1}
 .card .c-type{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px;color:#6d5c52;border-bottom:1px dashed #c9b894}
 .card .c-text{font-size:11.5px;line-height:1.35;padding:5px 6px;flex:1}
 .card .c-foot{display:flex;justify-content:space-between;align-items:center;padding:4px 6px;gap:4px}
-/* board market (Legends, Line-Up, Wild Surge…): name, cost, picture and type only; right-click shows the full card.
-   Cards in the casting arena keep their full text. */
-.boardc .card:not(.arena .card) .c-text,.boardc .card:not(.arena .card) .c-foot{display:none}
-.boardc .card:not(.arena .card){min-height:0}
-/* VP badge on the picture: only on the board (market rows and casting arena), where the footer is hidden or clipped */
+/* board cards (Legends, Line-Up, Wild Surge, casting arena) are full cards in the shape of a store-bought trading card
+   (63×88 mm): a wide 16:10 picture with the type label laid over its bottom edge, so the ability text gets the room.
+   fitNames() shrinks long ability text, and text that still does not fit ends in an "อ่านเพิ่มเติม" button (opens the zoom) */
+.boardc{--card-w:140px;--card-h:calc(var(--card-w) * 88 / 63)}
+.boardc .card:not(.t-chaos){width:var(--card-w);height:var(--card-h);min-height:0;overflow:hidden}
+.boardc .card:not(.t-chaos) .c-art{aspect-ratio:16/10;flex:none}
+.boardc .card:not(.t-chaos) .c-type{margin-top:-19px;height:19px;align-self:flex-start;position:relative;z-index:1;border:0;
+  border-radius:0 6px 0 0;background:#000b;color:#f3e7cf;font-size:9px;padding:3px 7px}
+.boardc .card .c-text{overflow:hidden;min-height:0;position:relative;font-size:10.5px;line-height:1.3}
+.card .more-btn{position:absolute;right:0;bottom:0;border:0;padding:1px 6px 0 20px;cursor:zoom-in;
+  background:linear-gradient(90deg,transparent,var(--paper) 16px);color:#5a1d14;font:inherit;font-size:10.5px;font-weight:700;text-decoration:underline}
+.card .more-btn:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+/* VP badge on the picture: only in the casting arena, where the footer VP is hidden */
 .card .c-art{position:relative}
 .card .c-vpb{display:none}
-.boardc .card .c-vpb{display:block;position:absolute;right:4px;bottom:4px;padding:1px 6px;border-radius:999px;background:#000c;color:var(--gold);
+.arena .card .c-vpb{display:block;position:absolute;right:4px;bottom:4px;padding:1px 6px;border-radius:999px;background:#000c;color:var(--gold);
   font-weight:700;font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums;box-shadow:0 0 0 1px #f0c35a66}
 .arena .card .c-foot .c-vp{display:none}
-.boardc .card:not(.arena .card) .c-type{border-bottom:0;padding:4px 6px 6px}
 .tag{font-size:9.5px;font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;margin-right:2px}
 .tag.act{background:var(--gold);color:#2a1d05}
 .act-wrap{display:flex;flex-direction:column;gap:6px;align-items:stretch}
@@ -3885,6 +3893,11 @@ function openZoom(k) {
   fitNames(z);
 }
 const closeZoom = () => { $('#zoom').hidden = true; };
+// "อ่านเพิ่มเติม" on a board card opens the zoom instead of buying / playing the card (capture runs before the board's click handler)
+document.addEventListener('click', e => {
+  const b = e.target.closest('.more-btn'); if (!b) return;
+  e.stopPropagation(); e.preventDefault(); openZoom(b.closest('.card').dataset.zoom);
+}, true);
 document.addEventListener('contextmenu', e => {
   const card = e.target.closest('.card[data-zoom]'); if (!card || card.closest('#zoom')) return;
   e.preventDefault(); openZoom(card.dataset.zoom);
@@ -3898,17 +3911,28 @@ function fitNames(root = document) {
     const fits = () => el.scrollHeight <= el.clientHeight + 1;
     for (let s = base; !fits() && s > base * 0.55; s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
   });
-  // casting-arena cards are all the same height: shrink the ability text of long cards until it fits
-  root.querySelectorAll('.arena .cards.played .card .c-text').forEach(el => {
-    el.style.fontSize = '';
-    const base = parseFloat(getComputedStyle(el).fontSize);
-    for (let s = base; el.scrollHeight > el.clientHeight + 1 && s > 7.5; s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
+  // board cards are all the same height: shrink the ability text of long cards (down to 9px), then cut it off
+  // with an "อ่านเพิ่มเติม" button that opens the zoomed card
+  root.querySelectorAll('.boardc .card:not(.t-chaos) .c-text').forEach(el => {
+    el.style.fontSize = el.style.height = el.style.flex = ''; el.querySelector('.more-btn')?.remove();
+    const base = parseFloat(getComputedStyle(el).fontSize), over = () => el.scrollHeight > el.clientHeight + 1;
+    for (let s = base; over() && s > 9; s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
+    if (!over() || !el.closest('.card[data-zoom]')) return;
+    // cut below the last line that is fully visible (measured: Thai lines can be taller than line-height),
+    // so no half-hidden line shows behind the button
+    // (overflow clips at the padding edge, so the box ends right at that line's bottom)
+    const top = el.getBoundingClientRect().top, limit = top + el.clientHeight;
+    const range = document.createRange(); range.selectNodeContents(el);
+    const cut = Math.max(0, ...[...range.getClientRects()].map(r => r.bottom).filter(b => b <= limit + 0.5));
+    if (cut) { el.style.flex = 'none'; el.style.height = (cut - top) + 'px'; }
+    el.insertAdjacentHTML('beforeend', '<button type="button" class="more-btn" title="ดูการ์ดขยาย">…อ่านเพิ่มเติม</button>');
   });
 }
 // cards are drawn by render(), dialogs, viewers and pop-ups: fit names whenever new cards appear (once per frame)
 let fitQueued = false;
+const isMoreBtn = n => n.classList && n.classList.contains('more-btn'); // fitNames' own button: no refit
 new MutationObserver(muts => {
-  if (fitQueued || !muts.some(m => m.addedNodes.length)) return;
+  if (fitQueued || !muts.some(m => [...m.addedNodes].some(n => !isMoreBtn(n)))) return;
   fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitNames(); });
 }).observe(document.body, { childList: true, subtree: true });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#zoom').hidden) closeZoom(); });
@@ -4043,12 +4067,12 @@ function render() {
       <div class="mrow market-row">
         <div class="mgroup" style="min-width:0;flex:1"><span class="cap">Line-Up</span><div class="cards">${lineup}</div></div>
         <div class="mgroup"><span class="cap">Wild Surge (${G.wild})</span>${wildHTML}</div>
-        <div class="piles">
+      </div>
+      <div class="piles">
           <span>กองหลัก <b>${G.main.length}</b></span>
           <span>Limp Wand <b>${G.bent}</b></span>
           <span>Dead Wizard Token เหลือ <b>${G.tokens.length}</b></span>
           <button class="linkbtn" data-act="view" data-what="destroyed">ถูกทำลาย (${G.destroyed.length})</button>
-        </div>
       </div>
       ${arena}
     </section>
