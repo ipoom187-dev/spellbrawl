@@ -229,6 +229,10 @@ button{font-family:inherit}
 .tag.act{background:var(--gold);color:#2a1d05}
 .act-wrap{display:flex;flex-direction:column;gap:6px;align-items:stretch}
 .act-btn{padding:6px 8px;font-size:13px;box-shadow:0 0 14px #f0c35a66}
+/* ✲ buttons (card abilities and the wizard tile) are solid gold so they read as buttons over cards and the felt */
+.act-btn,.act-trait{background:var(--gold);color:#2a1d05;border:1px solid #7a520f}
+.act-btn:hover:not(:disabled),.act-trait:hover:not(:disabled){background:#ffd776}
+.act-trait:disabled{background:#4a3c24;color:#c9b88f;border-color:#6a5530;opacity:1}
 .tag.atk{background:var(--hp)} .tag.def{background:var(--def);color:#06282a} .tag.ong{background:#2f8f93}
 .tag.uniq{background:var(--gold);color:#2a1d05}
 .c-vp{font-weight:700;font-size:12px;color:#7a4e00;white-space:nowrap}
@@ -280,8 +284,15 @@ button{font-family:inherit}
 .big .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
 .big.hp .v{color:var(--hp)} .big.pw .v{color:var(--gold)}
 .you{grid-area:you}
-.zones{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px}
-@media (max-width:640px){.zones{grid-template-columns:minmax(0,1fr)}}
+.zones{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px}
+/* your Ongoing cards: same row as the hand, against the right edge */
+.ong-zone{justify-self:end;max-width:min(380px,40vw)}
+.ong-zone .cards{justify-content:flex-end}
+.ong-zone .sect-label{text-align:right}
+.you-info{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.you-name{font-family:var(--f-display);font-size:22px;line-height:1.1}
+.youbar .pilebtns{margin:0 0 0 auto}
+@media (max-width:640px){.zones{grid-template-columns:minmax(0,1fr)}.ong-zone{justify-self:stretch;max-width:none}.ong-zone .cards{justify-content:flex-start}.ong-zone .sect-label{text-align:left}}
 .pilebtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .count-badge{position:absolute;top:-8px;right:-8px;background:var(--accent);color:#1a0f0a;font-weight:700;border-radius:12px;padding:2px 8px;font-size:12px;box-shadow:0 2px 6px #0008}
 .vgroup{display:flex;flex-direction:column;gap:6px;width:100%}
@@ -4043,7 +4054,7 @@ function chipsFor(p) {
 
 // a player's panel in the row under the board (everyone, you included): name, HP and wizard ability only;
 // hand/deck/discard counts, chips, Ongoing cards and pile buttons are in the "ข้อมูล" viewer (openViewer 'info').
-// A player with Ongoing cards gets a ⟳ marker (also opens the viewer).
+// A player with Ongoing cards gets a ⟳ marker (also opens the viewer). Your own panel has neither: your mat shows all of it.
 function seatHTML(p, dir) {
   const i = G.players.indexOf(p);
   const ong = p.ongoing.length ? `<button class="ongmark" data-act="view" data-what="info" data-p="${i}"
@@ -4054,7 +4065,7 @@ function seatHTML(p, dir) {
       <div class="rname"><b>${p.name}</b><span class="seatdir">${dir}</span>
         ${G.online ? `<span class="seattag">${p.away ? 'หลุด · AI เล่นแทน' : p.isAI ? 'AI' : 'ผู้เล่น'}</span>` : ''}
         ${cur() === p ? '<span class="turnpill">▶ กำลังร่ายเวท</span>' : ''}
-        <span class="rbtns">${ong}<button class="linkbtn" data-act="view" data-what="info" data-p="${i}">ข้อมูล</button></span></div>
+        ${p === meP() ? '' : `<span class="rbtns">${ong}<button class="linkbtn" data-act="view" data-what="info" data-p="${i}">ข้อมูล</button></span>`}</div>
       <div class="hprow"><div class="hpbar"><i style="width:${hpPct(p)}%"></i></div><span class="hpnum">${p.hp} HP</span></div>
       <div class="trait clamp" title="${traits}">${traits}</div>
     </div>`;
@@ -4117,7 +4128,7 @@ function render() {
   const turnBtns = `<div class="arena-actions">
       <div class="goldbox ${goldBump ? 'bump' : ''}" title="ทองที่ใช้ซื้อการ์ดได้ในเทิร์นนี้"><span class="coin" aria-hidden="true"></span>
         <b class="arena-pw">${pw}</b><small>ทองเทิร์นนี้</small></div>
-      ${traitsOf(me).filter(tr => tr.activate).map(tr => `<button class="btn ghost" data-act="trait" data-id="${tr.id}" ${myTurn && traitReady(me, tr) ? '' : 'disabled'} title="${tr.name}: ${tr.text}">✲ ${tr.actText}</button>`).join('')}
+      ${traitsOf(me).filter(tr => tr.activate).map(tr => `<button class="btn act-trait" data-act="trait" data-id="${tr.id}" ${myTurn && traitReady(me, tr) ? '' : 'disabled'} title="${tr.name}: ${tr.text}">✲ ${tr.actText}</button>`).join('')}
       <button class="btn end-btn" data-act="end" ${myTurn ? '' : 'disabled'}>จบเทิร์น</button>
     </div>`;
   const arena = `<div class="arena ${shown.length || nEv ? 'busy' : ''}">
@@ -4154,12 +4165,22 @@ function render() {
     <section class="you ${cur() === me ? 'active' : ''} ${me.hitFlash ? 'hit' : ''}" style="--pc:${me.color}">
       <div class="youbar">
         <div class="big pw"><span class="v">${cur() === me ? pw : '–'}</span><span class="k">ทอง</span></div>
-        <div style="min-width:0;flex:1;font-family:var(--f-display);font-size:22px">${pcName(me)} <span class="seatdir">มือและสัตว์รับใช้ของคุณ</span></div>
+        <div class="you-info">
+          <div class="you-name">${pcName(me)} <span class="seatdir">มือและสัตว์รับใช้ของคุณ</span></div>
+          <div class="stats"><span>มือ <b>${me.hand.length}</b></span><span>เด็ค <b>${me.deck.length}</b></span><span>ทิ้ง <b>${me.discard.length}</b></span></div>
+          ${chipsFor(me) ? `<div class="chips">${chipsFor(me)}</div>` : ''}
+        </div>
+        <div class="pilebtns">
+          <button class="linkbtn" data-act="view" data-what="deck" data-p="${ME}">ดูเด็ค (${me.deck.length})</button>
+          <button class="linkbtn" data-act="view" data-what="discard" data-p="${ME}">ดูกองทิ้ง (${me.discard.length})</button>
+          <button class="linkbtn" data-act="view" data-what="all" data-p="${ME}">การ์ดทั้งหมด (${allCards(me).length})</button>
+          <button class="linkbtn" data-act="view" data-what="tokens" data-p="${ME}">Dead Wizard Token (${me.tokens.length})</button>
+        </div>
       </div>
       <div class="zones">
         <div class="zone"><div class="sect-label">สัตว์รับใช้</div>${fam}</div>
-        <div class="zone"><div class="sect-label">มือของคุณ ${myTurn ? '· คลิกเพื่อเล่น' : ''}</div><div class="cards">${hand}</div>
-          ${ongoing ? `<div class="sect-label" style="margin-top:10px">การ์ดต่อเนื่องของคุณ</div><div class="cards">${ongoing}</div>` : ''}</div>
+        <div class="zone"><div class="sect-label">มือของคุณ ${myTurn ? '· คลิกเพื่อเล่น' : ''}</div><div class="cards">${hand}</div></div>
+        ${ongoing ? `<div class="zone ong-zone"><div class="sect-label">การ์ดต่อเนื่องของคุณ</div><div class="cards">${ongoing}</div></div>` : ''}
       </div>
     </section>`;
   boardEl.style.minHeight = keepH.h + 'px';
