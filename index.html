@@ -59,6 +59,10 @@ button{font-family:inherit}
 .rival .rbtns .linkbtn{padding:2px 8px}
 .ongmark{border:0;border-radius:999px;background:#2f8f93;color:#fff;font:inherit;font-size:11px;font-weight:700;padding:2px 8px;cursor:pointer}
 .ongmark:hover{background:#3aa9ae}
+.seats .rival{position:relative}
+/* the token count sits on the panel's top-right corner, half over its border, so it never pushes the name row */
+.tokmark{position:absolute;top:-10px;right:10px;z-index:2;box-shadow:0 2px 8px #000a;border:1px solid #b0304a;border-radius:999px;background:#3a1520;color:#ffd0d8;font:inherit;font-size:12px;font-weight:700;padding:1px 9px;cursor:pointer}
+.tokmark:hover{background:#6b2333}
 .hprow{display:flex;align-items:center;gap:8px}
 .hprow .hpbar{flex:1}
 .trait.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -130,9 +134,18 @@ button{font-family:inherit}
 #tok-note[hidden]{display:none}
 #tok-note .tn-box{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:min(360px,92vw);text-align:center;animation:popin .32s cubic-bezier(.2,1.3,.4,1)}
 #tok-note .tn-cap{font-family:var(--f-display);font-size:28px;line-height:1.1;color:#ff8a9a;text-shadow:0 2px 0 #000,0 0 18px #c8001e99;text-wrap:balance}
-#tok-note .card{width:240px;box-shadow:0 18px 50px #000d}
-#tok-note .card{--nf:22px}
-#tok-note .card .c-text{font-size:14px}
+#tok-note .card{width:min(340px,82vw);box-shadow:0 18px 50px #000d}
+/* Dead Wizard Token coin (tokenHTML) */
+.card.tokencoin{container-type:inline-size;aspect-ratio:1/1;border-radius:50%;min-height:0;padding:13% 15% 11%;gap:2cqw;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;
+  border:4px solid #7a1f2e;color:#f3e2e5;
+  background:radial-gradient(circle at 50% 32%, #4a1f2a 0%, #24101a 55%, #12080d 100%);
+  box-shadow:0 0 0 2px #c8a14a inset,0 0 0 7px #2a0d14 inset,0 0 0 8px #c8a14a66 inset,0 10px 30px #000c}
+.tokencoin .tk-skull{font-size:26cqw;line-height:1;color:#efe2c8;text-shadow:0 0 12px #c8001e,0 3px 0 #000}
+.tokencoin .tk-name{font-family:var(--f-display);font-size:10.5cqw;line-height:1.05;color:#ffb3c0;text-wrap:balance}
+.tokencoin .tk-text{font-size:6.4cqw;line-height:1.3;color:#f3e2e5;overflow:hidden}
+.tokencoin .tk-vp{font-weight:700;font-size:7.5cqw;color:#2a0d14;background:#e9c46a;border-radius:999px;padding:.2cqw 4cqw;margin-top:1cqw}
+.card.zoomed.tokencoin{width:min(380px,86vw)}
 #tok-note .tn-sub{font-size:12px;color:var(--mute)}
 @media (prefers-reduced-motion:reduce){#tok-note .tn-box{animation:none}}
 #pop{position:fixed;left:50%;top:44%;transform:translate(-50%,-50%);z-index:40;pointer-events:none;display:flex;gap:16px;flex-wrap:nowrap;justify-content:center;max-width:96vw}
@@ -171,7 +184,9 @@ button{font-family:inherit}
 .pname{font-weight:600}
 .trait{font-size:11px;color:var(--gold)}
 .hpbar{height:10px;background:#000a;border-radius:5px;overflow:hidden;position:relative}
-.hpbar i{display:block;height:100%;background:var(--hp);transition:width .3s}
+.hpbar i{display:block;height:100%;background:var(--hp);transition:width .3s;position:relative;z-index:1}
+.hpbar .hpghost{position:absolute;left:0;top:0;bottom:0;background:#fff4e0;box-shadow:0 0 8px #ffffffaa;animation:hpdrain 1.1s ease-in forwards}
+@keyframes hpdrain{0%,35%{width:var(--from)}100%{width:var(--to)}}
 .hpnum{font-variant-numeric:tabular-nums;font-weight:700}
 .stats{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
 .stats b{color:var(--ink)}
@@ -435,6 +450,22 @@ table.score tr.win td{color:var(--gold);font-weight:700}
 .fx.orb{left:0;top:0;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle,#fff 0 18%,var(--c) 45%,transparent 72%);box-shadow:0 0 26px 10px var(--c)}
 .fx.float{font-family:var(--f-display);font-size:46px;line-height:1;white-space:nowrap;transform:translate(-50%,-50%);text-shadow:0 0 14px currentColor,0 3px 0 #000,0 0 3px #000}
 .fx.float.dmg{color:#ff4d5e} .fx.float.crit{font-size:70px;color:#ff2d45}
+/* kill scene (FX.kill): grey wash, cracked panel, glass shards, flying skull token */
+.fx.screen.desat{background:transparent;-webkit-backdrop-filter:grayscale(1) contrast(1.1);backdrop-filter:grayscale(1) contrast(1.1)}
+.fx.crack{border-radius:10px;pointer-events:none;background:
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 40' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='white' stroke-width='.6' stroke-linecap='round'%3E%3Cpath d='M52 18 L40 2 M52 18 L66 0 M52 18 L88 10 M52 18 L98 30 M52 18 L70 40 M52 18 L44 40 M52 18 L18 34 M52 18 L4 14 M52 18 L24 4'/%3E%3Cpath d='M46 12 L58 13 L60 24 L47 25 Z M34 9 L30 22 L36 31 M70 6 L76 18 L72 30' stroke-width='.4'/%3E%3C/g%3E%3C/svg%3E") center/100% 100% no-repeat,
+  #ffffff14;box-shadow:inset 0 0 0 2px #ffffffaa,0 0 30px #ff3b4f88}
+.fx.shard{width:9px;height:13px;background:linear-gradient(135deg,#ffffffee,#bcd3ffaa);clip-path:polygon(50% 0,100% 70%,30% 100%,0 40%);box-shadow:0 0 6px #fff}
+.fx.tokfly{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:26px;line-height:1;color:#efe2c8;
+  background:radial-gradient(circle at 50% 35%, #4a1f2a, #12080d);border:3px solid #7a1f2e;box-shadow:0 0 0 2px #c8a14a inset,0 0 20px #c8001e}
+/* defence dome (FX.shield) */
+.fx.shieldbub{border-radius:22px;border:2px solid #8ff3ff;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 30%, #8ff3ff55, #59c2c722 55%, transparent 75%);box-shadow:0 0 24px #59c2c7cc, inset 0 0 30px #8ff3ff66}
+.fx.shieldbub.mirror{border-color:#fff;background:linear-gradient(115deg, transparent 30%, #ffffffaa 48%, transparent 66%) -150% 0/250% 100% no-repeat, radial-gradient(ellipse at 50% 30%, #e8fbff55, transparent 75%);
+  animation:mirrorsweep .7s ease-out forwards}
+@keyframes mirrorsweep{to{background-position:150% 0, 0 0}}
+.fx.float.block{color:#8ff3ff} .fx.float.mirror{color:#fff}
+.fx.float.huge{-webkit-text-stroke:2px #f0c35a;text-shadow:0 0 24px #ff2d45,0 4px 0 #000}
 .fx.float.heal{color:#7dffa0} .fx.float.curse{color:#c79bff;font-size:28px}
 .fx.ring{width:130px;height:130px;border-radius:50%;border:4px solid var(--def);box-shadow:0 0 30px var(--def),inset 0 0 30px var(--def);transform:translate(-50%,-50%)}
 .fx.seatflash{border-radius:10px;mix-blend-mode:screen}
@@ -463,6 +494,17 @@ table.score tr.win td{color:var(--gold);font-weight:700}
 @keyframes csglow{50%{filter:drop-shadow(0 0 16px #b06cff) brightness(1.08)}}
 .chaos-show .cs-hint{font-size:12px;color:var(--mute);letter-spacing:.1em}
 @media (prefers-reduced-motion:reduce){.chaos-show .cs-card,.chaos-show .cs-title{animation:none}}
+/* new Legend with a Group Attack (FX.legend): same hold-until-click stage as Chaos, in the Legend's gold and crimson */
+.fx.legend-show{background:radial-gradient(ellipse at 50% 45%, #5a1428cc, #0b0810ee 70%)}
+.legend-show .cs-title{color:var(--gold);text-shadow:0 0 30px #f0c35a,0 4px 0 #000}
+.legend-show .cs-card{zoom:1;flex:none}
+.legend-show .cs-card .card{width:clamp(150px, min(70vw, calc((100vh - 230px) / 1.8)), 300px);box-shadow:0 0 0 3px var(--gold),0 0 50px #f0c35a99}
+.legend-show .ls-row{display:flex;gap:22px;align-items:center;justify-content:center;flex-wrap:nowrap;width:min(760px,96vw)}
+.legend-show .ls-group{flex:1 1 240px;max-width:340px;border:2px solid #ff5a6e;border-radius:12px;padding:14px 18px;background:#2a0d14ee;
+  box-shadow:0 0 30px #c8001e88;text-align:left}
+.legend-show .ls-k{display:block;font-size:12px;font-weight:700;letter-spacing:.1em;color:#ff8a9a;margin-bottom:6px}
+.legend-show .ls-group p{margin:0;font-size:clamp(16px,2.2vw,20px);line-height:1.5;color:#fff}
+@media (max-width:640px){.legend-show .ls-row{flex-wrap:wrap}.legend-show .ls-group{flex-basis:100%}.legend-show .cs-card .card{width:clamp(130px, min(60vw, calc((100vh - 330px) / 1.8)), 220px)}}
 @media (prefers-reduced-motion:reduce){.card.buyable,.rival.active,.you.active,.banner .b-title{animation:none}.seats .rival{transition:none}}
 /* online play: lobby, waiting pill, seat tags */
 .online-box{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px;width:100%}
@@ -493,6 +535,7 @@ table.score tr.win td{color:var(--gold);font-weight:700}
       <button class="btn ghost" id="btn-speed" data-act="speed">AI: ปกติ</button>
       <button class="btn ghost" id="btn-sfx" data-act="sfx">เสียง: เปิด</button>
       <button class="btn ghost" id="btn-music" data-act="music">เพลง: เปิด</button>
+      <button class="btn ghost" id="btn-fx" data-act="fxlite">เอฟเฟกต์: เต็ม</button>
       <button class="btn ghost" data-act="artedit">ภาพกระดาน/การ์ด</button>
       <button class="btn ghost" data-act="rules">กติกา</button>
       <button class="btn ghost" data-act="newgame">เกมใหม่</button>
@@ -2530,7 +2573,7 @@ const tokenVP = k => k.vp != null ? k.vp : -3;                               // 
 // all of a player's real tokens; the "คู่หักล้าง" pair cancels out when one player holds both
 const pairDone = p => p.tokens.some(k => k.id === 'pairA') && p.tokens.some(k => k.id === 'pairB');
 const tokensVP = p => p.tokens.reduce((s, k) => s + (pairDone(p) && (k.id === 'pairA' || k.id === 'pairB') ? 0 : tokenVP(k)), 0);
-// a token drawn like a card, so it can pop up mid-screen and be zoomed
+// a token drawn like a card (as a skull coin, see tokenHTML), so it can pop up mid-screen and be zoomed
 let tokSeq = 0;
 const tokenCard = k => ({ uid: 'tok' + (++tokSeq), id: 'tok-' + k.id, name: '☠ ' + k.name, type: 'token', vp: tokenVP(k), text: k.text });
 const announceToken = (p, k, how = 'ได้ Dead Wizard Token') => {
@@ -2550,7 +2593,7 @@ function drawTokenNotice() {
   const el = $('#tok-note'), it = TOKNOTE[0];
   if (!it) { el.hidden = true; el.innerHTML = ''; return; }
   el.innerHTML = `<div class="tn-box"><div class="tn-cap" id="tok-note-cap">☠ คุณ${it.how}</div>${cardHTML(it.card, { noZoom: true })}
-    <div class="tn-sub">ผลของ Token อยู่บนการ์ด · VP ที่หักตอนจบเกมอยู่มุมล่างขวา</div>
+    <div class="tn-sub">ผลของ Token เขียนอยู่ในเหรียญ · VP ที่หักตอนจบเกมอยู่ด้านล่าง</div>
     <button class="btn" id="tn-ok">รับทราบ${TOKNOTE.length > 1 ? ` (อีก ${TOKNOTE.length - 1})` : ''}</button></div>`;
   el.hidden = false;
   $('#tn-ok').focus();
@@ -2940,12 +2983,14 @@ const FX = (() => {
     f.style.width = r.width + 'px'; f.style.height = r.height + 'px'; f.style.background = color;
     fire(f, [{ opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 0 }], { duration: 650 });
   }
-  function float(p, text, cls) {
+  function float(p, text, cls, size) {
     const { x, y } = at(p), el = spawn('float ' + cls, x + (Math.random() - .5) * 40, y - 10, text);
+    if (size) el.style.fontSize = size + 'px';
     fire(el, [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 },
       { transform: 'translate(-50%,-80%) scale(1.35)', opacity: 1, offset: .15 },
       { transform: 'translate(-50%,-110%) scale(1)', opacity: 1, offset: .6 },
       { transform: 'translate(-50%,-190%) scale(.9)', opacity: 0 }], { duration: 1200, easing: 'ease-out' });
+    return el;
   }
   const screen = (cls, kf, ms) => fire(spawn('screen ' + cls, 0, 0), kf, { duration: ms });
   const pulse = [{ opacity: 0 }, { opacity: 1, offset: .12 }, { opacity: 0 }];
@@ -3043,6 +3088,31 @@ const FX = (() => {
       await sleep(dur);
       sparks(b.x, b.y, color, 10, 60, 9);
     },
+    // the card whose attack is about to fly lifts and glows in the casting arena (found by its uid, so guests can too)
+    async windup(card) {
+      if (!card || RM.matches || fxLite()) return;
+      const el = document.querySelector(`.arena .card[data-zoom="${card.uid}"]`); if (!el) return;
+      el.closest('.slot')?.style.setProperty('z-index', 6);
+      el.animate([{ transform: 'none', filter: 'none' },
+        { transform: 'translateY(-16px) scale(1.06)', filter: 'drop-shadow(0 0 18px #ff7a3d) brightness(1.15)', offset: .55 },
+        { transform: 'none', filter: 'none' }], { duration: T(520), easing: 'cubic-bezier(.3,1.4,.5,1)' });
+      const r = el.getBoundingClientRect(); sparks(r.left + r.width / 2, r.top + 20, '#ff7a3d', 8, 40, 6, 30);
+      await sleep(T(300));
+    },
+    // a defence: a glowing dome pops over the defender's panel and the incoming bolt shatters on it ("ป้องกัน!");
+    // a reflect adds a mirror sweep ("สะท้อน!") before the bolt flies back
+    shield(t, reflect) {
+      const el = seat(t);
+      if (!el || fxLite()) return FX.ring(t);
+      const r = el.getBoundingClientRect(), d = spawn('shieldbub' + (reflect ? ' mirror' : ''), r.left - 10, r.top - 10);
+      d.style.width = r.width + 20 + 'px'; d.style.height = r.height + 20 + 'px';
+      fire(d, [{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1.04)', opacity: 1, offset: .2 },
+        { transform: 'scale(1)', opacity: 1, offset: .7 }, { transform: 'scale(1.12)', opacity: 0 }], { duration: T(1000), easing: 'ease-out' });
+      const { x, y } = at(t);
+      sparks(x, r.top, reflect ? '#e8fbff' : '#59c2c7', 16, 90, 8);
+      float(t, reflect ? 'สะท้อน!' : 'ป้องกัน!', reflect ? 'block mirror' : 'block', 34);
+      FX.ring(t);
+    },
     ring(p) {
       const { x, y } = at(p);
       [0, 120].forEach(delay => fire(spawn('ring', x, y), [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 1 },
@@ -3051,7 +3121,8 @@ const FX = (() => {
     hit(t, n) {
       const { x, y } = at(t);
       seatFlash(t, 'rgba(229,72,95,.5)');
-      float(t, '-' + n, n >= 4 ? 'dmg crit' : 'dmg');
+      // the number grows with the damage (40px for 1 … 104px at 8+); 6+ also gets a gold rim
+      float(t, '-' + n, n >= 6 ? 'dmg crit huge' : n >= 4 ? 'dmg crit' : 'dmg', Math.min(104, 36 + n * 8.5));
       sparks(x, y, '#ff6a3d', 8 + n * 3, 50 + n * 14, 9);
       shake(t === meP() ? 6 + n * 2 : n >= 3 ? 2 + n * 1.5 : 0);
     },
@@ -3069,11 +3140,35 @@ const FX = (() => {
           { duration: 700, delay: i * 45, easing: 'ease-in-out' });
       }
     },
-    kill(t, tok) {
-      const { x, y } = at(t);
+    // a death: the screen drains to grey for a beat, the dead player's panel cracks like glass and greys out,
+    // shards fall, and a skull token flies from the middle of the screen onto their panel; the banner names the killer
+    kill(t, tok, killer) {
+      const { x, y } = at(t), el = seat(t);
       screen('vig-red', pulse, T(1400)); shake(18); Embers.surge();
       sparks(x, y, '#ff3b4f', 30, 200, 11); sparks(x, y, '#efe6d6', 14, 140, 6);
-      return banner(`☠ ${t.name} ตาย!`, `Dead Wizard Token: ${tok.name}`, 'kill', T(1500));
+      if (!fxLite() && !RM.matches) {
+        screen('desat', [{ opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .55 }, { opacity: 0 }], T(1300));
+        if (el) {
+          const r = el.getBoundingClientRect(), c = spawn('crack', r.left, r.top);
+          c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+          fire(c, [{ opacity: 0, transform: 'scale(1.06)' }, { opacity: 1, transform: 'none', offset: .12 }, { opacity: 1, offset: .75 }, { opacity: 0 }], { duration: T(1600) });
+          el.animate([{ filter: 'none' }, { filter: 'grayscale(1) brightness(.7)', offset: .15 }, { filter: 'grayscale(1) brightness(.7)', offset: .8 }, { filter: 'none' }], { duration: T(1600) });
+          for (let i = 0; i < 12; i++) {           // glass shards dropping off the panel
+            const sh = spawn('shard', 0, 0), sx = r.left + Math.random() * r.width, sy = r.top + Math.random() * r.height;
+            fire(sh, [{ transform: `translate(${sx}px,${sy}px) rotate(0deg)`, opacity: 1 },
+              { transform: `translate(${sx + (Math.random() - .5) * 80}px,${sy + 120 + Math.random() * 120}px) rotate(${(Math.random() - .5) * 540}deg)`, opacity: 0 }],
+              { duration: T(900 + Math.random() * 500), delay: T(150), easing: 'cubic-bezier(.4,0,.9,.6)' });
+          }
+        }
+        const coin = spawn('tokfly', 0, 0, '☠'), cx = innerWidth / 2, cy = innerHeight * .42;
+        fire(coin, [{ transform: `translate(${cx}px,${cy}px) translate(-50%,-50%) scale(.2)`, opacity: 0 },
+          { transform: `translate(${cx}px,${cy - 40}px) translate(-50%,-50%) scale(1.6) rotate(-20deg)`, opacity: 1, offset: .35 },
+          { transform: `translate(${(cx + x) / 2}px,${Math.min(cy, y) - 90}px) translate(-50%,-50%) scale(1.1) rotate(200deg)`, opacity: 1, offset: .7 },
+          { transform: `translate(${x}px,${y}px) translate(-50%,-50%) scale(.5) rotate(360deg)`, opacity: .9 }], { duration: T(1400), easing: 'ease-in-out' });
+        setTimeout(() => sparks(x, y, '#e9c46a', 14, 70, 7), T(1350));
+      }
+      const by = killer && killer !== t ? `โดย ${killer.name} · ` : '';
+      return banner(`☠ ${t.name} ตาย!`, `${by}Dead Wizard Token: ${tok.name}`, 'kill', T(1500));
     },
     turn(p) {
       AUD.play(p === meP() ? 'turnMe' : 'turnAI');
@@ -3081,9 +3176,21 @@ const FX = (() => {
       banner('เทิร์นของคุณ!', 'ร่ายเวท ซื้อการ์ด ถล่มศัตรู', 'turn', 1100);
       return sleep(450);
     },
-    legend(L) {
+    // a new Legend: one with a Group Attack is held big in the middle (card + what the Group Attack does) until the
+    // player clicks it away, like a Chaos card; one without just gets the banner
+    async legend(L) {
       screen('vig-blood', pulse, T(2000)); shake(10); Embers.surge();
-      return banner('ตำนานปรากฏ!', `${L.name} · ${L.group}`, 'legend', T(2000));
+      if (!L.gattack) return banner('ตำนานปรากฏ!', L.name, 'legend', T(2000));
+      const box = spawn('chaos-show legend-show', 0, 0);
+      box.innerHTML = `<div class="cs-title">ตำนานปรากฏ!</div>
+        <div class="ls-row"><div class="cs-card">${cardHTML(L, { cls: 'zoomed', noZoom: true })}</div>
+          <div class="ls-group"><span class="ls-k">Group Attack · โดนทุกคน</span><p>${L.group}</p></div></div>
+        <div class="cs-hint">คลิกซ้ายที่ใดก็ได้เพื่อปิด แล้ว Group Attack จะเริ่ม</div>`;
+      await new Promise(r => box.addEventListener('pointerdown', e => { if (e.button === 0) r(); }));
+      box.style.pointerEvents = 'none';
+      box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 350, fill: 'forwards' }).onfinish = () => box.remove();
+      setTimeout(() => box.remove(), 800);
+      await sleep(200);
     },
     legendWin(p, L) {
       const { x, y } = at(p);
@@ -3164,6 +3271,7 @@ async function attack(src, spec) {
     if (spec.dmg && G.curCard && isWand(G.curCard) && hasTrait(src, 'weirdWand')) bonus += 1; // ability: Wand +1
   }
   const color = !spec.dmg ? (spec.bent ? '#b07cff' : '#59c2c7') : spec.chaos ? '#c27dff' : src ? '#ff7a3d' : '#ff3355';
+  if (src && G.curCard) await FX.windup(G.curCard);
   AUD.play('cast');
   await Promise.all(targets.map(t => FX.bolt(src, t, color)));
   let kills = 0, dealtTotal = 0;
@@ -3246,7 +3354,7 @@ async function tryDefend(t, src, spec) {
   used.push(choice);
   log(`${t.name} ป้องกันด้วย ${choice.name}`, 'good');
   showEvent(choice, `${t.name} ป้องกัน`, 'defend');
-  AUD.play(choice.redirect && src ? 'reflect' : 'shield'); FX.ring(t);
+  AUD.play(choice.redirect && src ? 'reflect' : 'shield'); FX.shield(t, !!(choice.redirect && src));
   if (choice.defDiscard) { t.hand.splice(t.hand.indexOf(choice), 1); t.discard.push(choice); }
   if (choice.defInPlay && t.ongoing.includes(choice)) { t.ongoing.splice(t.ongoing.indexOf(choice), 1); t.discard.push(choice); log(`${choice.name} ออกจากสนามของ ${t.name}`); }
   // defTopdeck: the card goes face up on top of the deck, so it comes back with the next draw
@@ -3326,7 +3434,7 @@ async function kill(t, killer, { tokenPick = 0 } = {}) {
   }
   log(swap ? `☠ ${t.name} ตาย! (โดย ${killer.name}) · ${killer.name} รับ Dead Wizard Token “${tok.name}” แทน · ${t.name} ฟื้นคืนชีพที่ ${t.hp} HP`
     : `☠ ${t.name} ตาย!${killer && killer !== t ? ` (โดย ${killer.name})` : ''} ได้รับ Dead Wizard Token “${tok.name}”: ${tok.text} · ฟื้นคืนชีพที่ ${t.hp} HP`, 'kill');
-  AUD.play('kill'); render(); await FX.kill(t, swap ? { name: `${tok.name} (${killer.name} รับแทน)` } : tok);
+  AUD.play('kill'); render(); await FX.kill(t, swap ? { name: `${tok.name} (${killer.name} รับแทน)` } : tok, killer);
   if (killer && killer !== t) {
     if (G.trophy !== killer) { G.trophy = killer; log(`${killer.name} ได้ถ้วยรางวัลแชมป์ (จั่ว 6 ทิ้ง 1 ตอนจบเทิร์น)`, 'sys'); }
     if (hasTrait(killer, 'bone')) { heal(killer, 3); await draw(killer, 1); }
@@ -3995,6 +4103,12 @@ function fitNames(root = document) {
       : () => el.scrollHeight <= el.clientHeight + 1;
     for (let s = base; !fits() && s > base * (el.closest('.t-chaos') ? 0.3 : 0.55); s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
   });
+  // Dead Wizard Token coins: shrink a long effect text (down to 60%) so it stays inside the circle
+  root.querySelectorAll('.tokencoin .tk-text').forEach(el => {
+    el.style.fontSize = '';
+    const base = parseFloat(getComputedStyle(el).fontSize);
+    for (let s = base; el.scrollHeight > el.clientHeight + 1 && s > base * 0.6; s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
+  });
   // every card has the same shape: shrink the ability text of long cards (down to 9px), then cut it off
   // with an "อ่านเพิ่มเติม" button that opens the zoomed card
   root.querySelectorAll('.card:not(.t-chaos):not(.mini) .c-text').forEach(el => {
@@ -4024,7 +4138,18 @@ let fitResize = null;
 addEventListener('resize', () => { clearTimeout(fitResize); fitResize = setTimeout(() => fitNames(), 150); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#zoom').hidden) closeZoom(); });
 $('#zoom').addEventListener('click', closeZoom);
+// a Dead Wizard Token (tokenCard) is drawn as a round skull coin with its name, effect and VP written inside, wherever
+// a card would be (the notice, pop-ups, the events viewer, the zoom); sizes come from the card's width (cqw)
+function tokenHTML(c, o = {}) {
+  const zk = String(c.uid != null ? c.uid : 'd-' + c.id);
+  ZOOMS.set(zk, c);
+  const vp = c.vp ? `${c.vp > 0 ? '+' : ''}${c.vp} VP` : '0 VP';
+  return `<div class="card tokencoin ${o.small ? 'small' : ''} ${o.cls || ''}" ${o.noZoom ? '' : `data-zoom="${zk}"`} title="${c.name}: ${c.text}">
+    <div class="tk-skull" aria-hidden="true">☠</div><div class="tk-name">${c.name.replace(/^☠\s*/, '')}</div>
+    <div class="tk-text">${c.text || ''}</div><div class="tk-vp">${vp}</div></div>`;
+}
 function cardHTML(c, o = {}) {
+  if (c.type === 'token') return tokenHTML(c, o);
   const cls = ['card', 't-' + c.type];
   if (o.buy) cls.push('buyable'); if (o.play) cls.push('playable'); if (o.dim) cls.push('dim');
   if (o.small) cls.push('small'); if (o.mini) cls.push('mini'); if (o.cls) cls.push(o.cls);
@@ -4052,7 +4177,25 @@ function cardHTML(c, o = {}) {
     <div class="c-foot"><span>${tags.join('')}</span>${vp}</div></div>`;
 }
 
+// settings → "เอฟเฟกต์: เต็ม / น้อย" (per browser); light mode skips the slow extras (wind-up, kill scene, HP drain)
+let FXLITE = (() => { try { return localStorage.getItem('sb-fxlite') === '1'; } catch { return false; } })();
+const fxLite = () => FXLITE;
 const hpPct = p => Math.max(0, Math.min(100, p.hp / 25 * 100));
+// HP bar with a "ghost": when HP drops, the lost part stays as a pale strip for a moment, then drains away.
+// Each browser keeps its own memory (HPGHOST by seat) so the drain keeps its phase across re-renders.
+const HPGHOST = {};
+function hpBarHTML(p) {
+  const i = G.players.indexOf(p), pct = hpPct(p), now = performance.now(), DUR = 1100;
+  let g = HPGHOST[i];
+  if (!g || p.hp > g.hp) g = HPGHOST[i] = { hp: p.hp, from: pct, t0: -1e9 };
+  else if (p.hp < g.hp) {
+    const running = now - g.t0 < DUR;
+    g = HPGHOST[i] = { hp: p.hp, from: running ? g.from : Math.max(0, Math.min(100, g.hp / 25 * 100)), t0: now };
+  }
+  const left = now - g.t0, ghost = left < DUR && g.from > pct && !fxLite()
+    ? `<b class="hpghost" style="--from:${g.from}%;--to:${pct}%;animation-delay:-${Math.round(left)}ms"></b>` : '';
+  return `<div class="hpbar">${ghost}<i style="width:${pct}%"></i></div>`;
+}
 function chipsFor(p) {
   const a = [];
   if (G.trophy === p) a.push('<span class="chip trophy">ถ้วยแชมป์</span>');
@@ -4072,13 +4215,16 @@ function seatHTML(p, dir) {
   const ong = p.ongoing.length ? `<button class="ongmark" data-act="view" data-what="info" data-p="${i}"
     title="การ์ดต่อเนื่อง: ${p.ongoing.map(c => c.name).join(', ')}">⟳ ต่อเนื่อง ${p.ongoing.length}</button>` : '';
   const traits = traitsOf(p).map(t => `${t.name}: ${t.text}`).join(' · ');
+  // Dead Wizard Tokens show right on the panel (top-right), names and effects in the tooltip; a click opens the details
+  const toks = p.tokens.length ? `<button class="tokmark" data-act="view" data-what="${p === meP() ? 'tokens' : 'familiar'}" data-p="${i}"
+    title="${p.tokens.map(t => `${t.name} (${tokenVP(t)} VP): ${t.text}`).join('\n')}">☠ ${p.tokens.length}</button>` : '';
   return `
     <div class="rival ${p === meP() ? 'mine' : ''} ${cur() === p ? 'active' : ''} ${p.hitFlash ? 'hit' : ''}" data-pi="${i}" style="--pc:${p.color}">
       <div class="rname"><b>${p.name}</b><span class="seatdir">${dir}</span>
         ${G.online ? `<span class="seattag">${p.away ? 'หลุด · AI เล่นแทน' : p.isAI ? 'AI' : 'ผู้เล่น'}</span>` : ''}
         ${cur() === p ? '<span class="turnpill">▶ กำลังร่ายเวท</span>' : ''}
-        ${p === meP() ? '' : `<span class="rbtns">${ong}<button class="linkbtn" data-act="view" data-what="info" data-p="${i}">ข้อมูล</button></span>`}</div>
-      <div class="hprow"><div class="hpbar"><i style="width:${hpPct(p)}%"></i></div><span class="hpnum">${p.hp} HP</span></div>
+        ${toks}${p === meP() ? '' : `<span class="rbtns">${ong}<button class="linkbtn" data-act="view" data-what="info" data-p="${i}">ข้อมูล</button></span>`}</div>
+      <div class="hprow">${hpBarHTML(p)}<span class="hpnum">${p.hp} HP</span></div>
       <div class="trait clamp" title="${traits}">${traits}</div>
     </div>`;
 }
@@ -4297,6 +4443,10 @@ document.addEventListener('click', async e => {
     const k = (steps.findIndex(s => s[0] === AI_DELAY) + 1) % steps.length;
     AI_DELAY = steps[k][0]; el.textContent = steps[k][1]; return;
   }
+  if (act === 'fxlite') {
+    FXLITE = !FXLITE; try { localStorage.setItem('sb-fxlite', FXLITE ? '1' : '0'); } catch {}
+    el.textContent = FXLITE ? 'เอฟเฟกต์: น้อย' : 'เอฟเฟกต์: เต็ม'; return;
+  }
   if (act === 'sfx' || act === 'music') { el.textContent = audioLabel(act, AUD.toggle(act)); if (act === 'sfx') AUD.play('buy'); return; }
   if (act === 'artedit') { openArtEditor(); return; }
   if (act === 'art-pick') { artTarget = el.dataset.id; $('#art-file').value = ''; $('#art-file').click(); return; }
@@ -4331,6 +4481,7 @@ document.addEventListener('pointerdown', () => AUD.unlock());
 const audioLabel = (k, on) => `${k === 'sfx' ? 'เสียง' : 'เพลง'}: ${on ? 'เปิด' : 'ปิด'}`;
 $('#btn-sfx').textContent = audioLabel('sfx', AUD.st.sfx);
 $('#btn-music').textContent = audioLabel('music', AUD.st.music);
+$('#btn-fx').textContent = fxLite() ? 'เอฟเฟกต์: น้อย' : 'เอฟเฟกต์: เต็ม';
 document.addEventListener('keydown', e => {
   AUD.unlock();
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card[data-act]')) { e.preventDefault(); e.target.click(); }
