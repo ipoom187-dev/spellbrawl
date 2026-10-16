@@ -35,36 +35,48 @@ header.top .sp{flex:1}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn:disabled{opacity:.4;cursor:default}
 .sect-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
-/* tabletop: the board spans the full width, the rivals' panels sit in one row under it, your mat at the bottom */
-.table{display:grid;gap:14px;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "seats" "you"}
-.seats{grid-area:seats;display:flex;flex-wrap:wrap;justify-content:center;gap:14px;min-width:0}
-.seats .rival{flex:1 1 300px;max-width:420px}
+/* tabletop: the board spans the full width, every player's panel (yours first) sits in one row under it, then your mat */
+.table{display:grid;gap:12px;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "seats" "you"}
+.seats{grid-area:seats;display:flex;flex-wrap:wrap;justify-content:center;gap:12px;min-width:0}
+.seats .rival{flex:1 1 240px;max-width:380px;padding:8px 10px;gap:5px}
+.rival .rname{flex-wrap:wrap;align-items:center}
+.rival .rbtns{margin-left:auto;display:flex;gap:6px;align-items:center}
+.rival .rbtns .linkbtn{padding:2px 8px}
+.ongmark{border:0;border-radius:999px;background:#2f8f93;color:#fff;font:inherit;font-size:11px;font-weight:700;padding:2px 8px;cursor:pointer}
+.ongmark:hover{background:#3aa9ae}
+.hprow{display:flex;align-items:center;gap:8px}
+.hprow .hpbar{flex:1}
+.trait.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .rival{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .rival.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,0 0 24px #ff7a3d33}
 .seatdir{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
 .rival .ong{display:flex;gap:6px;flex-wrap:wrap}
 .linkbtn{background:none;border:1px solid var(--line);color:var(--ink);border-radius:5px;padding:4px 8px;font:inherit;font-size:12px;cursor:pointer}
 .linkbtn:hover{border-color:var(--gold);color:var(--gold)}
-.boardc{grid-area:board;min-width:0;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:14px;
+.boardc{grid-area:board;min-width:0;border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;
   background:radial-gradient(ellipse at 50% 40%, var(--felt1), var(--felt2));
   border:10px solid var(--wood);box-shadow:0 0 0 2px var(--gold) inset,0 10px 40px #000a}
-.arena{border:1px solid color-mix(in srgb, var(--gold) 28%, transparent);border-radius:14px;padding:12px 14px;min-height:220px;
+.arena{border:1px solid color-mix(in srgb, var(--gold) 28%, transparent);border-radius:14px;padding:10px 12px;
   background:radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);transition:box-shadow .3s}
 .arena.busy{box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 22%, transparent)}
 .arena-pw{color:var(--gold);font-size:16px}
 /* casting arena keeps one fixed size: one row of cards that are all --arena-h tall (long ability text shrinks to fit,
-   see fitNames), with room for the ✲ button; when the row is full the cards overlap instead of wrapping */
+   see fitNames); the ✲ button sits over the bottom of its card; when the row is full the cards overlap instead of wrapping */
 .arena{--arena-h:var(--card-h)}
-.arena .cards.played{flex-wrap:nowrap;align-items:flex-start;height:calc(var(--arena-h) + 40px);gap:6px;padding-right:126px}
+.arena .cards.played{flex-wrap:nowrap;align-items:flex-start;height:var(--arena-h);gap:6px;padding-right:126px}
+.arena .act-wrap{position:relative}
+.arena .act-wrap .act-btn{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:2;white-space:nowrap}
 .arena .cards.played>.slot{flex:0 1 var(--card-w);min-width:22px;position:relative}
 .arena .cards.played>.slot:hover{z-index:5}
 .arena .cards.played>.slot>.card,.arena .cards.played>.slot>.act-wrap{width:var(--card-w)}
 .arena .cards.played .card{height:var(--arena-h);min-height:0;overflow:hidden}
 .arena .cards.played .card .c-text{overflow:hidden}
 .arena .cards.played>.empty{align-self:center}
-.arena>.sect-label{height:26px;display:flex;align-items:center;gap:10px;margin-bottom:6px} /* same height with or without the events button */
-.arena>.sect-label .ev-btn{padding-top:2px;padding-bottom:2px}
-.arena-title{min-height:30px}
+/* the line between the shop and the arena: arena title (whose turn, power, events) on the left, pile counts on the right */
+.boardbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 16px}
+.boardbar .arena-title{margin:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px}
+.boardbar .ev-btn{padding-top:2px;padding-bottom:2px;align-self:center}
+.boardbar .piles{margin:0 0 0 auto;justify-content:flex-end}
 /* "what happened" strip: each affected card with a coloured caption */
 .cards.events{gap:12px}
 .ev{display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -150,8 +162,8 @@ header.top .sp{flex:1}
 .mg-legend{padding:4px 6px 6px;margin:-4px 0 -6px -6px;border-radius:10px;
   border:1px solid color-mix(in srgb, var(--t-legend) 60%, transparent);
   background:linear-gradient(180deg, color-mix(in srgb, var(--t-legend) 26%, transparent), transparent 90%)}
-/* pile counts: one strip under the market */
-.piles{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;margin-top:-6px;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;justify-content:center}
+/* pile counts (in .boardbar) */
+.piles{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;justify-content:center}
 .piles b{color:var(--ink)}
 /* cards */
 .cards{display:flex;gap:8px;flex-wrap:wrap}
@@ -206,10 +218,11 @@ header.top .sp{flex:1}
 .card.t-chaos{position:relative;overflow:hidden;aspect-ratio:1/1.8;background:#140c1c;color:#f3eaff;border-color:#7a4bb0}
 .card.t-chaos .c-art{position:absolute;inset:0;aspect-ratio:auto;height:100%;border:0;z-index:0}
 .card.t-chaos > :not(.c-art):not(.zoom-btn){position:relative;z-index:1}
-.card.t-chaos .c-head{justify-content:center;padding:3px 26px 16px;background:linear-gradient(#000e 40%,#0000)}
+.card.t-chaos .c-head{justify-content:center;padding:3px 8px 16px;background:linear-gradient(#000e 40%,#0000)}
 .card.t-chaos .c-cost{display:none}
 /* the face shows a glowing glitchy CHAOS logo; the numbered name stays for logs and tooltips */
-.card.t-chaos .c-name{font-size:27px;line-height:1.05;letter-spacing:.14em;text-transform:uppercase;transform:skewX(-8deg);
+/* the logo stays on one line: fitNames() shrinks it to the card's width (it used to drop its last letter to a 2nd line) */
+.card.t-chaos .c-name{font-size:27px;line-height:1.05;letter-spacing:.14em;white-space:nowrap;overflow:visible;text-transform:uppercase;transform:skewX(-8deg);
   background:linear-gradient(180deg,#fff 0%,#ecd6ff 30%,#b46cff 58%,#4dffa0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(2px 0 0 #ff2bd680) drop-shadow(-2px 0 0 #2bffb480) drop-shadow(0 0 7px #b46cffcc)}
 .card.small.t-chaos .c-name{font-size:22px}
@@ -3900,8 +3913,11 @@ function fitNames(root = document) {
   root.querySelectorAll('.card .c-name').forEach(el => {
     el.style.fontSize = '';
     const base = parseFloat(getComputedStyle(el).fontSize);
-    const fits = () => el.scrollHeight <= el.clientHeight + 1;
-    for (let s = base; !fits() && s > base * 0.55; s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
+    // the one-line Chaos logo only has to fit the header's width (minus its padding and the skew/glow);
+    // its tall display glyphs always poke a few px past the line, so its height is not checked
+    const fits = el.closest('.t-chaos') ? () => el.scrollWidth <= el.parentElement.clientWidth - 22
+      : () => el.scrollHeight <= el.clientHeight + 1;
+    for (let s = base; !fits() && s > base * (el.closest('.t-chaos') ? 0.3 : 0.55); s -= 0.5) el.style.fontSize = (s - 0.5) + 'px';
   });
   // every card has the same shape: shrink the ability text of long cards (down to 9px), then cut it off
   // with an "อ่านเพิ่มเติม" button that opens the zoomed card
@@ -3969,23 +3985,22 @@ function chipsFor(p) {
   return a.join('');
 }
 
+// a player's panel in the row under the board (everyone, you included): name, HP and wizard ability only;
+// hand/deck/discard counts, chips, Ongoing cards and pile buttons are in the "ข้อมูล" viewer (openViewer 'info').
+// A player with Ongoing cards gets a ⟳ marker (also opens the viewer).
 function seatHTML(p, dir) {
-  const ong = p.ongoing.length ? `<div class="ong">${p.ongoing.map(c => cardHTML(c, { small: true })).join('')}</div>` : '';
   const i = G.players.indexOf(p);
+  const ong = p.ongoing.length ? `<button class="ongmark" data-act="view" data-what="info" data-p="${i}"
+    title="การ์ดต่อเนื่อง: ${p.ongoing.map(c => c.name).join(', ')}">⟳ ต่อเนื่อง ${p.ongoing.length}</button>` : '';
+  const traits = traitsOf(p).map(t => `${t.name}: ${t.text}`).join(' · ');
   return `
-    <div class="rival ${cur() === p ? 'active' : ''} ${p.hitFlash ? 'hit' : ''}" data-pi="${i}" style="--pc:${p.color}">
-      <div class="seatdir">${dir}</div>
-      <div class="rname"><b>${p.name}</b>${G.online ? `<span class="seattag">${p.away ? 'หลุด · AI เล่นแทน' : p.isAI ? 'AI' : 'ผู้เล่น'}</span>` : ''}${cur() === p ? '<span class="trait">กำลังร่ายเวท…</span>' : ''}</div>
-      <div class="trait">${p.trait.name}: ${p.trait.text}</div>
-      <div style="display:flex;align-items:center;gap:8px"><div class="hpbar" style="flex:1"><i style="width:${hpPct(p)}%"></i></div><span class="hpnum">${p.hp} HP</span></div>
-      <div class="stats"><span>มือ <b>${p.hand.length}</b></span><span>เด็ค <b>${p.deck.length}</b></span><span>ทิ้ง <b>${p.discard.length}</b></span></div>
-      <div class="chips">${chipsFor(p, false)}</div>
-      ${ong}
-      <div class="pilebtns">
-        <button class="linkbtn" data-act="view" data-what="last" data-p="${i}">เทิร์นล่าสุด (${(p.lastPlayed || []).length})</button>
-        <button class="linkbtn" data-act="view" data-what="discard" data-p="${i}">กองทิ้ง (${p.discard.length})</button>
-        <button class="linkbtn" data-act="view" data-what="familiar" data-p="${i}">สัตว์รับใช้</button>
-      </div>
+    <div class="rival ${p === meP() ? 'mine' : ''} ${cur() === p ? 'active' : ''} ${p.hitFlash ? 'hit' : ''}" data-pi="${i}" style="--pc:${p.color}">
+      <div class="rname"><b>${p.name}</b><span class="seatdir">${dir}</span>
+        ${G.online ? `<span class="seattag">${p.away ? 'หลุด · AI เล่นแทน' : p.isAI ? 'AI' : 'ผู้เล่น'}</span>` : ''}
+        ${cur() === p ? '<span class="trait">กำลังร่ายเวท…</span>' : ''}
+        <span class="rbtns">${ong}<button class="linkbtn" data-act="view" data-what="info" data-p="${i}">ข้อมูล</button></span></div>
+      <div class="hprow"><div class="hpbar"><i style="width:${hpPct(p)}%"></i></div><span class="hpnum">${p.hp} HP</span></div>
+      <div class="trait clamp" title="${traits}">${traits}</div>
     </div>`;
 }
 
@@ -4034,10 +4049,9 @@ function render() {
   // everything that happened to cards this turn (received, discarded, destroyed, revealed, defended, ✲) is behind a
   // button; it opens in the viewer (openViewer 'events'), which keeps updating while it is open
   const nEv = (G.turn && G.turn.events || []).length;
+  const arenaTitle = `<div class="arena-title">สนามร่ายเวท · ${who} <span>· พลังเทิร์นนี้ <b class="arena-pw">${pw}</b></span> ${waitHTML}
+      ${nEv ? `<button class="linkbtn ev-btn" data-act="view" data-what="events">เกิดอะไรขึ้นบ้าง (${nEv})</button>` : ''}</div>`;
   const arena = `<div class="arena ${shown.length || nEv ? 'busy' : ''}">
-      <div class="arena-title">สนามร่ายเวท · ${who} <span>· พลังเทิร์นนี้ <b class="arena-pw">${pw}</b></span> ${waitHTML}</div>
-      <div class="sect-label">การ์ดที่เล่น
-        ${nEv ? `<button class="linkbtn ev-btn" data-act="view" data-what="events">เกิดอะไรขึ้นบ้าง (${nEv})</button>` : ''}</div>
       <div class="cards played">${arenaCards || '<div class="empty">ยังไม่มีการ์ดถูกเล่นในเทิร์นนี้</div>'}</div>
     </div>`;
 
@@ -4053,30 +4067,19 @@ function render() {
         <div class="mgroup"><span class="cap">Line-Up</span><div class="cards">${lineup}</div></div>
         <div class="mgroup"><span class="cap">Wild Surge (${G.wild})</span>${wildHTML}</div>
       </div>
-      <div class="piles">
+      <div class="boardbar">${arenaTitle}<div class="piles">
           <span>กองหลัก <b>${G.main.length}</b></span>
           <span>Limp Wand <b>${G.bent}</b></span>
           <span>Dead Wizard Token เหลือ <b>${G.tokens.length}</b></span>
           <button class="linkbtn" data-act="view" data-what="destroyed">ถูกทำลาย (${G.destroyed.length})</button>
-      </div>
+      </div></div>
       ${arena}
     </section>
-    <div class="seats">${[...seats.left, ...seats.right].join('')}</div>
+    <div class="seats">${seatHTML(me, 'คุณ')}${[...seats.left, ...seats.right].join('')}</div>
     <section class="you ${cur() === me ? 'active' : ''} ${me.hitFlash ? 'hit' : ''}" style="--pc:${me.color}">
-      <div class="youbar" data-pi="${ME}">
-        <div class="big hp"><span class="v">${me.hp}</span><span class="k">HP</span></div>
+      <div class="youbar">
         <div class="big pw"><span class="v">${cur() === me ? pw : '–'}</span><span class="k">พลัง</span></div>
-        <div style="min-width:0;flex:1">
-          <div style="font-family:var(--f-display);font-size:24px">${pcName(me)} <span class="seatdir">ที่นั่งของคุณ</span></div>
-          <div class="trait">${me.trait.name}: ${me.trait.text}</div>
-          <div class="chips" style="margin-top:4px">${chipsFor(me, true)}</div>
-          <div class="pilebtns">
-            <button class="linkbtn" data-act="view" data-what="deck" data-p="${ME}">ดูเด็ค (${me.deck.length})</button>
-            <button class="linkbtn" data-act="view" data-what="discard" data-p="${ME}">ดูกองทิ้ง (${me.discard.length})</button>
-            <button class="linkbtn" data-act="view" data-what="all" data-p="${ME}">การ์ดทั้งหมด (${allCards(me).length})</button>
-            <button class="linkbtn" data-act="view" data-what="tokens" data-p="${ME}">Dead Wizard Token (${me.tokens.length})</button>
-          </div>
-        </div>
+        <div style="min-width:0;flex:1;font-family:var(--f-display);font-size:22px">${pcName(me)} <span class="seatdir">มือและสัตว์รับใช้ของคุณ</span></div>
         <div class="actions">
           ${traitsOf(me).filter(tr => tr.activate).map(tr => `<button class="btn ghost" data-act="trait" data-id="${tr.id}" ${myTurn && traitReady(me, tr) ? "" : "disabled"} title="${tr.name}: ${tr.text}">✲ ${tr.actText}</button>`).join("")}
           <button class="btn ghost" data-act="playall" ${myTurn && me.hand.length ? '' : 'disabled'}>เล่นทั้งมือ</button>
@@ -4147,6 +4150,17 @@ function openViewer(what, pi) {
     sub = 'การ์ดที่ถูกได้รับ ทิ้ง ทำลาย เปิดดู ใช้ป้องกัน หรือเปิดใช้ ✲ ในเทิร์นนี้ เรียงจากเก่าไปใหม่';
     body = evs.length ? `<div class="cards events">${evs.map(ev => `<div class="ev ev-${ev.kind}"><span class="ev-cap">${ev.label}</span>${cardHTML(ev.card, { small: true })}</div>`).join('')}</div>`
       : '<div class="empty">ยังไม่มีอะไรเกิดขึ้นในเทิร์นนี้</div>';
+  } else if (what === 'info') {
+    const mine = p === meP(), i = G.players.indexOf(p);
+    title = `${mine ? 'คุณ' : p.name} · ข้อมูลผู้เล่น`;
+    sub = `${p.hp} HP · มือ <b>${p.hand.length}</b> · เด็ค <b>${p.deck.length}</b> · ทิ้ง <b>${p.discard.length}</b>`;
+    const btns = mine
+      ? [['deck', `ดูเด็ค (${p.deck.length})`], ['discard', `ดูกองทิ้ง (${p.discard.length})`], ['all', `การ์ดทั้งหมด (${allCards(p).length})`], ['tokens', `Dead Wizard Token (${p.tokens.length})`]]
+      : [['last', `เทิร์นล่าสุด (${(p.lastPlayed || []).length})`], ['discard', `กองทิ้ง (${p.discard.length})`], ['familiar', 'สัตว์รับใช้']];
+    body = `<div class="vgroup"><h4>ความสามารถพ่อมด</h4>${traitsOf(p).map(t => `<div class="trait">${t.name}: ${t.text}</div>`).join('')}</div>
+      ${chipsFor(p) ? `<div class="vgroup"><div class="chips">${chipsFor(p)}</div></div>` : ''}
+      <div class="vgroup"><div class="pilebtns">${btns.map(([w, l]) => `<button class="linkbtn" data-act="view" data-what="${w}" data-p="${i}">${l}</button>`).join('')}</div></div>
+      <div class="vgroup"><h4>การ์ดต่อเนื่อง (${p.ongoing.length})</h4>${cardsBlock(p.ongoing)}</div>`;
   } else if (what === 'destroyed') {
     title = `การ์ดที่ถูกทำลาย · ${G.destroyed.length} ใบ`;
     body = cardsBlock(G.destroyed.slice().reverse(), { group: true });
