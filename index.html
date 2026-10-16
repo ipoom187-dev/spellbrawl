@@ -35,20 +35,10 @@ header.top .sp{flex:1}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn:disabled{opacity:.4;cursor:default}
 .sect-label{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:6px}
-/* tabletop: rivals seated top / left / right, board in the middle, your mat at the bottom */
-.table{display:grid;gap:14px;min-width:0;
-  grid-template-columns:minmax(210px,250px) minmax(0,1fr) minmax(210px,250px);
-  grid-template-areas:"top top top" "left board right" "you you you"}
-.seat-top{grid-area:top;display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
-.seat-top .rival{width:min(100%,380px)}
-.seat-top:empty{display:none}
-.seat-left{grid-area:left;display:flex;flex-direction:column;justify-content:center;gap:14px;min-width:0}
-.seat-right{grid-area:right;display:flex;flex-direction:column;justify-content:center;gap:14px;min-width:0}
-@media (max-width:1150px){
-  .table{grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "left" "right" "board" "you"}
-  .seat-left,.seat-right{flex-direction:row;flex-wrap:wrap;justify-content:center}
-  .seat-left .rival,.seat-right .rival{width:min(100%,380px)}
-}
+/* tabletop: the board spans the full width, the rivals' panels sit in one row under it, your mat at the bottom */
+.table{display:grid;gap:14px;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-areas:"board" "seats" "you"}
+.seats{grid-area:seats;display:flex;flex-wrap:wrap;justify-content:center;gap:14px;min-width:0}
+.seats .rival{flex:1 1 300px;max-width:420px}
 .rival{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .rival.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset,0 0 24px #ff7a3d33}
 .seatdir{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
@@ -4001,14 +3991,13 @@ function render() {
   // G.ending (e.g. the Dead Wizard Token pile ran out) ends the game after this turn: the player still finishes it
   const myTurn = cur() === me && !G.over && G.endTurnResolve;
   const pw = G.turn ? G.turn.power : 0;
-  // seating: rivals only in the left and right columns. Clockwise from you: the first half sit up your left side
-  // (nearest you at the bottom), the rest come down your right side.
+  // seating: the rivals' panels sit in one row under the board, clockwise from you: your left neighbour at the far
+  // left, round the table to your right neighbour at the far right (the first half are tagged left, the rest right)
   const others = [...G.players.slice(ME + 1), ...G.players.slice(0, ME)];
-  const seats = { left: [], top: [], right: [] };
+  const seats = { left: [], right: [] };
   const nLeft = Math.ceil(others.length / 2);
   const dirName = { left: 'ฝั่งซ้ายของคุณ', right: 'ฝั่งขวาของคุณ' };
   others.forEach((p, k) => { const side = k < nLeft ? 'left' : 'right'; seats[side].push(seatHTML(p, dirName[side])); });
-  seats.left.reverse();
 
   const legendHTML = `<div class="cards">${G.legendRow.map((L, i) => L
     ? cardHTML(L, { cost: costFor(me, L), buy: myTurn && canOwn(me, L) && costFor(me, L) <= pw, attrs: `data-act="buy" data-src="legend" data-i="${i}"` })
@@ -4052,9 +4041,6 @@ function render() {
     : `<div class="act-wrap">${cardHTML(c, { small: true })}<button class="btn act-btn" data-act="sacrifice" data-uid="${c.uid}" title="${c.sacText || ''}">ทำลายเพื่อใช้</button></div>`).join('') : '';
 
   $('#board').innerHTML = `
-    <div class="seat-top">${seats.top.join('')}</div>
-    <div class="seat-left">${seats.left.join('')}</div>
-    <div class="seat-right">${seats.right.join('')}</div>
     <section class="boardc">
       <div class="legend-hall">
         <div class="hall-title">ตำนาน <span>เลือกซื้อได้ 3 ใบ · กองคว่ำเหลือ ${G.legends.length} ใบ</span></div>
@@ -4072,6 +4058,7 @@ function render() {
       </div>
       ${arena}
     </section>
+    <div class="seats">${[...seats.left, ...seats.right].join('')}</div>
     <section class="you ${cur() === me ? 'active' : ''} ${me.hitFlash ? 'hit' : ''}" style="--pc:${me.color}">
       <div class="youbar" data-pi="${ME}">
         <div class="big hp"><span class="v">${me.hp}</span><span class="k">HP</span></div>
