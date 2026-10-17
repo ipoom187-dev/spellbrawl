@@ -174,6 +174,10 @@ Which to run:
   which card. Then show the saved picture, and tell the user it is not pushed yet. Don't commit/push until the user says "push".
 - The user's prompt page "Spellbrawl Art Prompts" (https://claude.ai/artifact/LhbyR22yfaufQNYcDQjnuB) shows each card's
   picture from `art/<id>.jpg` files published with it; the page has `const IMGS = new Set([...])` listing the ids with art.
+  **"ดึงการ์ดจากหน้า prompt"**: query the page's db collection `changes` for `status: 'pending'` docs (`kind` `edit` = only
+  the changed fields `n t k v pw x g p img`; `new` = a whole entry whose `t` may also be `chaos`, `token` (has `v`, usually -3)
+  or `trait` (wizard ability); `delete`). Put each into the game (new tokens → `TOKENS`, new Chaos → a `chaos…` def + `MAIN`,
+  new abilities → `TRAITS`), test, batch-update those docs to `status: 'applied'`, and refresh the page's `CARDS` entries.
   After adding pictures, read the artifact, add the ids to `IMGS`, and republish to the same url with
   `files: {"art/<id>.jpg": "art/<id>.jpg"}` for each new or replaced picture.
 - The user works on both Windows and macOS; `git pull` before editing.
