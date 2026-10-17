@@ -380,6 +380,53 @@ button{font-family:inherit}
 .dialog:has(.fam-pick) .opts .card .c-vp{font-size:16px}
 .opts .opt-card .card:hover{transform:translateY(-4px);box-shadow:0 0 0 2px var(--gold)}
 .setup-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+/* ---- title screens (titleMode): start, join, lobby, waiting room ---- */
+#modal .brand{display:none}
+#modal.title-mode{background:radial-gradient(ellipse at 50% 18%, #6a1a2e88, transparent 60%),
+  radial-gradient(ellipse at 50% 120%, #ff7a3d33, transparent 55%), linear-gradient(#0b0810b8, #0b0810ee), url("art/board.jpg") center/cover, #0b0810}
+#modal.title-mode .brand{display:block;text-align:center;margin:-6px 0 2px}
+.brand .logo{font-family:var(--f-display);font-size:clamp(52px,9.5vw,118px);line-height:.92;letter-spacing:2px;white-space:nowrap;
+  background:linear-gradient(180deg,#fff2c4 0%,#f0c35a 40%,#ff7a3d 72%,#a3243b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 22px #ff7a3d88) drop-shadow(0 5px 0 #000);animation:logoin .9s cubic-bezier(.2,1.2,.4,1) both, logoglow 3.2s ease-in-out .9s infinite}
+@keyframes logoin{from{transform:scale(.7);opacity:0;letter-spacing:24px}to{transform:none;opacity:1}}
+@keyframes logoglow{50%{filter:drop-shadow(0 0 40px #ffb454cc) drop-shadow(0 5px 0 #000)}}
+.brand .tagline{margin-top:8px;font-size:clamp(14px,1.9vw,19px);letter-spacing:.08em;color:#f3e2b5;text-shadow:0 2px 8px #000}
+.brand .tagline::before,.brand .tagline::after{content:'✦';color:var(--gold);margin:0 10px;font-size:.8em}
+#modal.title-mode .dialog{max-width:780px;gap:14px;padding:26px 28px 22px;border-radius:18px;border:1px solid #f0c35a88;
+  background:linear-gradient(180deg,#22192bf2,#140c1cf7);box-shadow:0 0 0 1px #000,0 0 70px #ff7a3d2a,0 30px 90px #000d}
+#modal.title-mode .dialog h2{text-align:center;font-size:22px;color:var(--gold);letter-spacing:.04em}
+#modal.title-mode .dialog > .msub{text-align:center;font-size:13.5px}
+#modal.title-mode #m-opts{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:14px}
+#modal.title-mode .fld input,#modal.title-mode .fld select{font-size:16px;padding:10px 12px;border-radius:9px}
+.ts-name{max-width:420px;width:100%;align-self:center;text-align:center}
+.ts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ts-card{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:14px;border:1px solid var(--line);
+  background:linear-gradient(180deg,#ffffff0d,#ffffff04);transition:border-color .2s,box-shadow .2s}
+.ts-card:hover{border-color:#f0c35a88;box-shadow:0 0 24px #f0c35a22}
+.ts-h{display:flex;align-items:center;gap:10px;font-weight:700;font-size:21px;line-height:1.2;color:var(--ink)}
+.ts-ico{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:18px;color:#2a1d05;
+  background:radial-gradient(circle at 35% 30%,#fff6c8,#f0c35a 45%,#a8741c);box-shadow:0 0 0 2px #7a520f inset,0 2px 8px #000a}
+.ts-p{margin:0;flex:1;color:var(--mute);font-size:13px;line-height:1.55}
+.ts-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ts-row .btn{flex:1 1 140px}
+.btn.xl{padding:13px 16px;font-size:17px;border-radius:10px}
+#modal.title-mode .btn.xl:not(.ghost){background:linear-gradient(180deg,#ffb454,#ff7a3d 55%,#d4502f);color:#1a0f0a;box-shadow:0 0 20px #ff7a3d55,0 3px 0 #7a2a14}
+#modal.title-mode .btn.xl:not(.ghost):hover:not(:disabled){filter:brightness(1.1)}
+.ts-foot{text-align:center}
+@media (max-width:640px){.ts-grid{grid-template-columns:1fr}#modal.title-mode .dialog{padding:20px 16px}}
+/* lobby / waiting room: a big room code and player chips */
+#modal.title-mode .roomcode{flex-direction:column;justify-content:center;gap:6px;padding:14px;border-radius:14px;border:1px dashed #f0c35a99;background:#00000055}
+#modal.title-mode .roomcode b{font-size:clamp(46px,8vw,68px);text-shadow:0 0 20px #f0c35a66}
+#modal.title-mode .lobby-list{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+#modal.title-mode .lobby-list li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:10px;background:#ffffff0a;border:1px solid var(--line)}
+#modal.title-mode .lobby-list li.waiting{justify-content:center;border-style:dashed;animation:waitpulse 1.6s ease-in-out infinite}
+.av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#1a0f0a;background:var(--gold)}
+.lobby-list li:nth-child(2) .av{background:#7ddf9a} .lobby-list li:nth-child(3) .av{background:#59c2c7}
+.lobby-list li:nth-child(4) .av{background:#c79bff} .lobby-list li:nth-child(5) .av{background:#ff8a9a}
+.lob-wait{text-align:center;color:var(--gold);font-family:var(--f-display);font-size:24px;animation:waitpulse 1.6s ease-in-out infinite}
+@keyframes waitpulse{50%{opacity:.45}}
+.codein{text-transform:uppercase;letter-spacing:.3em;text-align:center;font-family:var(--f-display);font-size:28px!important;color:var(--gold)!important}
+@media (prefers-reduced-motion:reduce){.brand .logo,.lob-wait,#modal.title-mode .lobby-list li.waiting{animation:none}}
 label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute)}
 label.fld input,label.fld select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px;font:inherit}
 .rules{font-size:13px;line-height:1.6;color:var(--ink)}
@@ -3980,7 +4027,7 @@ function finalRows() {
 function showFinal(rows = finalRows()) {
   const win = rows[0].p === meP();
   AUD.play(win ? 'victory' : 'defeat'); FX.victory(win, rows[0].p.name);
-  const m = $('#modal'); m.hidden = false;
+  const m = $('#modal'); m.hidden = false; titleMode(false);
   $('#m-title').textContent = `${rows[0].p.name} ชนะ!`;
   $('#m-sub').innerHTML = `เกมจบเพราะ${G.ending}`;
   $('#m-opts').innerHTML = `<div class="tablewrap" style="width:100%"><table class="score"><tr><th>พ่อมด</th><th>VP การ์ด</th><th>Limp Wand</th><th>Dead Wizard Token</th><th>ตำนาน</th><th>รวม</th></tr>
@@ -4060,20 +4107,34 @@ async function startGame(name, nAI, guests = []) {
   runGame();
 }
 
+// title screens (start, join, host lobby, guest waiting room, connecting): the big Wizard Royale logo over the tavern
+// table; every other use of the modal (choices, rules, scores) switches it off
+// a player's round initial badge in the room lists
+const avatar = n => `<span class="av" aria-hidden="true">${escHTML([...String(n || '?').trim()][0] || '?')}</span>`;
+function titleMode(on) {
+  $('#modal').classList.toggle('title-mode', on);
+  if (on && !$('#brand')) $('#modal .dialog').insertAdjacentHTML('afterbegin',
+    '<div class="brand" id="brand"><div class="logo">WIZARD ROYALE</div><div class="tagline">การแข่งขันหาพ่อมดที่เก่งที่สุดในโลก</div></div>');
+}
 function showSetup(err = '') {
-  const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
-  $('#m-title').textContent = 'Wizard Royale · เข้าสู่สนามประลองเวท';
+  const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide'); titleMode(true);
+  $('#m-title').textContent = 'เข้าสู่สนามประลองเวท';
   $('#m-sub').innerHTML = (err ? `<span class="err">${escHTML(err)}</span><br>` : '') + 'พ่อมดทุกคนเริ่มที่ 20 HP · ซื้อการ์ด สร้างเด็ค ระเบิดศัตรู ล้มตำนาน แล้วเก็บ VP ให้มากที่สุด';
-  $('#m-opts').innerHTML = `<div class="setup-grid" style="width:100%">
-    <label class="fld" for="in-name">ชื่อพ่อมดของคุณ<input id="in-name" value="${escHTML(NET.savedName() || 'Grand Wizard')}" maxlength="20"></label>
-    <label class="fld" for="in-n">จำนวนคู่ต่อสู้ (AI)<select id="in-n"><option value="1">1 คน (2 ผู้เล่น)</option><option value="2">2 คน (3 ผู้เล่น)</option><option value="3" selected>3 คน (4 ผู้เล่น)</option><option value="4">4 คน (5 ผู้เล่น)</option></select></label>
+  $('#m-opts').innerHTML = `
+    <label class="fld ts-name" for="in-name">ชื่อพ่อมดของคุณ<input id="in-name" value="${escHTML(NET.savedName() || 'Grand Wizard')}" maxlength="20"></label>
+    <div class="ts-grid">
+      <section class="ts-card">
+        <div class="ts-h"><span class="ts-ico" aria-hidden="true">⚔</span>เล่นกับ AI</div>
+        <label class="fld" for="in-n">จำนวนคู่ต่อสู้<select id="in-n"><option value="1">1 คน (2 ผู้เล่น)</option><option value="2">2 คน (3 ผู้เล่น)</option><option value="3" selected>3 คน (4 ผู้เล่น)</option><option value="4">4 คน (5 ผู้เล่น)</option></select></label>
+        <button class="btn xl" id="go">เริ่มการแข่งขัน</button>
+      </section>
+      <section class="ts-card">
+        <div class="ts-h"><span class="ts-ico" aria-hidden="true">✦</span>เล่นกับเพื่อนออนไลน์</div>
+        <p class="ts-p">2–5 คน คนละเครื่อง · คนสร้างห้องเป็นเจ้าภาพ เพื่อนเข้าด้วยลิงก์หรือรหัสห้อง · เติม AI ให้ครบโต๊ะได้</p>
+        <div class="ts-row"><button class="btn xl" id="host">สร้างห้อง</button><button class="btn ghost xl" id="join">เข้าห้องเพื่อน</button></div>
+      </section>
     </div>
-    <button class="btn" id="go">เล่นกับ AI</button> <button class="btn ghost" id="show-rules">อ่านกติกา</button>
-    <div class="online-box">
-      <div class="sect-label">เล่นออนไลน์กับเพื่อน (คนละเครื่อง)</div>
-      <div class="online-btns"><button class="btn" id="host">สร้างห้อง</button> <button class="btn ghost" id="join">เข้าห้องเพื่อน</button></div>
-      <div class="msub">คนสร้างห้องเป็นเจ้าภาพ เกมรันบนเครื่องเจ้าภาพ เพื่อนเข้าด้วยลิงก์หรือรหัสห้อง เติม AI ให้ครบโต๊ะได้</div>
-    </div>`;
+    <div class="ts-foot"><button class="linkbtn" id="show-rules">อ่านกติกา</button></div>`;
   $('#m-opts').onclick = e => {
     const n = ($('#in-name') && $('#in-name').value.trim()) || 'Grand Wizard';
     if (e.target.id === 'go') {
@@ -4169,7 +4230,7 @@ const RULES_HTML = `<div class="rules rg">
 </div>`;
 
 function showRules(backToSetup) {
-  const m = $('#modal'); m.hidden = false;
+  const m = $('#modal'); m.hidden = false; titleMode(false);
   $('#m-title').textContent = 'กติกา'; $('#m-sub').textContent = '';
   $('#modal .dialog').classList.add('wide');
   $('#m-opts').innerHTML = RULES_HTML + `<button class="btn" id="close-rules">${backToSetup ? 'กลับ' : 'ปิด'}</button>`;
@@ -4188,7 +4249,7 @@ async function humanChoose(who, title, options, sub = '') {
 }
 function localChoose(title, options, sub = '') {
   return new Promise(res => {
-    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide'); titleMode(false);
     $('#m-title').textContent = title; $('#m-sub').innerHTML = sub;
     const box = $('#m-opts');
     box.innerHTML = options.map((o, i) => o.card
@@ -5123,7 +5184,7 @@ const NET = {
       NET.guests = G.players.filter(p => p.peer && NET.conns.has(p.peer)).map(p => ({ cid: p.cid, name: p.name, peer: p.peer }));
     }
     NET.send({ t: 'lobby', names: [NET.name, ...NET.guests.map(g => g.name)], code: NET.code });
-    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide'); titleMode(true);
     const link = NET.roomLink(NET.code);
     const humans = 1 + NET.guests.length;
     const prevAI = $('#lob-ai') ? +$('#lob-ai').value : (humans > 1 ? 0 : 1);
@@ -5139,12 +5200,12 @@ const NET = {
       ${link ? `<input class="roomlink" id="lob-link" readonly value="${escHTML(link)}">` : ''}
       <div class="sect-label">ผู้เล่นในห้อง (${humans}/5)</div>
       <ol class="lobby-list">
-        <li><b>${escHTML(NET.name)}</b> <span class="seattag">เจ้าภาพ (คุณ)</span></li>
-        ${NET.guests.map(g => `<li><b>${escHTML(g.name)}</b> <span class="seattag">เพื่อน</span></li>`).join('')}
+        <li>${avatar(NET.name)}<b>${escHTML(NET.name)}</b> <span class="seattag">เจ้าภาพ (คุณ)</span></li>
+        ${NET.guests.map(g => `<li>${avatar(g.name)}<b>${escHTML(g.name)}</b> <span class="seattag">เพื่อน</span></li>`).join('')}
         ${humans < 2 ? '<li class="waiting">รอเพื่อนเข้าห้อง…</li>' : ''}
       </ol>
       <label class="fld" for="lob-ai">เติมผู้เล่น AI<select id="lob-ai">${Array.from({ length: maxAI + 1 }, (_, k) => `<option value="${k}" ${k === aiSel ? 'selected' : ''}>${k === 0 ? 'ไม่เติม' : k + ' ตัว'} (รวม ${humans + k} ผู้เล่น)</option>`).join('')}</select></label>
-      <div class="lobby-btns"><button class="btn" id="lob-start">เริ่มเกม</button> <button class="btn ghost" id="lob-close">ปิดห้อง</button></div>
+      <div class="ts-row"><button class="btn xl" id="lob-start">เริ่มเกม</button><button class="btn ghost xl" id="lob-close">ปิดห้อง</button></div>
       <div class="msub" id="lob-msg"></div>
     </div>`;
     const check = () => { const ok = humans + +$('#lob-ai').value >= 2; $('#lob-start').disabled = !ok; $('#lob-msg').textContent = ok ? '' : 'ต้องมีอย่างน้อย 2 ผู้เล่น: รอเพื่อน หรือเติม AI'; };
@@ -5222,11 +5283,12 @@ const NET = {
     } catch (e) { console.warn('fx', k, e); }
   },
   showWaiting() {
-    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide'); titleMode(true);
     $('#m-title').textContent = `ห้อง ${NET.code}`;
     $('#m-sub').textContent = 'เข้าห้องแล้ว รอเจ้าภาพเริ่มเกม…';
     $('#m-opts').innerHTML = `<div class="lobby"><div class="sect-label">ผู้เล่นในห้อง (${NET.lobbyNames.length}/5)</div>
-      <ol class="lobby-list">${NET.lobbyNames.map((n, i) => `<li><b>${escHTML(n)}</b> ${i === 0 ? '<span class="seattag">เจ้าภาพ</span>' : n === NET.name ? '<span class="seattag">คุณ</span>' : ''}</li>`).join('')}</ol>
+      <ol class="lobby-list">${NET.lobbyNames.map((n, i) => `<li>${avatar(n)}<b>${escHTML(n)}</b> ${i === 0 ? '<span class="seattag">เจ้าภาพ</span>' : n === NET.name ? '<span class="seattag">คุณ</span>' : ''}</li>`).join('')}</ol>
+      <div class="lob-wait">รอเจ้าภาพเริ่มเกม…</div>
       <div class="lobby-btns"><button class="btn ghost" id="lob-leave">ออกจากห้อง</button></div></div>`;
     $('#m-opts').onclick = e => { if (e.target.id === 'lob-leave') NET.leave(); };
   },
@@ -5234,7 +5296,7 @@ const NET = {
     if (NET.role !== 'guest' || NET.left) return;
     NET.left = true;
     const code = NET.code;
-    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide'); titleMode(true);
     $('#m-title').textContent = 'การเชื่อมต่อหลุด';
     $('#m-sub').textContent = 'ติดต่อเจ้าภาพไม่ได้แล้ว (เจ้าภาพอาจปิดหน้าเกม หรือเน็ตหลุด) ถ้าห้องยังเปิดอยู่ กดเข้าใหม่ได้ ที่นั่งเดิมจะกลับมาเป็นของคุณ';
     $('#m-opts').innerHTML = '<button class="btn" id="re-join">เข้าห้องอีกครั้ง</button> <button class="btn ghost" id="re-home">กลับหน้าแรก</button>';
@@ -5246,7 +5308,7 @@ const NET = {
 
   /* ---- shared ---- */
   status(msg) {
-    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide'); titleMode(true);
     $('#m-title').textContent = 'ออนไลน์'; $('#m-sub').textContent = msg;
     $('#m-opts').innerHTML = '<button class="btn ghost" id="st-cancel">ยกเลิก</button>';
     $('#m-opts').onclick = e => { if (e.target.id === 'st-cancel') NET.leave(); };
@@ -5270,14 +5332,14 @@ const NET = {
     location.reload();
   },
   showJoin(code = '', err = '') {
-    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
+    const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide'); titleMode(true);
     $('#m-title').textContent = 'เข้าห้องเพื่อน';
     $('#m-sub').innerHTML = err ? `<span class="err">${escHTML(err)}</span>` : 'ใส่ชื่อของคุณ แล้วกดเข้าห้อง';
     $('#m-opts').innerHTML = `<div class="setup-grid" style="width:100%">
       <label class="fld" for="j-name">ชื่อพ่อมดของคุณ<input id="j-name" value="${escHTML(NET.name || NET.savedName() || 'Wizard')}" maxlength="20"></label>
-      <label class="fld" for="j-code">รหัสห้อง<input id="j-code" value="${escHTML(code)}" maxlength="8" style="text-transform:uppercase;letter-spacing:.2em" placeholder="เช่น K7QXP"></label>
+      <label class="fld" for="j-code">รหัสห้อง<input id="j-code" class="codein" value="${escHTML(code)}" maxlength="8" placeholder="K7QXP" autocomplete="off"></label>
       </div>
-      <button class="btn" id="j-go">เข้าห้อง</button> <button class="btn ghost" id="j-back">กลับ</button>`;
+      <div class="ts-row"><button class="btn xl" id="j-go">เข้าห้อง</button><button class="btn ghost xl" id="j-back">กลับ</button></div>`;
     $('#m-opts').onclick = e => {
       if (e.target.id === 'j-go') { NET.left = false; NET.join($('#j-code').value, $('#j-name').value.trim() || 'Wizard'); }
       if (e.target.id === 'j-back') NET.leave();
