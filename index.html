@@ -1336,9 +1336,11 @@ async function gainTopOfMain(p) {
   return null;
 }
 // resolve only the attack part of a card: owner's power/draw/heal are skipped; self = force every attack onto that player
-async function attackOnly(card, owner, self) {
+// randomAll (Chaos 22): every target is drawn at random from all players, the turn player included — single-target
+// attacks hit one random player, attacks on everyone hit every player
+async function attackOnly(card, owner, self, { randomAll = false } = {}) {
   if (!card.atk || !card.play) return;
-  G.attackOnly = { owner, self, card };
+  G.attackOnly = { owner, self, card, randomAll };
   G.curLabel = card.name;
   try { await card.play(owner, card); }
   catch (e) { console.error(e); log(`(${card.name} ใช้ไม่ได้ในโหมดนี้)`); }
@@ -1515,10 +1517,13 @@ def('chaosP', { name:'Chaos 21', type:'chaos', atk:1, text:'<b>โจมตี:<
   chaos: async by => attack(null, { to:'where', where: t => t.hp >= 10, dmg:5, chaos:true, by }) });
 
 def('chaosQ', { name:'Chaos 22', type:'chaos', atk:1,
-  text:'ทุกการ์ดใน Line-Up ใช้<b>การโจมตี</b>ของตัวเอง โดยผู้เล่นที่เป็นเทิร์นเลือกเป้าหมาย (ผลอื่นของการ์ดไม่เกิด)',
+  text:'ทุกการ์ดใน Line-Up ใช้<b>การโจมตี</b>ของตัวเอง โดยสุ่มเป้าหมายจากผู้เล่นทุกคน รวมผู้เล่นในเทิร์นนี้ด้วย (ไม่มีใครเลือกเป้าหมาย · ผลอื่นของการ์ดไม่เกิด)',
   chaos: async () => {
     const p = cur();
-    for (const c of G.lineup.filter(c => c && c.atk && c.play)) { log(`Chaos 22: ${c.name} ใน Line-Up โจมตี (${p.name} เลือกเป้าหมาย)`, 'sys'); await attackOnly(c, p, null); }
+    for (const c of G.lineup.filter(c => c && c.atk && c.play)) {
+      log(`Chaos 22: ${c.name} ใน Line-Up โจมตี (สุ่มเป้าหมาย)`, 'sys');
+      await attackOnly(c, p, null, { randomAll: true });
+    }
   } });
 
 def('chaosR', { name:'Chaos 23', type:'chaos',
@@ -3461,6 +3466,11 @@ async function attack(src, spec) {
   const pool = (src && !spec.includeSelf ? opps(src) : G.players.slice()).filter(t => t !== G.optOut); // includeSelf: the attacker may pick themself
   let targets = [];
   if (G.attackOnly && G.attackOnly.self) { targets = [G.attackOnly.self]; src = null; } // Chaos 20: your own attacks hit you
+  else if (G.attackOnly && G.attackOnly.randomAll) {   // Chaos 22: nobody chooses; anyone can be hit, the turn player too
+    const all = G.players.filter(t => t !== G.optOut);
+    targets = spec.to === 'where' ? all.filter(spec.where) : spec.to === 'lr' ? shuffle(all.slice()).slice(0, 2)
+      : spec.to === 'each' || spec.to === 'all' ? all : [all[rnd(all.length)]];
+  }
   else switch (spec.to) {
     case 'choose': targets = [await pickTarget(src, spec.among ? pool.filter(spec.among) : pool, spec)]; break; // among: limit who can be picked
     case 'left': targets = [leftOf(src)]; break;
