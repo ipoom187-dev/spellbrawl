@@ -178,6 +178,10 @@ Which to run:
   the changed fields `n t k v pw x g p img`; `new` = a whole entry whose `t` may also be `chaos`, `token` (has `v`, usually -3)
   or `trait` (wizard ability); `delete`). Put each into the game (new tokens → `TOKENS`, new Chaos → a `chaos…` def + `MAIN`,
   new abilities → `TRAITS`), test, batch-update those docs to `status: 'applied'`, and refresh the page's `CARDS` entries.
+  **Thai card names** (added 2026-10-17): `tools/names-th.json` (id → Thai name) is the source; the page's `CARDS` entries
+  carry them as `nt` (Chaos: "โกลาหล N"), shown before the English name, and an edit doc may carry `nt`. When pulling an
+  `nt` edit, update `tools/names-th.json`. New cards also get a Thai name. The game itself still shows English names
+  (a Thai/English name setting is planned; keep English names, `isWand` reads them).
   After adding pictures, read the artifact, add the ids to `IMGS`, and republish to the same url with
   `files: {"art/<id>.jpg": "art/<id>.jpg"}` for each new or replaced picture.
 - The user works on both Windows and macOS; `git pull` before editing.
