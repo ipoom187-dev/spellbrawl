@@ -1,5 +1,5 @@
 #!/bin/bash
-# Spellbrawl launcher (macOS): double-click in Finder to open the game in its own app window.
+# Wizard Royale launcher (macOS): double-click in Finder to open the game in its own app window.
 DIR="$(cd "$(dirname "$0")" && pwd)"
 URL="file://${DIR// /%20}/index.html"
 if [ -d "/Applications/Google Chrome.app" ]; then

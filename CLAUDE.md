@@ -1,4 +1,8 @@
-# Spellbrawl
+# Wizard Royale
+
+Game name: **Wizard Royale** (renamed from Spellbrawl on 2026-10-17; story: a world-wide contest to find the greatest
+wizard). Play link: https://ipoom187-dev.github.io/wizard-royale/ (repo `ipoom187-dev/wizard-royale`). Internal keys and the
+online room prefix still say `spellbrawl-…` on purpose: renaming them would wipe saved settings and split rooms.
 
 Single-file HTML deck-building game (`index.html`), rules modelled on a well-known wizard-battle deck-builder (keep that game unnamed in anything players see).
 UI and card text are in Thai; card text is always written fresh in Thai, never translated word-for-word.
@@ -156,7 +160,7 @@ Which to run:
 
 ## Repo
 
-- Launchers: `Spellbrawl.cmd` (Windows, CRLF) and `Spellbrawl.command` (macOS, executable bit).
+- Launchers: `WizardRoyale.cmd` (Windows, CRLF) and `WizardRoyale.command` (macOS, executable bit).
 - Published on GitHub Pages from `main` (root): `index.html` + `art/` are served as-is; art now loads on http(s) too.
 - Art: `art/<id>.png|jpg` per card, `art/board.jpg` (table), `art/mat.jpg` (rug under your own seat panel `.you`; same dim slider as the board).
   AI art: `tools/gen-art.ps1` (Windows PowerShell, Google Gemini, key in the user's `GEMINI_API_KEY` env var — never ask for it in chat)
@@ -172,7 +176,7 @@ Which to run:
   It centre-crops to square, saves `art/<id>.jpg` at 512×512 and removes older `art/<id>.*`. Chaos cards share
   `art/chaos.jpg` (tall 9:16, not square: don't use add-art.ps1 for it). If the name matches no card, say so and ask
   which card. Then show the saved picture, and tell the user it is not pushed yet. Don't commit/push until the user says "push".
-- The user's prompt page "Spellbrawl Art Prompts" (https://claude.ai/artifact/LhbyR22yfaufQNYcDQjnuB) shows each card's
+- The user's prompt page "WizardRoyaleWiki" (was "Spellbrawl Art Prompts") (https://claude.ai/artifact/LhbyR22yfaufQNYcDQjnuB) shows each card's
   picture from `art/<id>.jpg` files published with it; the page has `const IMGS = new Set([...])` listing the ids with art.
   **"ดึงการ์ดจากหน้า prompt"**: query the page's db collection `changes` for `status: 'pending'` docs (`kind` `edit` = only
   the changed fields `n t k v pw x g p img`; `new` = a whole entry whose `t` may also be `chaos`, `token` (has `v`, usually -3)

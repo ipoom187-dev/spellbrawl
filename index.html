@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Spellbrawl</title>
+<title>Wizard Royale</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Chakra+Petch:wght@400;600;700&display=swap">
@@ -4062,7 +4062,7 @@ async function startGame(name, nAI, guests = []) {
 
 function showSetup(err = '') {
   const m = $('#modal'); m.hidden = false; $('#modal .dialog').classList.remove('wide');
-  $('#m-title').textContent = 'เข้าสู่สนามประลองเวท';
+  $('#m-title').textContent = 'Wizard Royale · เข้าสู่สนามประลองเวท';
   $('#m-sub').innerHTML = (err ? `<span class="err">${escHTML(err)}</span><br>` : '') + 'พ่อมดทุกคนเริ่มที่ 20 HP · ซื้อการ์ด สร้างเด็ค ระเบิดศัตรู ล้มตำนาน แล้วเก็บ VP ให้มากที่สุด';
   $('#m-opts').innerHTML = `<div class="setup-grid" style="width:100%">
     <label class="fld" for="in-name">ชื่อพ่อมดของคุณ<input id="in-name" value="${escHTML(NET.savedName() || 'Grand Wizard')}" maxlength="20"></label>
