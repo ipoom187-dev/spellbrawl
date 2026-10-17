@@ -1307,7 +1307,7 @@ def('quake', { name:'Chaos 3', type:'chaos', text:'พ่อมดทุกค�
 def('tithe', { name:'Chaos 4', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดที่ HP มากที่สุดรับ 4 ดาเมจ', chaos: async by => attack(null, { to:'strongest', dmg:4, chaos:true, by }) });
 def('gift', { name:'Chaos 5', type:'chaos', text:'พ่อมดทุกคนฟื้น 3 HP', chaos: async () => { turnOrder().forEach(t => heal(t, 3)); } });
 def('chaosA', { name:'Chaos 6', type:'chaos',
-  text:'พ่อมดแต่ละคนเลือก: ทิ้งการ์ดในมือทั้งหมดแล้วจั่ว 2 ใบ <i>หรือ</i> รับ Limp Wand 1 ใบ',
+  text:'พ่อมดทุกคนเลือก: ทิ้งการ์ดในมือทั้งหมดแล้วจั่ว 2 ใบ หรือ รับ Limp Wand 1 ใบ',
   chaos: async () => {
     const n = G.players.length;
     for (let k = 0; k < n; k++) {               // starting with the player whose turn it is
@@ -1366,7 +1366,7 @@ def('chaosC', { name:'Chaos 8', type:'chaos', atk:1,
   } });
 
 def('chaosD', { name:'Chaos 9', type:'chaos',
-  text:'พ่อมดแต่ละคน จ่าย 4 HP เพื่อทำลายการ์ดในมือ 1 ใบได้ ทำซ้ำได้ไม่จำกัด (ต้องมีอย่างน้อย 4 HP · ถ้าตายก็หยุด)',
+  text:'พ่อมดทุกคนจ่าย 4 HP เพื่อทำลายการ์ดในมือ 1 ใบได้ ทำซ้ำได้ไม่จำกัด (ต้องมีอย่างน้อย 4 HP · ถ้าตายก็หยุด)',
   chaos: async () => {
     for (const t of turnOrder()) {
       while (t.hp >= 4 && t.hand.length) {
@@ -1410,7 +1410,7 @@ def('chaosF', { name:'Chaos 11', type:'chaos', atk:1,
     } });
   } });
 
-def('chaosG', { name:'Chaos 12', type:'chaos', text:'พ่อมดที่ HP มากที่สุดกับน้อยที่สุดสลับ HP กัน (ไม่ใช่การโจมตี · ป้องกันไม่ได้)',
+def('chaosG', { name:'Chaos 12', type:'chaos', text:'พ่อมดที่ HP มากที่สุดกับน้อยที่สุดสลับ HP กัน',
   chaos: async () => {
     const order = turnOrder(), hi = Math.max(...order.map(t => t.hp)), lo = Math.min(...order.map(t => t.hp));
     if (hi === lo) { log('ทุกคน HP เท่ากัน · ไม่มีใครสลับ'); return; }
@@ -1434,7 +1434,7 @@ def('chaosI', { name:'Chaos 14', type:'chaos', atk:1, text:'<b>โจมตี:<
     } });
   } });
 
-def('chaosJ', { name:'Chaos 15', type:'chaos', text:'พ่อมดแต่ละคนเลือกรับการ์ดใบบนสุดของกองหลักได้ ใครรับ ต้องทำลายการ์ดใบบนสุดของเด็คตัวเอง',
+def('chaosJ', { name:'Chaos 15', type:'chaos', text:'พ่อมดทุกคนเลือกรับการ์ดใบบนสุดของกองหลักได้ ใครรับ ต้องทำลายการ์ดใบบนสุดของเด็คตัวเอง',
   chaos: async () => {
     for (const t of turnOrder()) {
       while (G.main.length && G.main[G.main.length - 1].type === 'chaos') { const x = G.main.pop(); G.destroyed.push(x); log(`${x.name} บนกองหลักถูกทำลาย`); }
@@ -1450,16 +1450,16 @@ def('chaosJ', { name:'Chaos 15', type:'chaos', text:'พ่อมดแต่ล
     }
   } });
 
-def('chaosK', { name:'Chaos 16', type:'chaos', text:'พ่อมดแต่ละคนเลือกทำลายการ์ดที่แพงที่สุดในมือ เพื่อฟื้น 13 HP ได้',
+def('chaosK', { name:'Chaos 16', type:'chaos', text:'พ่อมดทุกคนเลือกทิ้งการ์ดที่แพงที่สุดในมือ เพื่อฟื้น 5 HP ได้',
   chaos: async () => {
     for (const t of turnOrder()) {
       if (!t.hand.length) continue;
       const m = Math.max(...t.hand.map(c => c.cost || 0)), c = t.hand.find(x => (x.cost || 0) === m);
-      const yes = t.isAI ? t.hp <= 12
-        : await humanChoose(t, `Chaos 16: ทำลาย ${c.name} (ราคา ${m}) เพื่อฟื้น 13 HP?`, [{ label: 'ทำลายแล้วฟื้น 13 HP', value: true }, { label: 'ไม่ทำ', value: false, ghost: true }], `ตอนนี้คุณมี ${t.hp} HP`);
+      const yes = t.isAI ? t.hp <= 8 && m <= 4
+        : await humanChoose(t, `Chaos 16: ทิ้ง ${c.name} (ราคา ${m}) เพื่อฟื้น 5 HP?`, [{ label: 'ทิ้งแล้วฟื้น 5 HP', value: true }, { label: 'ไม่ทำ', value: false, ghost: true }], `ตอนนี้คุณมี ${t.hp} HP`);
       if (!yes) continue;
-      t.hand.splice(t.hand.indexOf(c), 1); G.destroyed.push(c); log(`${t.name} ทำลาย ${c.name}`); AUD.play('destroy');
-      heal(t, 13);
+      t.hand.splice(t.hand.indexOf(c), 1); t.discard.push(c); log(`${t.name} ทิ้ง ${c.name}`); AUD.play('discard');
+      heal(t, 5);
     }
   } });
 
@@ -1475,7 +1475,7 @@ def('chaosL', { name:'Chaos 17', type:'chaos', text:'สุ่มเล่นก
   } });
 
 def('chaosM', { name:'Chaos 18', type:'chaos',
-  text:'พ่อมดแต่ละคนเลือกทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ ถ้าใบนั้นมี 1 VP ขึ้นไป ได้การ์ดจากบนสุดของกองหลักเท่ากับ VP นั้น (★? นับเป็น 3)',
+  text:'พ่อมดทุกคนเลือกทำลายการ์ด 1 ใบจากมือหรือกองทิ้งได้ ถ้าใบนั้นมี 1 VP ขึ้นไป ได้การ์ดจากบนสุดของกองหลักเท่ากับ VP นั้น (★? นับเป็น 3)',
   chaos: async () => {
     for (const t of turnOrder()) {
       const pool = [...t.hand, ...t.discard];
@@ -1542,16 +1542,23 @@ def('chaosR', { name:'Chaos 23', type:'chaos',
   } });
 
 def('chaosS', { name:'Chaos 24', type:'chaos', atk:1,
-  text:'<b>โจมตี:</b> ศัตรูทางขวาของผู้เล่นที่เป็นเทิร์น ทำลายการ์ดในมือได้ 1 ใบ และในกองทิ้งได้ 1 ใบ (ป้องกัน = ไม่รับผลดีนี้)',
+  text:'<b>โจมตี:</b> ศัตรูทางขวาของผู้เล่นในเทิร์นนี้ ต้องทำลายการ์ดในมือ 1 ใบ และในกองทิ้ง 1 ใบ',
   chaos: async () => {
-    await attack(cur(), { to:'right', benign:true, dmgText:'ได้ทำลายการ์ดในมือ 1 ใบ และในกองทิ้ง 1 ใบ (เป็นผลดี)', dmg: async t => {
+    // forced: one card from the hand and one from the discard pile (the AI gives up its weakest)
+    const lose = async (t, pile, where) => {
+      if (!t[pile].length) return;
+      const c = t.isAI ? t[pile].slice().sort((a, b) => aiVal(a) - aiVal(b))[0]
+        : await humanChoose(t, `Chaos 24: ทำลายการ์ด 1 ใบ${where}`, t[pile].map(x => ({ card: x, value: x })));
+      t[pile].splice(t[pile].indexOf(c), 1); G.destroyed.push(c); log(`${t.name} ทำลาย ${c.name}${where}`, 'dmg'); AUD.play('destroy');
+    };
+    await attack(cur(), { to:'right', dmgText:'ต้องทำลายการ์ดในมือ 1 ใบ และในกองทิ้ง 1 ใบ', dmg: async t => {
       if (t === cur()) return 0;
-      await destroyFromHand(t, 1); await destroyOwn(t, { discardOnly: true });
+      await lose(t, 'hand', 'จากมือ'); await lose(t, 'discard', 'จากกองทิ้ง');
       return 0;
     } });
   } });
 
-def('chaosT', { name:'Chaos 25', type:'chaos', atk:1, text:'<b>โจมตี:</b> ศัตรูทางซ้ายของผู้เล่นที่เป็นเทิร์นจั่ว 2 ใบ (ป้องกัน = ไม่รับผลดีนี้)',
+def('chaosT', { name:'Chaos 25', type:'chaos', atk:1, text:'<b>โจมตี:</b> ศัตรูทางซ้ายของผู้เล่นในเทิร์นนี้จั่ว 2 ใบ',
   chaos: async () => {
     await attack(cur(), { to:'left', benign:true, dmgText:'จั่ว 2 ใบ (เป็นผลดี)', dmg: async t => { if (t === cur()) return 0; await draw(t, 2); log(`${t.name} จั่ว 2 ใบ`); return 0; } });
   } });
@@ -1571,7 +1578,7 @@ def('chaosU', { name:'Chaos 26', type:'chaos', atk:1,
 def('chaosV', { name:'Chaos 27', type:'chaos', atk:1, text:'<b>โจมตี:</b> พ่อมดทุกคนที่มี 10 HP หรือน้อยกว่ารับ 3 ดาเมจ',
   chaos: async by => attack(null, { to:'where', where: t => t.hp <= 10, dmg:3, chaos:true, by }) });
 
-def('chaosW', { name:'Chaos 28', type:'chaos', text:'ตำนานที่หงายอยู่ 1 ใบ (ผู้เล่นที่เป็นเทิร์นเลือก) ใช้ Group Attack',
+def('chaosW', { name:'Chaos 28', type:'chaos', text:'(ผู้เล่นในเทิร์นนี้) เลือกใช้ Group Attack ของตำนานที่หงายอยู่ 1 ใบ',
   chaos: async () => {
     const up = G.legendRow.filter(L => L && L.gattack);
     if (!up.length) { log('ตำนานที่หงายอยู่ไม่มี Group Attack'); return; }
@@ -1604,7 +1611,7 @@ def('chaos2A', { name:'Chaos 31', type:'chaos', atk:1, text:'<b>โจมตี:
   } });
 
 def('chaos2B', { name:'Chaos 32', type:'chaos',
-  text:'พ่อมดแต่ละคนสุ่มเปิดการ์ดในมือ 1 ใบ แล้วเลือก: ทำลายใบนั้น <i>หรือ</i> จ่าย 2 HP สุ่มเปิดใบใหม่ (ทำซ้ำได้) · จะหยุดโดยไม่ทำลายก็ได้',
+  text:'พ่อมดทุกคนสุ่มเปิดการ์ดในมือ 1 ใบ แล้วเลือก: ทำลายใบนั้น หรือ จ่าย 2 HP สุ่มเปิดใบใหม่ (ทำซ้ำได้) · จะหยุดโดยไม่ทำลายก็ได้',
   chaos: async () => {
     for (const t of turnOrder()) {
       const seen = [];
@@ -1677,7 +1684,7 @@ def('chaos2S', { name:'Chaos 36', type:'chaos', text:'พ่อมดทุก�
   } });
 
 def('chaos2T', { name:'Chaos 37', type:'chaos',
-  text:'เริ่มจากผู้เล่นที่เป็นเทิร์น ทุกคนเลือก “หมอบ” หรือ “แทง” · คนที่แทงเปิดมือ คนที่ราคารวมสูงสุดจั่ว 2 ใบ (เสมอได้หลายคน) คนที่แทงคนอื่นทิ้งการ์ดในมือทั้งหมด',
+  text:'พ่อมดทุกคนเลือก “หมอบ” หรือ “แทง” · คนที่แทงเปิดมือ คนที่มีราคาการ์ดรวมสูงสุดจั่ว 2 ใบ (เสมอได้หลายคน) คนที่แทงแพ้สุ่มทิ้งการ์ดในมือ 1 ใบ และรับ Limp Wand ไปใส่มือแทน',
   chaos: async () => {
     const bettors = [];
     for (const t of turnOrder()) {
@@ -1692,7 +1699,10 @@ def('chaos2T', { name:'Chaos 37', type:'chaos',
     const m = Math.max(...bettors.map(handCost));
     for (const t of bettors) {
       if (handCost(t) === m) { log(`${t.name} ชนะ! จั่ว 2`, 'good'); await draw(t, 2); }
-      else { const n = t.hand.length; t.discard.push(...t.hand); t.hand = []; log(`${t.name} แพ้ · ทิ้งการ์ดในมือ ${n} ใบ`, 'dmg'); }
+      else {   // a losing bettor: one random card from hand to the discard pile, a Limp Wand into hand instead
+        if (t.hand.length) { const c = t.hand.splice(rnd(t.hand.length), 1)[0]; t.discard.push(c); log(`${t.name} แพ้ · สุ่มทิ้ง ${c.name}`, 'dmg'); }
+        if (G.bent > 0) { G.bent--; await toHand(t, make('bent')); log(`${t.name} รับ Limp Wand ใส่มือ`, 'dmg'); AUD.play('curse'); FX.curse(t); }
+      }
     }
     render();
   } });
@@ -2420,9 +2430,9 @@ const FAMILIARS = ['imp','gcat','newt','oracle','raven','golem','sprite','eel',
 // "ใช้ความสามารถ" button · other ids are checked in the engine with hasTrait(p, id).
 const TRAIT_TYPES = ['wizard', 'creature', 'spell', 'treasure', 'location', 'legend', 'familiar'];
 const TRAITS = [
-  { id:'bloodDraw', name:'เลือดแลกการ์ด', text:'ในเทิร์นของคุณ จ่าย 4 HP เพื่อจั่ว 1 ใบได้ 1 ครั้ง (ต้องมีอย่างน้อย 4 HP)',
-    actText:'จ่าย 4 HP จั่ว 1', canActivate: p => p.hp >= 4, aiUse: p => p.hp > 12,
-    activate: async p => { await loseHP(p, 4); await draw(p, 1); } },
+  { id:'bloodDraw', name:'กรีดเลือดแลกการ์ด', text:'ในเทิร์นของคุณ จ่าย 3 HP เพื่อจั่ว 1 ใบได้ 1 ครั้ง (ต้องมีอย่างน้อย 4 HP)',
+    actText:'จ่าย 3 HP จั่ว 1', canActivate: p => p.hp >= 4, aiUse: p => p.hp > 10,
+    activate: async p => { await loseHP(p, 3); await draw(p, 1); } },
   { id:'creatureHeal', name:'พลังชีวิตสัตว์อสูร', text:'ทุกครั้งที่คุณลงสัตว์อสูรในเทิร์นคุณ ฟื้น HP เท่ากับ VP ของใบนั้น',
     onCardPlayed: async (p, c) => { if (isType(c, 'creature')) { const n = vpOf(c, p); if (n > 0) heal(p, n); } } },
   { id:'variety', name:'ครบเครื่อง', text:'ถ้าเทิร์นนี้คุณลงการ์ดต่างประเภทกันครบ 4 ประเภทขึ้นไป +1 ทอง และจั่ว 1 ใบ (เทิร์นละครั้ง)',
@@ -2430,7 +2440,7 @@ const TRAITS = [
       if (G.turn.varietyDone || TRAIT_TYPES.filter(t => G.turn.types[t]).length < 4) return;
       G.turn.varietyDone = true; P(p, 1); await draw(p, 1); log(`${p.name} ลงการ์ดครบ 4 ประเภท: +1 ทอง จั่ว 1`, 'good');
     } },
-  { id:'cheapTop', name:'ของถูกขึ้นเด็ค', text:'การ์ดราคา 4 หรือต่ำกว่าที่ซื้อหรือได้จาก Line-Up ไปวางบนสุดของเด็คแทนกองทิ้ง (บังคับ)' },
+  { id:'cheapTop', name:'นักล่าของถูก', text:'การ์ดราคา 4 หรือต่ำกว่าที่ซื้อหรือได้จาก Line-Up นำไปวางบนสุดของเด็คแทนกองทิ้ง' },
   { id:'spellPeek', name:'ตาทิพย์', text:'ทุกครั้งที่คุณลงคาถาในเทิร์นคุณ ดูการ์ดใบบนสุดของเด็ค แล้วเลือกทิ้งได้',
     onCardPlayed: async (p, c) => {
       if (!isType(c, 'spell')) return;
@@ -2438,7 +2448,7 @@ const TRAITS = [
       const yes = p.isAI ? isJunk(p)(top) : await humanChoose(p, `ตาทิพย์: ทิ้ง ${top.name}?`, [{ label: 'ทิ้ง', value: true }, { label: 'เก็บไว้บนเด็ค', value: false, ghost: true }], cardHTML(top, { small: true }));
       if (yes) { p.discard.push(top); log(`${p.name} ทิ้ง ${top.name} จากบนเด็ค`); } else p.deck.push(top);
     } },
-  { id:'pairs', name:'คู่หู', text:'ถ้าเทิร์นนี้ลงพ่อมดต่างชื่อกัน 2 ใบขึ้นไป +2 ทอง · ถ้าลงสัตว์อสูรต่างชื่อกัน 2 ใบขึ้นไป +2 ทอง (ได้ทั้งสองอย่าง)',
+  { id:'pairs', name:'คู่หู', text:'ถ้าเทิร์นนี้ลงพ่อมดชื่อต่างกัน 2 ใบขึ้นไป +2 ทอง · ถ้าลงสัตว์อสูรชื่อต่างกัน 2 ใบขึ้นไป +2 ทอง (ได้ทั้งสองอย่าง)',
     onCardPlayed: async p => {
       for (const ty of ['wizard', 'creature']) {
         const names = new Set(G.turn.shown.filter(c => isType(c, ty)).map(c => c.name));
@@ -2446,7 +2456,7 @@ const TRAITS = [
       }
     } },
   { id:'wizardDraw', name:'รับสมัครพ่อมด', text:'ตอนจบเทิร์น จั่วเพิ่ม 1 ใบ ต่อพ่อมดที่ซื้อหรือได้มาในเทิร์นนี้' },
-  { id:'treasure2', name:'สมบัติชิ้นที่สอง', text:'ครั้งที่สองที่ลงสมบัติในเทิร์นคุณ นำการ์ด 1 ใบจากกองทิ้งไปวางบนสุดของเด็คได้',
+  { id:'treasure2', name:'สมบัติชิ้นที่สอง', text:'ในเทิร์นคุณ ถ้าลงสมบัติ 2 ใบ นำการ์ด 1 ใบจากกองทิ้งไปวางบนสุดของเด็คได้',
     onCardPlayed: async (p, c) => {
       if (!isType(c, 'treasure') || G.turn.types.treasure !== 2 || !p.discard.length) return;
       const best = p.discard.slice().sort((a, b) => aiVal(b) - aiVal(a))[0];
@@ -2454,7 +2464,7 @@ const TRAITS = [
         : await humanChoose(p, 'สมบัติชิ้นที่สอง: วางการ์ดจากกองทิ้งบนเด็ค?', [...p.discard.map(x => ({ card: x, value: x })), { label: 'ไม่', value: null, ghost: true }]);
       if (pick) { p.discard.splice(p.discard.indexOf(pick), 1); p.deck.push(pick); log(`${p.name} วาง ${pick.name} บนสุดของเด็ค`); }
     } },
-  { id:'thief', name:'นักล้วงเด็ค', text:'✲ เปิดใช้ (เทิร์นละครั้ง): ถ้าคุณควบคุมพ่อมดและ/หรือคาถารวม 2 ใบขึ้นไป เล่นการ์ดใบบนสุดของเด็คเป้าหมาย แล้วใบนั้นลงกองทิ้งของเขา',
+  { id:'thief', name:'นักล้วงเด็ค', text:'✲ เปิดใช้ (เทิร์นละครั้ง): ถ้าคุณลงพ่อมดหรือคาถารวม 2 ใบขึ้นไป เล่นการ์ดใบบนสุดของเด็คเป้าหมาย แล้วนำใบนั้นลงกองทิ้งของเขา',
     actText:'ล้วงเด็คศัตรู', canActivate: p => inPlay(p).filter(c => isType(c, 'wizard') || isType(c, 'spell')).length >= 2, aiUse: () => true,
     activate: async p => {
       const t = await pickTarget(p, opps(p), { label: 'นักล้วงเด็ค: เลือกศัตรู' });
@@ -2462,9 +2472,9 @@ const TRAITS = [
       log(`${p.name} ล้วง ${c.name} จากเด็คของ ${t.name} มาใช้`, 'sys');
       await playCard(p, c, { fromOther: t });
     } },
-  { id:'weirdWand', name:'ไม้กายสิทธิ์ประหลาด', text:'เริ่มเกม: Rune 1 ใบในเด็คเริ่มต้นเปลี่ยนเป็น Weird Wand · การโจมตีจากการ์ดชื่อ “Wand” ของคุณ +1 ดาเมจ และป้องกันไม่ได้' },
+  { id:'weirdWand', name:'ไม้กายสิทธิ์ประหลาด', text:'เริ่มเกม: Rune 1 ใบในเด็คเริ่มต้นเปลี่ยนเป็น Weird Wand · การ์ดชื่อ “Wand” ของคุณ +1 ดาเมจ และป้องกันไม่ได้' },
   { id:'spellDraw', name:'นักสะสมคาถา', text:'ตอนจบเทิร์น จั่วเพิ่ม 1 ใบ ต่อคาถาที่ซื้อหรือได้มาในเทิร์นนี้' },
-  { id:'creatureTop', name:'จับสัตว์ขึ้นเด็ค', text:'เมื่อคุณได้สัตว์อสูรมา เลือกวางบนสุดของเด็คได้' },
+  { id:'creatureTop', name:'ผู้ให้อาหารสัตว์อสูร', text:'เมื่อคุณได้สัตว์อสูรมา เลือกวางบนสุดของเด็คได้' },
   { id:'treasureLover', name:'นักล่าสมบัติ', text:'ซื้อสมบัติถูกลง 1 · จบเกม: สมบัติของคุณได้ +1 VP ต่อใบ' },
 ];
 // Dead Wizard tokens (sets 1 + 2, 2026-10-10). One of each; the pile takes 4 per player at random from both sets.
