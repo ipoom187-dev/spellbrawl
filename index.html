@@ -2032,24 +2032,24 @@ def('mrbun', { name:'Sir Fluffington, Rogue Pet', type:'legend', alsoType:'creat
 def('vortexfuckery', { name:'The Whirlpool of Total Nonsense', type:'legend', alsoType:'location', cost:18, vp:6, ongoing:1,
   text:'<b>ต่อเนื่อง:</b> ครั้งแรกในแต่ละเทิร์นที่การโจมตีของคุณทำดาเมจ ได้ทองเท่ากับดาเมจรวมที่ทำได้', group:'—' });
 def('schadenfreude', { name:'Saint Gloatsworth', type:'legend', alsoType:'wizard', cost:19, vp:7, power:5, atk:1,
-  text:'+5 ทอง<br><b>โจมตี:</b> เป้าหมายได้ Dead Wizard Token 2 อันจากนอกเกม (สะท้อนกลับไม่ได้ แต่ป้องกันได้)', group:'—',
+  text:'+5 ทอง<br><b>โจมตี (ป้องกันไม่ได้):</b> เป้าหมายได้ Dead Wizard Token 2 อันจากนอกเกม', group:'—',
   play: async p => {
-    await attack(p, { to:'choose', noRedirect:true, dmgText:'ได้ Dead Wizard Token 2 อัน (-6 VP)', dmg: t => {
+    await attack(p, { to:'choose', unblockable:1, dmgText:'ได้ Dead Wizard Token 2 อัน (-6 VP)', dmg: t => {
       for (let i = 0; i < 2; i++) { const k = { ...TOKENS[rnd(TOKENS.length)] }; t.tokens.push(k); announceToken(t, k); } // fresh tokens: the shared pile is untouched
       log(`${t.name} ได้ Dead Wizard Token 2 อัน: ${t.tokens.slice(-2).map(k => k.name).join(', ')}`, 'dmg'); render();
       return 0;
     } });
   } });
 def('winnerwand', { name:"The Champion Wand of Victory", type:'legend', alsoType:'treasure', cost:20, vp:7, power:8, atk:1,
-  text:'+8 ทอง<br><b>โจมตี:</b> เป้าหมายรับ 1 ดาเมจ ถ้าเขาตายด้วยวิธีนี้ <b>คุณชนะเกมทันที</b>', group:'—',
+  text:'+8 ทอง<br><b>โจมตี:</b> เป้าหมายรับ 2 ดาเมจ ถ้าเขาตายด้วยวิธีนี้ <b>คุณชนะเกมทันที</b>', group:'—',
   play: async p => {
-    await attack(p, { to:'choose', dmg:1, onKill: async t => {
+    await attack(p, { to:'choose', dmg:2, onKill: async t => {
       G.instantWinner = p; G.ending = `${p.name} ฆ่า ${t.name} ด้วย The Champion Wand of Victory`;
       log(`🏆 ${p.name} ชนะเกมทันที!`, 'sys');
       if (G.endTurnResolve) { const r = G.endTurnResolve; G.endTurnResolve = null; r(); } // human turn: end it now
     } });
   } });
-def('blackbart', { name:'Captain Plunderbeard', type:'legend', alsoType:'wizard', cost:9, vp:3, power:2, atk:1,
+def('blackbart', { name:'Captain Plunderbeard', type:'legend', alsoType:'wizard', cost:15, vp:3, power:2, atk:1,
   text:'+2 ทอง<br><b>โจมตี:</b> เปิดการ์ด 4 ใบบนสุดของเด็คเป้าหมาย เลือกเล่น 1 ใบเป็นของคุณ แล้วทั้ง 4 ใบลงกองทิ้งของเจ้าของ', group:'—',
   play: async p => {
     await attack(p, { to:'choose', dmgText:'เปิดการ์ด 4 ใบบนสุดของเด็คคุณ ให้ผู้โจมตีเลือกเล่น 1 ใบ', dmg: async t => {
