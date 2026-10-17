@@ -2,6 +2,9 @@
 <meta charset="utf-8">
 <title>Wizard Royale</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- visitor stats (GoatCounter, no cookies): https://ipoom187.goatcounter.com · it skips localhost and file:// on its own;
+     open the game once with #toggle-goatcounter on a device to stop counting that device -->
+<script data-goatcounter="https://ipoom187.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Chakra+Petch:wght@400;600;700&display=swap">
 <style>
@@ -663,6 +666,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rnd = n => Math.floor(Math.random() * n);
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 let G = null, uidc = 1, AI_DELAY = 650;
+// GoatCounter event (game started, room made…): shows up as a path in the stats; does nothing if the counter is blocked
+const statEvent = (path, title) => { try { if (window.goatcounter && goatcounter.count) goatcounter.count({ path, title: title || path, event: true }); } catch (e) {} };
 // ME = the seat this browser shows and controls: 0 offline and for the host of an online room, the guest's own seat otherwise
 let ME = 0;
 const meP = () => G.players[ME];
@@ -4024,6 +4029,7 @@ async function runGame() {
 
 function finish() {
   G.over = true;
+  if (G.players.some(p => !p.isAI || p.away)) statEvent('game-finish', 'เล่นจบเกม'); // not the all-AI test games
   const rows = finalRows();
   log(`เกมจบ: ${G.ending}`, 'sys');
   render();
@@ -4107,6 +4113,7 @@ function newGame(name, nAI, more = []) {
 async function startGame(name, nAI, guests = []) {
   newGame(name, nAI, guests.map(g => g.name));
   ME = 0;
+  statEvent(guests.length ? 'game-start-online' : 'game-start', `เริ่มเกม ${G.players.length} คน${guests.length ? ` (เพื่อนออนไลน์ ${guests.length})` : ''}`);
   if (guests.length) { G.online = true; guests.forEach((g, k) => { G.players[k + 1].peer = g.peer; }); }
   for (const p of G.players) {
     if (p.isAI) p.familiar = p.famChoices[rnd(2)];
@@ -5117,6 +5124,7 @@ const NET = {
   async createRoom(name) {
     NET.name = name; NET.saveName(name);
     NET.role = 'host'; NET.phase = 'lobby'; NET.guests = [];
+    statEvent('room-create', 'สร้างห้องออนไลน์');
     NET.status('กำลังสร้างห้อง…');
     try { await NET.loadPeer(); } catch (e) { return NET.fail('โหลดระบบออนไลน์ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่'); }
     const tryOpen = (left) => {
@@ -5252,6 +5260,7 @@ const NET = {
     if (!code) return NET.showJoin('', 'ใส่รหัสห้องก่อน');
     NET.name = name; NET.saveName(name); NET.code = code;
     NET.role = 'guest';
+    statEvent('room-join', 'เข้าห้องเพื่อน');
     NET.status(`กำลังเข้าห้อง ${code}…`);
     try { await NET.loadPeer(); } catch (e) { return NET.fail('โหลดระบบออนไลน์ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', code); }
     const peer = NET.newPeer(); NET.peer = peer;
