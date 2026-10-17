@@ -1,6 +1,6 @@
 # Wizard Royale
 
-เล่นบนเว็บ: https://ipoom187-dev.github.io/wizard-royale/
+เล่นบนเว็บ: https://wizardroyale.github.io/
 
 ในโลกนี้มีการแข่งขันหาพ่อมดที่เก่งที่สุด และคุณคือหนึ่งในผู้เข้าแข่งขัน
 

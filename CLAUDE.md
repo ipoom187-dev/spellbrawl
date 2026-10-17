@@ -1,7 +1,7 @@
 # Wizard Royale
 
 Game name: **Wizard Royale** (renamed from Spellbrawl on 2026-10-17; story: a world-wide contest to find the greatest
-wizard). Play link: https://ipoom187-dev.github.io/wizard-royale/ (repo `ipoom187-dev/wizard-royale`). Internal keys and the
+wizard). Play link: https://wizardroyale.github.io/ (repo `wizardroyale/wizardroyale.github.io`, moved from `ipoom187-dev/wizard-royale` on 2026-10-17; clones elsewhere need `git remote set-url origin https://github.com/wizardroyale/wizardroyale.github.io.git`). Internal keys and the
 online room prefix still say `spellbrawl-…` on purpose: renaming them would wipe saved settings and split rooms.
 
 Single-file HTML deck-building game (`index.html`), rules modelled on a well-known wizard-battle deck-builder (keep that game unnamed in anything players see).
