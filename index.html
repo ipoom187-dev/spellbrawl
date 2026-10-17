@@ -333,6 +333,23 @@ button{font-family:inherit}
 .vgroup .cards{gap:14px}
 .zone{min-width:0}
 .empty{color:var(--mute);font-size:12px;font-style:italic;padding:8px 0}
+/* your panel sits on the busy mat picture: its small texts get dark pills, larger type and a shadow; the hand is centred */
+.you .sect-label,.you .stats span,.you .empty{display:inline-block;background:#0b0810d0;border:1px solid #ffffff1c;border-radius:999px;
+  padding:3px 11px;color:#f3e7cf;text-shadow:0 1px 2px #000}
+.you .sect-label{font-size:13px;font-weight:700;letter-spacing:.06em}
+.you .stats{font-size:14px;color:#f3e7cf;gap:6px}
+.you .stats b{color:var(--gold)}
+.you .empty{font-size:13px;font-style:normal;padding:3px 11px}
+.you .seatdir{font-family:var(--f-body);font-size:13px;letter-spacing:.04em;color:#e6dccb;text-shadow:0 1px 3px #000,0 0 8px #000}
+.you .you-name .pname{text-shadow:0 2px 4px #000,0 0 10px #000}
+.you .big .k{font-size:13px;color:#f3e7cf;text-shadow:0 1px 3px #000}
+.you .big .v{text-shadow:0 2px 6px #000}
+.you .hand-zone{display:flex;flex-direction:column;align-items:center}
+.you .hand-zone .cards{justify-content:center;width:100%}
+/* deck / discard / all cards / tokens buttons */
+.you .pilebtns .linkbtn{background:linear-gradient(#2a1d34f2,#160e1cf2);border:1px solid #c8a14a99;color:#f3e7cf;font-size:13.5px;font-weight:600;
+  padding:7px 13px;border-radius:8px;box-shadow:0 2px 8px #000a,inset 0 1px 0 #ffffff14;text-shadow:0 1px 2px #000}
+.you .pilebtns .linkbtn:hover{border-color:var(--gold);color:var(--gold);background:linear-gradient(#3a2848f2,#1e1426f2)}
 /* log */
 /* overlay */
 /* card zoom */
@@ -4628,7 +4645,7 @@ function render() {
       </div>
       <div class="zones">
         <div class="zone"><div class="sect-label">สัตว์รับใช้</div>${fam}</div>
-        <div class="zone"><div class="sect-label">มือของคุณ ${myTurn ? '· คลิกเพื่อเล่น' : ''}</div><div class="cards">${hand}</div></div>
+        <div class="zone hand-zone"><div class="sect-label">มือของคุณ ${myTurn ? '· คลิกเพื่อเล่น' : ''}</div><div class="cards">${hand}</div></div>
         ${ongoing ? `<div class="zone ong-zone"><div class="sect-label">การ์ดต่อเนื่องของคุณ</div><div class="cards">${ongoing}</div></div>` : ''}
       </div>
     </section>`;
